@@ -265,7 +265,7 @@ function renderWelcome(v){
     <div class="wgrid">
       <button class="btn" type="button" data-do="minta">${ic("play",16)}Minta megnyitása</button>
       <button class="btn" type="button" data-do="ures">${ic("edit",16)}Üres terv, beírom</button>
-      <button class="btn" type="button" data-do="sablon">${ic("down",16)}Excel-sablon letöltése</button>
+      <button class="btn" type="button" data-do="sablon">${ic("down",16)}Sablon letöltése</button>
       <button class="btn" type="button" data-do="tour">${ic("play",16)}Bemutató · 2 perc</button>
     </div>
     <p class="muted small">A sablonnal működik a legbiztosabban, de a saját táblázatodat is megpróbálja felismerni: kell egy fejlécsor <b>Perc</b> (vagy Kezdés), <b>Típus</b> és <b>Blokk / shot</b> oszlopokkal. A terv csak ezen az eszközön tárolódik.</p>
@@ -315,7 +315,6 @@ function importPreview(){
 function renderEdit(){
   const v=$('[data-view="terv"]');
   const secs=[["fajl","Fájl"],["idorend","Időrend"],["projekt","Projekt"],["emberek","Emberek"],["szkript","Szkript"]];
-  if(!P.blocks.length&&editSec==="idorend"&&!openEB)editSec="fajl";
   let body="";
   if(editSec==="fajl")body=`${pending?importPreview():""}
     <section class="card"><h2>Excel-táblázat betöltése</h2>
@@ -330,6 +329,7 @@ function renderEdit(){
       <button class="btn danger" type="button" data-do="ures">${ic("x",16)}Üres terv</button></div></section>`;
   else if(editSec==="idorend")body=`<p class="muted small" id="edwrap">${wrapLine()}</p>
     <datalist id="glist">${P.groups.filter(g=>g.code).map(g=>`<option value="${esc(g.code)}">${esc(g.name)}</option>`).join("")}</datalist>
+    ${P.blocks.length?"":`<section class="card empty"><h2>Üres a terv</h2><p class="muted">Add hozzá az első blokkot az alábbi gombokkal, sorban, ahogy a nap megy: érkezés, előkészület, forgatás, átállás, ebéd… A crew callt és a dátumot a <b>Projekt</b> részen állítod. Ha Excelben már megvan a nap, töltsd be a <b>Fájl</b> részen.</p></section>`}
     <div class="eblist">${P.blocks.map(blockCard).join("")}</div>
     <div class="wgrid add"><button class="btn sm" type="button" data-addb="shoot">${ic("plus",14)}Forgatás</button><button class="btn sm" type="button" data-addb="move">${ic("plus",14)}Átállás</button><button class="btn sm" type="button" data-addb="prep">${ic("plus",14)}Előkészület</button><button class="btn sm" type="button" data-addb="lunch">${ic("plus",14)}Ebéd</button><button class="btn sm" type="button" data-addb="res">${ic("plus",14)}Tartalék</button></div>`;
   else if(editSec==="projekt")body=`<section class="card"><h2>A nap</h2><div class="eg">
@@ -349,6 +349,7 @@ function renderEdit(){
       <div class="etab">${P.script.map((l,k)=>`<div class="er sr" data-list="script" data-k="${k}"><label class="fi w2"><span class="flab">Típus</span><select data-f="t">${STYPES.map(([a,b])=>`<option value="${a}" ${a===l.t?"selected":""}>${b}</option>`).join("")}</select></label>
         ${fld("x",l.x,{label:"Szöveg",area:1,cls:"span2"})}${fld("ids",(l.ids||[]).join(", "),{label:"Shotok",ph:"1/1, 1/2",cls:"w2"})}<button type="button" class="ib del" data-act="rowdel" aria-label="Sor törlése">${ic("x",16)}</button></div>`).join("")}</div>
       <button type="button" class="btn sm" data-act="rowadd" data-list="script">${ic("plus",14)}Új sor</button></section>`;
+  renderTabs();$$(".tabs a").forEach(a=>{if(a.getAttribute("href")==="#terv")a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
   v.innerHTML=`<div class="vh">Terv</div><div class="seg esec" role="group" aria-label="Szakasz">${secs.map(([k,l])=>`<button type="button" data-sec="${k}" aria-pressed="${editSec===k}">${l}</button>`).join("")}</div><div class="stack">${body}</div>`;
 }
 /* események (egyszer, delegálva) */

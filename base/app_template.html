@@ -262,6 +262,8 @@ input[type=time],select{height:40px;border-radius:12px;border:1px solid var(--ha
 .dk.wide{grid-auto-flow:column;gap:8px}
 .tabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:5px;border-radius:23px;background:rgba(16,20,27,.9);border:1px solid var(--hair);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
 .tabs a{display:grid;justify-items:center;gap:3px;padding:8px 1px 7px;border-radius:18px;color:var(--fg-3);text-decoration:none;font-size:10px;font-weight:650;letter-spacing:0;min-width:0}
+.tabs.few{max-width:360px;margin-inline:auto}
+.tabs.few a{font-size:11px}
 .tabs a[aria-current="page"]{color:var(--fg);background:var(--surface-2)}
 .toasts{display:grid;gap:6px}
 .toast{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px;padding:8px 8px 8px 14px;border-radius:16px;background:rgba(26,32,42,.96);border:1px solid var(--hair-2);box-shadow:0 14px 40px -14px #000;font-weight:600;font-size:14px;animation:rise .22s ease}
@@ -852,10 +854,15 @@ function renderInfo(){
 /*__EDITOR_JS__*/
 /* ---------- útvonal ---------- */
 const VIEWS=[["most","Most","now"],["idorend","Időrend","list"],["szkript","Szkript","doc"],["stab","Stáb","users"],["terv","Terv","edit"],["info","Info","sliders"]];
-$("#tabs").innerHTML=VIEWS.map(([k,l,i])=>`<a href="#${k}">${ic(i,21)}<span>${l}</span></a>`).join("");
+// Terv nélkül csak az kap fület, aminek van értelme: Kezdés (betöltés), Terv (beírás), Info.
+const VIEWS0=[["most","Kezdés","upload"],["terv","Terv","edit"],["info","Info","sliders"]];
+let tabKey="";
+function renderTabs(){const vs=B.length?VIEWS:VIEWS0,k=vs.map(v=>v[1]).join();if(k===tabKey)return;tabKey=k;
+  const t=$("#tabs");t.innerHTML=vs.map(([k,l,i])=>`<a href="#${k}">${ic(i,21)}<span>${l}</span></a>`).join("");t.classList.toggle("few",!B.length)}
 let view="most";
 function route(scroll){
-  const h=location.hash.slice(1);view=VIEWS.some(v=>v[0]===h)?h:"most";
+  renderTabs();
+  const h=location.hash.slice(1),vs=B.length?VIEWS:VIEWS0;view=vs.some(v=>v[0]===h)?h:"most";if(h&&h!==view)history.replaceState(null,"","#"+view);
   $$("[data-view]").forEach(s=>s.hidden=s.dataset.view!==view);
   $$(".tabs a").forEach(a=>{if(a.getAttribute("href")==="#"+view)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
   $("#dock").hidden=view!=="most"||!B.length;
