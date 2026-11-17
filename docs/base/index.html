@@ -648,7 +648,7 @@ html.gated,html.gated body{overflow:hidden}
 .codebtn{height:38px;padding:0 12px;border-radius:11px;border:1px dashed color-mix(in srgb,var(--shoot) 60%,transparent);background:color-mix(in srgb,var(--shoot) 10%,transparent);color:var(--shoot);font-weight:800;font-size:15px;letter-spacing:.08em;white-space:nowrap}
 .roles{display:grid;gap:10px;margin-bottom:10px}
 .role{border:1px solid var(--hair);border-radius:var(--r-tile);background:var(--surface);padding:10px;display:grid;gap:10px}
-.role-top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+.role-top{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center}
 .rname{min-width:0;font:inherit;font-weight:700;font-size:16px;color:var(--fg);background:transparent;border:1px solid transparent;border-radius:10px;padding:6px 8px}
 .rname:hover,.rname:focus{border-color:var(--hair-2);background:rgba(0,0,0,.25);outline:none}
 .perms{display:flex;flex-wrap:wrap;gap:6px}
@@ -666,6 +666,8 @@ body.ro .chk{pointer-events:none;opacity:.55}
 #pvbar .pv-l{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 #pvbar select{min-width:0;max-width:44vw;background:var(--surface-3);color:var(--fg);border:1px solid var(--hair);border-radius:999px;padding:6px 10px;font:inherit}
 #pvbar .btn{white-space:nowrap}
+
+.gcode{font-size:34px;font-weight:800;letter-spacing:.06em;text-align:center;margin:4px 0 8px}
 
 .credit-line{margin:22px 0 6px;text-align:center;font-size:11.5px;letter-spacing:.02em;color:var(--fg-3)}
 .credit p+p{margin-top:2px}
@@ -1347,6 +1349,17 @@ const PRESETS=[["Rendező","most idorend szkript stab phones images props notes 
   ["Szkriptes","most idorend szkript stab images props notes takes"],["Stáb (általános)","most idorend stab notes"]];
 const RAND=(n,al="ABCDEFGHJKLMNPQRSTUVWXYZ23456789")=>{const a=new Uint32Array(n);crypto.getRandomValues(a);return[...a].map(x=>al[x%al.length]).join("")};
 const RID=n=>RAND(n,"abcdefghijkmnpqrstuvwxyz23456789");
+const JOINKEY="aperation-join";
+const inviteURL=c=>PAGES_URL+"?join="+fmtCode(c);
+(()=>{const m=location.search.match(/[?&]join=([A-Za-z0-9-]{8,9})/);if(!m)return;
+  try{localStorage.setItem(JOINKEY,m[1].toUpperCase().replace(/[^A-Z0-9]/g,""))}catch(e){}
+  try{history.replaceState(null,"",location.pathname+location.hash)}catch(e){}})();
+const pendingJoin=()=>{try{return localStorage.getItem(JOINKEY)||""}catch(e){return""}};
+async function mpInvite(code,role){
+  const url=inviteURL(code),text=`Meghívó${P.title?` a(z) „${P.title}” diszpóhoz`:" egy közös diszpóhoz"} (APERATION, ${role}). Kód: ${fmtCode(code)}`;
+  if(navigator.share){try{await navigator.share({title:"APERATION meghívó",text,url});return}catch(e){if(e&&e.name==="AbortError")return}}
+  copyText(text+"\n"+url);
+}
 const fmtCode=c=>c?c.slice(0,4)+"-"+c.slice(4):"";
 const normCode=c=>String(c||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
 
@@ -1392,15 +1405,76 @@ function filterP(p,perm){
   if(!perm.phones){q.cast.forEach(c=>c.phone="");q.crew.forEach(c=>c.phone="")}
   return q;
 }
-let pubT=null;
-function mpPublishSoon(){if(!isMpAdmin()||!MP.ready||tour||mpApplying)return;clearTimeout(pubT);pubT=setTimeout(mpPublish,1200)}
-function mpPublish(){
-  if(!fdb||!isMpAdmin())return;const ts=Date.now();MP.lastPub=ts;const b=fdb.batch(),r0=pref();
-  b.set(r0.collection("views").doc("__admin"),{plan:JSON.stringify(P),perm:ALLPERM,roleName:"Szerkesztő",ts,by:UID});
-  for(const r of MP.roles)b.set(r0.collection("views").doc(r.id),{plan:JSON.stringify(filterP(P,r.perm)),perm:r.perm,roleName:r.name,ts,by:UID});
-  b.update(r0,{title:P.title||"",ts});
-  return b.commit().catch(mpErr);
+/* közös szerkesztés: háromutas összefésülés.
+   base = a szerverrel utoljára egyeztetett terv, local = a mi tervünk, remote = ami most a szerveren van.
+   Blokkok, shotok, emberek és fények elemenként (_id szerint) fésülődnek, mezőnként; ha ketten ugyanazt
+   a mezőt írták át, a később mentő nyer. Így ketten egyszerre írhatják a diszpót. */
+const J=JSON.stringify,jeq=(a,b)=>J(a)===J(b),isObj=x=>x&&typeof x==="object"&&!Array.isArray(x);
+function merge3(b,l,r){
+  if(jeq(l,r)||jeq(r,b))return l;if(jeq(l,b))return r;
+  if(Array.isArray(l)&&Array.isArray(r)){
+    const idd=a=>Array.isArray(a)&&a.every(x=>isObj(x)&&x._id);
+    if(idd(l)&&idd(r)&&idd(b||[]))return mergeIds(b||[],l,r);
+    if(Array.isArray(b)&&b.length===l.length&&l.length===r.length)return l.map((x,i)=>merge3(b[i],x,r[i]));
+    return l;
+  }
+  if(isObj(l)&&isObj(r)){const o={},bb=isObj(b)?b:{};
+    for(const k of new Set([...Object.keys(l),...Object.keys(r)])){
+      if(!(k in l)&&(k in bb)&&jeq(bb[k],r[k]))continue;
+      if(!(k in r)&&(k in bb)&&jeq(bb[k],l[k]))continue;
+      o[k]=!(k in l)?r[k]:!(k in r)?l[k]:merge3(bb[k],l[k],r[k])}
+    return o}
+  return l;
 }
+function mergeIds(b,l,r){
+  const M=a=>new Map(a.map(x=>[x._id,x])),Bm=M(b),Lm=M(l),Rm=M(r),ids=a=>a.map(x=>x._id);
+  const pick=id=>{const iL=Lm.has(id),iR=Rm.has(id);
+    if(iL&&iR)return merge3(Bm.get(id),Lm.get(id),Rm.get(id));
+    if(!Bm.has(id))return iL?Lm.get(id):Rm.get(id);
+    const x=iL?Lm.get(id):Rm.get(id);return jeq(x,Bm.get(id))?null:x}; // az egyik oldal törölte; ha a másik közben módosította, marad
+  const both=id=>Bm.has(id)&&Lm.has(id)&&Rm.has(id);
+  const moved=!jeq(ids(l).filter(both),ids(b).filter(both));
+  const prim=moved?ids(l):ids(r),sec=moved?ids(r):ids(l),order=[...prim];
+  sec.forEach((id,i)=>{if(order.includes(id))return;let j=i-1;while(j>=0&&!order.includes(sec[j]))j--;order.splice(j<0?0:order.indexOf(sec[j])+1,0,id)});
+  return order.map(pick).filter(Boolean);
+}
+let pubT=null,pubBusy=false,pubAgain=false,needRender=false;
+const BASEKEY="aperation-mp-base";
+function setBase(x){MP.base=x;try{localStorage.setItem(BASEKEY,J({pid:MP.pid,p:x}))}catch(e){}}
+try{const b=JSON.parse(localStorage.getItem(BASEKEY)||"null");if(b&&MP.on&&b.pid===MP.pid)MP.base=b.p}catch(e){}
+function mpPublishSoon(){if(!isMpAdmin()||!MP.ready||tour||mpApplying)return;clearTimeout(pubT);pubT=setTimeout(mpPublish,900)}
+async function mpPublish(){
+  if(!fdb||!isMpAdmin())return;if(pubBusy){pubAgain=true;return}pubBusy=true;
+  const sent=JSON.parse(J(P)),base=MP.base?JSON.parse(J(MP.base)):null,r0=pref(),ref=r0.collection("views").doc("__admin");let out=null;
+  try{
+    await fdb.runTransaction(async tx=>{
+      const cur=await tx.get(ref);let remote=null;
+      if(cur.exists){try{remote=normP(JSON.parse(cur.data().plan))}catch(e){}}
+      const merged=remote&&base&&!jeq(remote,base)?normP(merge3(base,sent,remote)):sent,ts=Date.now();
+      tx.set(ref,{plan:J(merged),perm:ALLPERM,roleName:"Szerkesztő",ts,by:UID});
+      for(const r of MP.roles)tx.set(r0.collection("views").doc(r.id),{plan:J(filterP(merged,r.perm)),perm:r.perm,roleName:r.name,ts,by:UID});
+      tx.update(r0,{title:merged.title||"",ts});
+      out={merged,ts};
+    });
+    MP.lastPub=out.ts;setBase(out.merged);
+    if(!jeq(out.merged,sent)){ // közben másik szerkesztő is írt: az ő változásai bekerülnek nálunk is
+      const now=jeq(P,sent)?out.merged:normP(merge3(sent,P,out.merged));
+      mpApplyPlan(now);if(!jeq(now,out.merged))pubAgain=true;
+    }else if(!jeq(P,sent))pubAgain=true;
+  }catch(e){if(e&&e.code==="permission-denied")mpErr(e);else setTimeout(mpPublishSoon,4000)}
+  pubBusy=false;if(pubAgain){pubAgain=false;mpPublishSoon()}
+}
+// a terv cseréje úgy, hogy gépelés közben ne ugorjon el a kurzor (a mező elhagyásakor frissül)
+function mpApplyPlan(p){
+  mpApplying=true;P=normP(p);saveP();applyProject();mpApplying=false;tabKey="";
+  if(view==="terv"&&document.activeElement&&document.activeElement.closest('[data-view="terv"]')&&document.activeElement.matches("input,textarea,select")){needRender=true;tick(true)}
+  else renderAll();
+}
+// mező elhagyásakor frissítünk; ha közben egy másik mezőbe lépett, újrarajzolás után oda tesszük vissza a kurzort
+document.addEventListener("focusout",()=>setTimeout(()=>{if(!needRender)return;const a=document.activeElement;
+  let sel=null;if(a&&a.closest('[data-view="terv"]')&&a.matches("input,textarea,select")&&a.dataset.f){const h=a.closest("[data-id]");sel=(h&&h.dataset.id?`[data-id="${h.dataset.id}"] `:"")+`[data-f="${a.dataset.f}"]`}
+  needRender=false;renderAll();
+  if(sel){const n=document.querySelector('[data-view="terv"] '+sel);if(n){n.focus({preventScroll:true});try{const l=n.value.length;n.setSelectionRange(l,l)}catch(e){}}}},60));
 /* a nap állása */
 let pushT=null;
 function mpPush(){
@@ -1442,9 +1516,17 @@ function takesRedraw(){takesHold=false;if(view==="most")renderMost();else if(vie
 function mpOnView(s){
   if(!s.exists){if(isMember())mpLost();return}
   const d=s.data();
-  if(isMpAdmin()&&(d.by===UID||d.ts<=MP.lastPub))return;
+  if(isMpAdmin()&&d.by===UID&&d.ts<=MP.lastPub)return;
   if(tour){MP.pendView=s;return}
   let p;try{p=JSON.parse(d.plan)}catch(e){return}
+  if(isMpAdmin()){
+    const remote=normP(p);MP.title=remote.title;mpSaveLocal();
+    if(MP.base&&jeq(remote,MP.base))return;
+    // ha nálunk van még el nem küldött változás, összefésüljük, és visszaküldjük
+    const local=MP.base&&!jeq(P,MP.base)?normP(merge3(MP.base,P,remote)):remote;
+    setBase(remote);if(!jeq(local,P))mpApplyPlan(local);if(!jeq(local,remote))mpPublishSoon();
+    return;
+  }
   if(isMember()){MP.perm=d.perm;MP.roleName=d.roleName}
   MP.title=p.title;mpSaveLocal();
   mpApplying=true;P=normP(p);saveP();applyProject();mpApplying=false;
@@ -1476,13 +1558,12 @@ function mpLost(){if(!MP.on||MP.leaving)return;MP.leaving=true;toast("Kikerült�
 
 /* létrehozás, belépés, kilépés */
 async function mpCreate(btn){
-  if(!P.blocks.length){toast("Előbb legyen egy terv: tölts be Excelt, vagy írd be a napot.");return}
   if(btn){btn.disabled=true;btn.textContent="Létrehozás…"}
   try{
     await fbInit();const pid=RID(20),r0=fdb.collection("projects").doc(pid),ts=Date.now();
     await r0.set({owner:UID,title:P.title||"",created:ts,ts});
     const b=fdb.batch(),acode=RAND(8);
-    MP={...MP,on:true,mode:"admin",pid,roleId:"__owner",code:acode,name:"",perm:ALLPERM,roleName:"Szerkesztő",title:P.title,roles:[],members:[]};
+    MP={...MP,base:null,on:true,mode:"admin",pid,roleId:"__owner",code:acode,name:"",perm:ALLPERM,roleName:"Szerkesztő",title:P.title,roles:[],members:[]};
     PRESETS.forEach(([name,s],k)=>{const id=RID(12),code=RAND(8),perm=permOf(s);MP.roles.push({id,name,perm,code,order:k});
       b.set(r0.collection("roles").doc(id),{name,perm,code,order:k});b.set(fdb.collection("codes").doc(code),{pid,roleId:id})});
     b.set(r0.collection("roles").doc("__admin"),{name:"Szerkesztő (társ-AD)",admin:true,code:acode,order:-1});b.set(fdb.collection("codes").doc(acode),{pid,roleId:"__admin"});
@@ -1500,11 +1581,12 @@ async function mpJoin(raw,name){
     const {pid,roleId}=cd.data();
     await fdb.collection("projects").doc(pid).collection("members").doc(UID).set({code:c,roleId,name:name.trim(),joined:Date.now()});
     if(!MP.on){try{localStorage.setItem(LOCALP,JSON.stringify(P));localStorage.setItem(LOCALS,JSON.stringify(st))}catch(e){}}
-    MP={...MP,on:true,mode:roleId==="__admin"?"admin":"member",pid,roleId,code:c,name:name.trim(),perm:roleId==="__admin"?ALLPERM:null,roleName:"",title:"",roles:[],members:[],lastPub:0,liveTs:0};
+    MP={...MP,base:null,on:true,mode:roleId==="__admin"?"admin":"member",pid,roleId,code:c,name:name.trim(),perm:roleId==="__admin"?ALLPERM:null,roleName:"",title:"",roles:[],members:[],lastPub:0,liveTs:0};
     if(isMember()){P=normP({});applyProject()}
     const s=st.sound;st=fresh();st.sound=s;mpApplying=true;save();mpApplying=false;
-    mpSaveLocal();mpListen();location.hash="#most";renderAll();
-    toast(isMember()?"Csatlakoztál. A terv mindjárt megjelenik.":"Csatlakoztál szerkesztőként.",{tone:"ok"});return true;
+    try{localStorage.removeItem(JOINKEY)}catch(e){}
+    mpSaveLocal();mpListen();if(isMpAdmin()){editSec="projekt";location.hash="#terv"}else location.hash="#most";renderAll();
+    toast(isMember()?"Csatlakoztál. A terv mindjárt megjelenik.":"Csatlakoztál társszerkesztőként: együtt írjátok a diszpót.",{tone:"ok"});return true;
   }catch(e){mpErr(e);return false}
 }
 async function mpLeave(silent){
@@ -1548,20 +1630,21 @@ function teamHTML(){
     <a class="btn solid" href="${PAGES_URL}" target="_blank" rel="noopener">${ic("arrow",16)}Telepíthető változat megnyitása</a>
     <p class="muted small">Ott a terved Excelként átvihető: itt Fájl → Terv mentése Excelbe, ott Excel betöltése.</p></section>`;
   if(!MP.on)return`<section class="card" id="teamcard"><h2>Közös munka a stábbal</h2>
-    <p class="muted">Ha megosztod a tervet, minden pozíció (rendező, 1st AD, 2nd AD, szkriptes, általános stáb) kap egy <b>belépőkódot</b>. Aki beírja, a saját telefonján élőben látja a napot: mi megy most, mennyit csúsztunk, mi jön. Te döntöd el pozíciónként, <b>ki mit lát</b>, és ki <b>vezérelheti</b> a napot (Kész, +5′, take, érkezések).</p>
-    <ul class="list"><li>A rejtett adatot (pl. telefonszám, forgatókönyv) a szerver el sem küldi annak, akinek nem szabad látnia.</li><li>Térerő nélkül is megy tovább; amikor visszajön a net, szinkronizál.</li><li>A terv szerkesztése nálad marad. A változtatások pár másodperc múlva mindenkinél megjelennek.</li></ul>
-    <button class="btn solid" type="button" data-do="mpcreate" ${P.blocks.length?"":"disabled"}>${ic("users",16)}Közös projekt indítása</button>
-    ${P.blocks.length?"":`<p class="muted small">Előbb legyen egy terv a Fájl vagy az Időrend részen.</p>`}</section>`;
+    <p class="muted">Már a diszpó írásakor dolgozhattok együtt: indítsd el a közös projektet, és küldj <b>meghívó linket</b> vagy kódot. A <b>társszerkesztők</b> veled együtt írják a tervet (shotlist, időrend, emberek, forgatókönyv), a változások pár másodperc alatt mindenkinél megjelennek. A többi pozíció (rendező, 1st AD, 2nd AD, szkriptes, stáb) a kész napot látja a telefonján, és te döntöd el, ki mit lát.</p>
+    <ul class="list"><li>Ha ketten egyszerre írtok, az app összefésüli: más-más blokk, shot vagy mező szerkesztése nem írja felül egymást.</li><li>A rejtett adatot (pl. telefonszám, forgatókönyv) a szerver el sem küldi annak, akinek nem szabad látnia.</li><li>Térerő nélkül is megy tovább; amikor visszajön a net, szinkronizál.</li></ul>
+    <button class="btn solid" type="button" data-do="mpcreate">${ic("users",16)}Közös projekt indítása</button>
+    ${P.blocks.length||P.title?"":`<p class="muted small">Üres tervvel is indíthatod: a címet és a napot közösen is kitölthetitek.</p>`}</section>`;
   const cnt=id=>MP.members.filter(m=>m.roleId===id).length;
   return`<div class="team">
     <section class="card" id="teamcard"><div class="card-head"><h2>Közös projekt</h2><span class="chip" style="--c:var(--ok)">${ic("check",14)}Élő</span></div>
       <p class="muted small">A kódot küldd el annak, aki az adott pozícióban dolgozik. A telepíthető változatban: <b>Kezdés → Csatlakozás kóddal</b> (vagy Info fül).</p>
-      ${MP.roleId==="__owner"||MP.adminCode?`<div class="code-row"><div><b>Szerkesztői kód</b><small>társ-AD-nak: mindent lát és szerkeszt</small></div><button type="button" class="codebtn num" data-copy="${MP.adminCode||""}">${fmtCode(MP.adminCode||"")}</button><button type="button" class="btn sm" data-do="admincode">Új kód</button></div>`:""}
+      ${MP.roleId==="__owner"||MP.adminCode?`<div class="code-row"><div><b>Társszerkesztők</b><small>együtt írjátok a diszpót: mindent lát és szerkeszt</small></div><button type="button" class="codebtn num" data-copy="${MP.adminCode||""}">${fmtCode(MP.adminCode||"")}</button><button type="button" class="btn sm" data-do="admincode">Új kód</button></div>
+      <button type="button" class="btn solid" data-invite="${MP.adminCode||""}" data-irole="társszerkesztő">${ic("users",16)}Társszerkesztő meghívása (link)</button>`:""}
     </section>
     <section class="card"><div class="card-head"><h2>Pozíciók</h2><span class="chip neutral">${MP.roles.length}</span></div>
       <p class="muted small">Koppints a jelölőkre: kiemelve, amit az adott pozíció lát. A <b>Vezérlés</b> jog a nap léptetése.</p>
       <div class="roles">${MP.roles.map(r=>`<div class="role" data-rid="${r.id}">
-        <div class="role-top"><input class="rname" data-rname value="${esc(r.name)}" aria-label="Pozíció neve"><button type="button" class="codebtn num" data-copy="${r.code}">${fmtCode(r.code)}</button></div>
+        <div class="role-top"><input class="rname" data-rname value="${esc(r.name)}" aria-label="Pozíció neve"><button type="button" class="codebtn num" data-copy="${r.code}">${fmtCode(r.code)}</button><button type="button" class="btn sm" data-invite="${r.code}" data-irole="${esc(r.name)}" aria-label="Meghívó link küldése">${ic("arrow",14)}Link</button></div>
         <div class="perms">${PERMS.map(([k,l])=>`<button type="button" class="perm ${r.perm[k]?"on":""} ${k==="control"?"ctl":""}" data-perm="${k}" aria-pressed="${!!r.perm[k]}" title="${esc(PERM_HELP[k])}">${l}</button>`).join("")}</div>
         <div class="role-act"><span class="muted small">${cnt(r.id)} csatlakozott</span><span style="flex:1"></span><button type="button" class="btn sm" data-do="rolecode">Új kód</button><button type="button" class="btn sm danger" data-do="roledel">${ic("x",14)}Törlés</button></div></div>`).join("")}</div>
       <button type="button" class="btn sm" data-do="roleadd">${ic("plus",14)}Új pozíció</button></section>
@@ -1573,7 +1656,7 @@ function teamHTML(){
 /* felület: csatlakozás (Kezdés, Info) */
 function joinHTML(){
   if(!MP_AVAIL)return"";
-  return`<div class="join"><div class="eg"><label class="fi"><span class="flab">Belépőkód</span><input id="jcode" autocomplete="off" autocapitalize="characters" placeholder="ABCD-2345" maxlength="9" class="num"></label>
+  return`<div class="join"><div class="eg"><label class="fi"><span class="flab">Belépőkód</span><input id="jcode" autocomplete="off" autocapitalize="characters" placeholder="ABCD-2345" maxlength="9" class="num" value="${esc(fmtCode(pendingJoin()))}"></label>
     <label class="fi"><span class="flab">A neved</span><input id="jname" autocomplete="name" placeholder="pl. Kiss Anna" value="${esc(MP.name||"")}"></label></div>
     <button type="button" class="btn solid" data-do="join">${ic("users",16)}Csatlakozás</button></div>`;
 }
@@ -1591,6 +1674,7 @@ document.addEventListener("click",async e=>{
   const t=e.target.closest("button,a");if(!t)return;const d=t.dataset;
   if(d.secGo){editSec=d.secGo;return}
   if(d.copy){copyText(fmtCode(d.copy));return}
+  if(d.invite){mpInvite(d.invite,d.irole||"");return}
   if(d.kick){if(sure(t,"Biztos?"))mpKick(d.kick);return}
   if(d.perm){const r=MP.roles.find(x=>x.id===t.closest("[data-rid]").dataset.rid);if(!r)return;r.perm[d.perm]=!r.perm[d.perm];t.classList.toggle("on",r.perm[d.perm]);t.setAttribute("aria-pressed",r.perm[d.perm]);mpRoleSave(r);return}
   if(!d.do)return;
@@ -1666,10 +1750,10 @@ function normP(p){
   if(!Array.isArray(p.notes))p.notes=splitLines(p.notes);
   p.blocks=p.blocks.map(b=>Object.assign({type:"shoot",d:10,label:"",setup:"",note:"",group:"",talent:"",props:"",story:"",skippable:false,images:[]},b,
     {_id:b._id||uid(),d:Math.max(0,Math.round(+b.d||0)),type:TYPES.includes(b.type)?b.type:"shoot",images:(b.images||[]).filter(x=>x&&(x.url||x.idb))}));
-  p.groups=p.groups.map(g=>Object.assign({code:"",name:"",desc:""},g,{images:(g.images||[]).filter(x=>x&&(x.url||x.idb))}));
+  p.groups=p.groups.map(g=>Object.assign({code:"",name:"",desc:""},g,{_id:g._id||uid(),images:(g.images||[]).filter(x=>x&&(x.url||x.idb))}));
   p.shots=(p.shots||[]).map(s=>Object.assign({code:"",size:"",lens:"",move:"",desc:"",talent:"",props:"",story:"",note:"",images:[]},s,{_id:s._id||uid(),images:(s.images||[]).filter(x=>x&&(x.url||x.idb))}));
-  p.cast=p.cast.map(c=>Object.assign({role:"",name:"",arr:"",ruha:"",smink:"",haj:"",onset:"",phone:""},c));
-  p.crew=p.crew.map(c=>Object.assign({dept:"",pos:"",name:"",arr:"",phone:""},c));
+  p.cast=p.cast.map(c=>Object.assign({role:"",name:"",arr:"",ruha:"",smink:"",haj:"",onset:"",phone:""},c,{_id:c._id||uid()}));
+  p.crew=p.crew.map(c=>Object.assign({dept:"",pos:"",name:"",arr:"",phone:""},c,{_id:c._id||uid()}));
   p.script=p.script.map(l=>({t:STYPES.some(s=>s[0]===l.t)?l.t:"ac",x:l.x||"",ids:Array.isArray(l.ids)?l.ids:splitList(l.ids)}));
   return p;
 }
@@ -1997,21 +2081,28 @@ function parseScript(txt){
 
 /* ---------- üdvözlő ---------- */
 function renderWelcome(v){
+  const inv=MP_AVAIL&&!MP.on&&pendingJoin();
+  if(isMpAdmin()){v.innerHTML=`<div class="welcome"><h1 class="brand-logo">${LOGO_SVG}</h1>
+    <section class="card startcard"><h2>${esc(P.title||MP.title||"Közös diszpó")}</h2><p class="muted">Közös projektben vagy${MP.roleId==="__owner"?"":" társszerkesztőként"}. A terv még üres: kezdjétek a <b>Terv</b> fülön, amit bárki beír, mindenkinél megjelenik.</p>
+    <button class="btn solid big" type="button" data-do="gotoplan">${ic("edit",18)}Diszpó írása</button>
+    <button class="btn" type="button" data-sec-go="csapat" data-do="gototeam">${ic("users",16)}Meghívás, csapat</button></section>${creditLine()}</div>`;return}
   if(isMember()){v.innerHTML=`<div class="welcome"><div class="vh" style="margin-bottom:6px">${esc(MP.title||"Közös projekt")}</div>
     <section class="card"><h2>${MP.ready?"Várakozás a tervre…":"Kapcsolódás…"}</h2><p class="muted">Csatlakoztál${MP.roleName?` <b>${esc(MP.roleName)}</b> pozícióban`:""}. Amint a szerkesztő terve megérkezik, itt látod a napot. Ha sokáig nem jön, ellenőrizd a netet.</p>
     <button type="button" class="btn danger" data-do="mpleave">Kilépés a közös projektből</button></section>${creditLine()}</div>`;return}
   v.innerHTML=`<div class="welcome">
     <h1 class="brand-logo">${LOGO_SVG}</h1>
+    ${inv?`<section class="card startcard"><h2>Meghívtak egy közös diszpóba</h2><p class="muted">A kód már be van írva. Add meg a neved, és csatlakozz: a szerkesztő látni fogja, ki vagy.</p>${joinHTML()}</section>`:""}
     <p class="muted">Egy forgatási nap vezérlője: óra, visszaszámláló, várható wrap, shotonként a beállítás, a fény, a kellék és a forgatókönyv.</p>
     <section class="card startcard"><h2>Diszpó készítése</h2>
       <p class="muted">Írd meg a napot itt az appban, lépésről lépésre. Minden azonnal mentődik.</p>
       <ol class="steps"><li><b>Projekt</b><span>cím, dátum, crew call, helyszín</span></li><li><b>Shotlist</b><span>jelenetek, shotok, plán, optika</span></li><li><b>Időrend</b><span>a nap blokkjai, húzással rendezve</span></li><li><b>Emberek, forgatókönyv</b><span>szereplők, stáb, a sztori jelölése</span></li></ol>
+      ${MP_AVAIL?`<p class="muted small">Nem egyedül írod? A Terv fülön a <b>Meghívás</b> gombbal linket küldhetsz a csapatnak, és együtt dolgozhattok rajta.</p>`:""}
       <button class="btn solid big" type="button" data-do="newproj">${ic("plus",18)}Új diszpó</button></section>
     <div class="wgrid">
       <button class="btn" type="button" data-do="minta">${ic("play",16)}Minta megnyitása</button>
       <button class="btn" type="button" data-do="tour">${ic("play",16)}Bemutató · 2 perc</button>
     </div>
-    ${MP_AVAIL?`<section class="card joincard"><div class="card-head"><h2>Kódot kaptál a stábtól?</h2><button class="btn sm solid" type="button" data-do="joinform">${ic("users",14)}Csatlakozás kóddal</button></div><div id="joinbox" hidden>${joinHTML()}</div></section>`:""}
+    ${MP_AVAIL&&!inv?`<section class="card joincard"><div class="card-head"><h2>Kódot kaptál a stábtól?</h2><button class="btn sm solid" type="button" data-do="joinform">${ic("users",14)}Csatlakozás kóddal</button></div><div id="joinbox" hidden>${joinHTML()}</div></section>`:""}
     ${plLoad().length?`<section class="card"><h2>Korábbi projektek</h2>${projectsHTML()}</section>`:""}
     <details class="card xlcard"><summary><b>Már megvan Excelben vagy fájlban?</b><span class="muted small">Táblázat vagy APERATION-projektfájl betöltése</span></summary>
       <label class="drop sm" id="drop">${ic("upload",22)}<b>Fájl betöltése</b><span class="muted small">Koppints, vagy húzd ide (Excel vagy APERATION-projektfájl)</span><input type="file" accept=".xlsx,.xls,.xlsm,.ods,.csv,.json" data-import hidden></label>
@@ -2032,7 +2123,7 @@ const dupMove=k=>P.blocks[k]&&P.blocks[k].type==="move"&&((P.blocks[k-1]||{}).ty
 const dupMoveCount=()=>P.blocks.reduce((n,b,k)=>n+(b.type==="move"&&(P.blocks[k-1]||{}).type==="move"?1:0),0);
 function blockCard(b,k){
   const open=openEB===b._id;
-  return`<div class="eb" data-k="${k}" data-list="blocks" data-type="${b.type}">
+  return`<div class="eb" data-k="${k}" data-id="${b._id}" data-list="blocks" data-type="${b.type}">
     <div class="eb-top"><button type="button" class="eb-drag" aria-label="Húzd az átrendezéshez (vagy nyilakkal léptesd): ${esc(b.label||TNAME[b.type])}"><svg width="14" height="20" viewBox="0 0 14 20" fill="currentColor" aria-hidden="true"><circle cx="4" cy="4" r="1.6"/><circle cx="10" cy="4" r="1.6"/><circle cx="4" cy="10" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="4" cy="16" r="1.6"/><circle cx="10" cy="16" r="1.6"/></svg></button><span class="eb-t num" data-bs="${k}">${B[k]?hm(B[k].s):""}</span>
       <select data-f="type" aria-label="Típus">${TYPES.map(t=>`<option value="${t}" ${t===b.type?"selected":""}>${TNAME[t]}</option>`).join("")}</select>
       <label class="fi mins"><input data-f="d" type="number" inputmode="numeric" min="0" step="5" value="${b.d}" aria-label="Perc"><span>perc</span></label>
@@ -2057,7 +2148,7 @@ function imgEditor(r,kinds){
     <input type="url" placeholder="vagy kép-link (https://…)" data-imgurl aria-label="Kép linkje">${kinds.length>1?`<select data-imgkind aria-label="Kép fajtája">${kinds.map(([k,l])=>`<option value="${k}">${l}</option>`).join("")}</select>`:`<input type="hidden" data-imgkind value="${kinds[0][0]}">`}<button type="button" class="btn sm" data-act="imgurl">Hozzáad</button></div></div>`;
 }
 function rowsTable(list,cols,addLabel,extra){
-  return`<div class="etab">${P[list].map((r,k)=>`<div class="er" data-list="${list}" data-k="${k}">${cols.map(([f,l,o])=>fld(f,r[f]||"",Object.assign({label:l},o||{}))).join("")}${extra?extra(r,k):""}<button type="button" class="ib del" data-act="rowdel" aria-label="Sor törlése">${ic("x",16)}</button></div>`).join("")}</div>
+  return`<div class="etab">${P[list].map((r,k)=>`<div class="er" data-list="${list}" data-k="${k}" data-id="${r._id||""}">${cols.map(([f,l,o])=>fld(f,r[f]||"",Object.assign({label:l},o||{}))).join("")}${extra?extra(r,k):""}<button type="button" class="ib del" data-act="rowdel" aria-label="Sor törlése">${ic("x",16)}</button></div>`).join("")}</div>
     <button type="button" class="btn sm" data-act="rowadd" data-list="${list}">${ic("plus",14)}${addLabel}</button>`;
 }
 function importPreview(){
@@ -2106,7 +2197,7 @@ function renderEdit(){
   document.documentElement.style.setProperty("--hdr-h",($(".hdr")?$(".hdr").offsetHeight:96)+"px");
   renderTabs();$$(".tabs a").forEach(a=>{if(a.getAttribute("href")==="#terv")a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});placeInd();
   {const ord=secs.filter(x=>x[0]!=="fajl"),ix=ord.findIndex(x=>x[0]===editSec);if(ix>=0&&ix<ord.length-1&&!pending)body+=`<div class="nextsec"><button class="btn" type="button" data-sec="${ord[ix+1][0]}">Tovább: ${ord[ix+1][1]}${ic("chev",16)}</button></div>`}
-  v.innerHTML=`<div class="vh-row"><div class="vh">Terv</div><span class="vh-act"><span class="savedind" id="savedind" aria-live="polite">${savedText()}</span><button class="btn sm" type="button" data-do="projlist">${ic("list",14)}Projektek</button><button class="btn sm" type="button" data-do="newproj">${ic("plus",14)}Új projekt</button></span></div><div class="seg esec" role="group" aria-label="Szakasz">${secs.map(([k,l])=>`<button type="button" data-sec="${k}" aria-pressed="${editSec===k}">${l}</button>`).join("")}</div><div class="stack">${body}</div>`;
+  v.innerHTML=`<div class="vh-row"><div class="vh">Terv</div><span class="vh-act"><span class="savedind" id="savedind" aria-live="polite">${savedText()}</span>${MP_AVAIL&&!isMember()?`<button class="btn sm ${MP.on?"":"solid"}" type="button" data-sec="csapat">${ic("users",14)}${MP.on?"Közös":"Meghívás"}</button>`:""}<button class="btn sm" type="button" data-do="projlist">${ic("list",14)}Projektek</button><button class="btn sm" type="button" data-do="newproj">${ic("plus",14)}Új projekt</button></span></div><div class="seg esec" role="group" aria-label="Szakasz">${secs.map(([k,l])=>`<button type="button" data-sec="${k}" aria-pressed="${editSec===k}">${l}</button>`).join("")}</div><div class="stack">${body}</div>`;
   if(editSec==="fajl")backupListFill();
 }
 /* blokkok átrendezése húzással: a fogantyút megfogva a kártya követi az ujjat, a többi félrecsúszik,
@@ -2154,7 +2245,7 @@ document.addEventListener("pointerup",e=>{if(DR&&e.pointerId===DR.id)drEnd(false
 document.addEventListener("pointercancel",e=>{if(DR&&e.pointerId===DR.id)drEnd(true)});
 document.addEventListener("keydown",e=>{
   const h=e.target.closest&&e.target.closest(".eb-drag");if(!h||!/^Arrow(Up|Down)$/.test(e.key))return;e.preventDefault();
-  const L=h.closest("[data-list]").dataset.list,k=+h.closest("[data-k]").dataset.k,to=k+(e.key==="ArrowUp"?-1:1);if(to<0||to>=P[L].length)return;
+  const L=h.closest("[data-list]").dataset.list,k=hostK(h.closest("[data-k]")),to=k+(e.key==="ArrowUp"?-1:1);if(to<0||to>=P[L].length)return;
   if(L==="blocks")withRemap(()=>{const b=P.blocks.splice(k,1)[0];P.blocks.splice(to,0,b)});else{const it=P[L].splice(k,1)[0];P[L].splice(to,0,it);commit()}
   renderEdit();
   const n=$(`.eb[data-list="${L}"][data-k="${to}"] .eb-drag`);n&&n.focus();
@@ -2163,8 +2254,11 @@ document.addEventListener("keydown",e=>{
 /* események (egyszer, delegálva) */
 function sure(btn,msg){if(btn.dataset.armed)return true;const h=btn.innerHTML;btn.dataset.armed="1";btn.classList.add("armed");btn.textContent=msg;
   setTimeout(()=>{if(btn.isConnected){delete btn.dataset.armed;btn.classList.remove("armed");btn.innerHTML=h}},4000);return false}
+// sor azonosítása: közös szerkesztésnél a sorszám elcsúszhat (más beszúrt egy sort), ezért az _id dönt
+function hostK(h){const L=h.dataset.list||(h.closest("[data-list]")||{dataset:{}}).dataset.list,id=h.dataset.id;
+  if(id&&L&&P[L]){const i=P[L].findIndex(x=>x._id===id);if(i>=0)return i}return +h.dataset.k}
 function fieldSet(el){
-  const f=el.dataset.f,host=el.closest("[data-list]"),list=host&&host.dataset.list,k=host?+host.dataset.k:-1;
+  const f=el.dataset.f,host=el.closest("[data-list]"),list=host&&host.dataset.list,k=host?hostK(host):-1;
   const obj=list?P[list][k]:P;if(!obj)return;
   let val=el.type==="checkbox"?el.checked:el.value;
   if(f==="d")val=Math.max(0,Math.round(+val||0));
@@ -2183,7 +2277,7 @@ document.addEventListener("change",e=>{const el=e.target;
   if(el.dataset&&el.dataset.addimg){addImages(el,[...el.files]);return}
   if(el.dataset&&el.dataset.f&&el.closest('[data-view="terv"]')){if(el.tagName==="SELECT"||el.type==="checkbox"||el.type==="date"||el.type==="time")fieldSet(el);else{clearTimeout(cTimer);commit()}}});
 async function addImages(el,files){
-  const host=el.closest("[data-list]"),k=+host.dataset.k,b=P[host.dataset.list][k],kind=el.dataset.addimg;b.images=b.images||[];
+  const host=el.closest("[data-list]"),k=hostK(host),b=P[host.dataset.list][k],kind=el.dataset.addimg;b.images=b.images||[];
   for(const f of files){const key="img-"+uid();try{const bl=await shrink(f);await idb.put(key,bl);IMG[key]=URL.createObjectURL(bl);b.images.push({kind,idb:key,name:f.name})}catch(e){toast("A képet nem sikerült elmenteni ezen az eszközön.",{tone:"late"})}}
   commit();renderEdit();
 }
@@ -2197,6 +2291,8 @@ document.addEventListener("click",async e=>{
     else if(d.do==="ures"){if(P.blocks.length&&!sure(t,"Biztos? A mostani terv törlődik"))return;
       setProject({title:"",call:480,blocks:[{type:"prep",d:30,label:"Érkezés, setup"},{type:"shoot",d:30,label:"1/1"}]},{reset:true});editSec="idorend";openEB=P.blocks[1]._id;location.hash="#terv";renderEdit()}
     else if(d.do==="newproj")newProject(t);
+    else if(d.do==="gotoplan"){editSec="projekt";location.hash="#terv";renderEdit()}
+    else if(d.do==="gototeam"){editSec="csapat";location.hash="#terv";renderEdit()}
     else if(d.do==="projexport")exportProjectFile();
     else if(d.do==="projlist"){editSec="fajl";renderEdit();const c=document.getElementById("projcard");c&&c.scrollIntoView({block:"start",behavior:"smooth"})}
     else if(d.do==="sablon")downloadSablon();
@@ -2210,9 +2306,9 @@ document.addEventListener("click",async e=>{
   if(d.addb){withRemap(()=>{const b=normP({blocks:[{type:d.addb,d:d.addb==="shoot"?20:d.addb==="lunch"?45:10,label:d.addb==="shoot"?"":TNAME[d.addb]}]}).blocks[0];P.blocks.push(b);openEB=b._id});renderEdit();
     const last=$$(".eb");last.length&&last[last.length-1].scrollIntoView({block:"center"});return}
   if(!d.act&&d.imgdel==null)return;
-  const host=t.closest("[data-k]"),k=host?+host.dataset.k:-1;
+  const host=t.closest("[data-k]"),k=host?hostK(host):-1;
   if(d.act==="tog"){const b=P.blocks[k];openEB=openEB===b._id?null:b._id;renderEdit();return}
-  if(d.act==="rowadd"){const L=d.list;P[L].push(L==="script"?{t:"ac",x:"",ids:[]}:L==="groups"?{code:"",name:"",desc:""}:L==="cast"?normP({cast:[{}]}).cast[0]:normP({crew:[{}]}).crew[0]);commit();renderEdit();const r=$$(`[data-list="${L}"].er`);r.length&&r[r.length-1].querySelector("input,textarea,select").focus();return}
+  if(d.act==="rowadd"){const L=d.list;P[L].push(L==="script"?{t:"ac",x:"",ids:[]}:L==="groups"?normP({groups:[{}]}).groups[0]:L==="cast"?normP({cast:[{}]}).cast[0]:normP({crew:[{}]}).crew[0]);commit();renderEdit();const r=$$(`[data-list="${L}"].er`);r.length&&r[r.length-1].querySelector("input,textarea,select").focus();return}
   if(d.act==="rowdel"){const L=host.dataset.list,old=P[L][k];P[L].splice(k,1);commit();renderEdit();toast("Sor törölve.",{action:"Visszavonás",fn:()=>{P[L].splice(k,0,old);commit();renderEdit()}});return}
   if(d.act==="imgurl"){const u=host.querySelector("[data-imgurl]").value.trim();if(!/^https?:\/\//.test(u)){toast("Teljes linket adj meg (https://…).");return}const it=P[host.dataset.list][k];(it.images=it.images||[]).push({kind:host.querySelector("[data-imgkind]").value,url:u});commit();renderEdit();return}
   if(d.imgdel!=null){const b=P[host.dataset.list][k],x=b.images.splice(+d.imgdel,1)[0];if(x&&x.idb)idb.del(x.idb).catch(()=>{});commit();renderEdit();return}
@@ -2260,7 +2356,7 @@ function slCard(s,k){
   const status=!code?`<span class="eb-warn sm">${ic("alert",14)}Adj neki számot (pl. 1/1)</span>`
     :sch.length?`<span class="slst ok">${ic("check",13)}Időrendben: ${sch.map(b=>`${hm(b.s)} · ${b.d}′`).join(", ")}</span>`
     :`<span class="slst">Még nincs az időrendben</span>`;
-  return`<div class="eb sl" data-k="${k}" data-list="shots" data-type="shoot">
+  return`<div class="eb sl" data-k="${k}" data-id="${s._id}" data-list="shots" data-type="shoot">
     <div class="eb-top"><button type="button" class="eb-drag" aria-label="Húzd az átrendezéshez: ${esc(code||"shot")}"><svg width="14" height="20" viewBox="0 0 14 20" fill="currentColor" aria-hidden="true"><circle cx="4" cy="4" r="1.6"/><circle cx="10" cy="4" r="1.6"/><circle cx="4" cy="10" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="4" cy="16" r="1.6"/><circle cx="10" cy="16" r="1.6"/></svg></button>
       ${fld("code",s.code,{ph:"1/1",cls:"slcode"})}
       <select data-f="size" aria-label="Plánméret"><option value="">Plán…</option>${SL_SIZES.map(x=>`<option ${x===s.size?"selected":""}>${x}</option>`).join("")}${s.size&&!SL_SIZES.includes(s.size)?`<option selected>${esc(s.size)}</option>`:""}</select>
@@ -2296,7 +2392,7 @@ function slToPlan(list){
 }
 document.addEventListener("click",e=>{
   const t=e.target.closest&&e.target.closest("button");if(!t||!t.closest('[data-view="terv"]'))return;const a=t.dataset.act;if(!a||!/^sl/.test(a))return;
-  const host=t.closest('[data-list="shots"]'),k=host?+host.dataset.k:-1,s=P.shots[k];
+  const host=t.closest('[data-list="shots"]'),k=host?hostK(host):-1,s=P.shots[k];
   if(a==="sltog"){openSL=openSL===s._id?null:s._id;renderEdit();return}
   if(a==="sladd"||a==="slscene"){const c=a==="slscene"?slNewScene():slNextCode(P.shots[P.shots.length-1]);
     const ns=normP({shots:[{code:c}]}).shots[0];P.shots.push(ns);openSL=ns._id;commit();renderEdit();
@@ -2772,6 +2868,9 @@ const STANDALONE=IS_IOS?navigator.standalone===true:(matchMedia("(display-mode: 
 const DEV_BYPASS=/^(localhost|127\.)/.test(location.hostname)&&/[?&]nogate\b/.test(location.search);
 const GATED=GATE&&(IS_IOS||IS_ANDROID)&&!STANDALONE&&!DEV_BYPASS;
 let installEvt=null;
+// meghívó link (?join=KÓD): a kódot telepítés előtt is megmutatjuk, mert iPhone-on a főképernyős app nem kapja meg a linket
+const GJOIN=(()=>{const m=location.search.match(/[?&]join=([A-Za-z0-9-]{8,9})/);let c=m?m[1]:"";if(!c)try{c=localStorage.getItem("aperation-join")||""}catch(e){}
+  c=c.toUpperCase().replace(/[^A-Z0-9]/g,"");return c.length===8?c.slice(0,4)+"-"+c.slice(4):""})();
 function gateHTML(){
   const shareIc='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-4px"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
   const dots='<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="vertical-align:-4px"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>';
@@ -2795,6 +2894,7 @@ function gateHTML(){
       <li>Erősítsd meg: <b>Telepítés</b>.</li>
       <li>Indítsd az appot a kezdőképernyőn vagy az alkalmazások között az <b>APERATION</b> ikonnal.</li></ol>`;
   return`<div class="gate-in"><div class="brand-logo" style="margin:0 auto 6px">${LOGO_SVG}</div>
+    ${GJOIN?`<section class="card"><h2>Meghívtak egy közös diszpóba</h2><p class="muted">A meghívókódod:</p><p class="gcode num">${GJOIN}</p><p class="muted small">Jegyezd meg vagy másold ki. Telepítés után az appban: <b>Kezdés → Csatlakozás kóddal</b>, és írd be ezt a kódot.</p><button type="button" class="btn" id="gcode">Kód másolása</button></section>`:""}
     <section class="card"><h2>Tedd ki a főképernyőre</h2>
       <p class="muted">Az APERATION telefonon csak a főképernyőről indítva működik. Így <b>net nélkül is</b> fut a forgatáson, teljes képernyős, nem alszik el, és a terved biztonságban az appban marad.</p>
       ${steps}<p class="gdone" id="gdone" hidden>${ic("check",18)}Kész! Most indítsd az appot a főképernyőről.</p></section>
@@ -2803,7 +2903,8 @@ function gateHTML(){
 function gateShow(){
   const g=document.createElement("div");g.className="gate";g.id="gate";g.setAttribute("role","dialog");g.setAttribute("aria-modal","true");g.setAttribute("aria-label","Telepítés a főképernyőre");
   g.innerHTML=gateHTML();document.body.append(g);document.documentElement.classList.add("gated");
-  const c=g.querySelector("#gcopy");c&&(c.onclick=()=>copyText(location.href.split("#")[0]));
+  const c=g.querySelector("#gcopy");c&&(c.onclick=()=>copyText(location.origin+location.pathname+(GJOIN?"?join="+GJOIN:"")));
+  const gc=g.querySelector("#gcode");gc&&(gc.onclick=()=>copyText(GJOIN));
   const ib=g.querySelector("#ginstall");
   const offer=()=>{if(ib&&installEvt){ib.hidden=false}};
   offer();addEventListener("gate-prompt",offer);

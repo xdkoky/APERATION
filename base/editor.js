@@ -14,10 +14,10 @@ function normP(p){
   if(!Array.isArray(p.notes))p.notes=splitLines(p.notes);
   p.blocks=p.blocks.map(b=>Object.assign({type:"shoot",d:10,label:"",setup:"",note:"",group:"",talent:"",props:"",story:"",skippable:false,images:[]},b,
     {_id:b._id||uid(),d:Math.max(0,Math.round(+b.d||0)),type:TYPES.includes(b.type)?b.type:"shoot",images:(b.images||[]).filter(x=>x&&(x.url||x.idb))}));
-  p.groups=p.groups.map(g=>Object.assign({code:"",name:"",desc:""},g,{images:(g.images||[]).filter(x=>x&&(x.url||x.idb))}));
+  p.groups=p.groups.map(g=>Object.assign({code:"",name:"",desc:""},g,{_id:g._id||uid(),images:(g.images||[]).filter(x=>x&&(x.url||x.idb))}));
   p.shots=(p.shots||[]).map(s=>Object.assign({code:"",size:"",lens:"",move:"",desc:"",talent:"",props:"",story:"",note:"",images:[]},s,{_id:s._id||uid(),images:(s.images||[]).filter(x=>x&&(x.url||x.idb))}));
-  p.cast=p.cast.map(c=>Object.assign({role:"",name:"",arr:"",ruha:"",smink:"",haj:"",onset:"",phone:""},c));
-  p.crew=p.crew.map(c=>Object.assign({dept:"",pos:"",name:"",arr:"",phone:""},c));
+  p.cast=p.cast.map(c=>Object.assign({role:"",name:"",arr:"",ruha:"",smink:"",haj:"",onset:"",phone:""},c,{_id:c._id||uid()}));
+  p.crew=p.crew.map(c=>Object.assign({dept:"",pos:"",name:"",arr:"",phone:""},c,{_id:c._id||uid()}));
   p.script=p.script.map(l=>({t:STYPES.some(s=>s[0]===l.t)?l.t:"ac",x:l.x||"",ids:Array.isArray(l.ids)?l.ids:splitList(l.ids)}));
   return p;
 }
@@ -345,21 +345,28 @@ function parseScript(txt){
 
 /* ---------- üdvözlő ---------- */
 function renderWelcome(v){
+  const inv=MP_AVAIL&&!MP.on&&pendingJoin();
+  if(isMpAdmin()){v.innerHTML=`<div class="welcome"><h1 class="brand-logo">${LOGO_SVG}</h1>
+    <section class="card startcard"><h2>${esc(P.title||MP.title||"Közös diszpó")}</h2><p class="muted">Közös projektben vagy${MP.roleId==="__owner"?"":" társszerkesztőként"}. A terv még üres: kezdjétek a <b>Terv</b> fülön, amit bárki beír, mindenkinél megjelenik.</p>
+    <button class="btn solid big" type="button" data-do="gotoplan">${ic("edit",18)}Diszpó írása</button>
+    <button class="btn" type="button" data-sec-go="csapat" data-do="gototeam">${ic("users",16)}Meghívás, csapat</button></section>${creditLine()}</div>`;return}
   if(isMember()){v.innerHTML=`<div class="welcome"><div class="vh" style="margin-bottom:6px">${esc(MP.title||"Közös projekt")}</div>
     <section class="card"><h2>${MP.ready?"Várakozás a tervre…":"Kapcsolódás…"}</h2><p class="muted">Csatlakoztál${MP.roleName?` <b>${esc(MP.roleName)}</b> pozícióban`:""}. Amint a szerkesztő terve megérkezik, itt látod a napot. Ha sokáig nem jön, ellenőrizd a netet.</p>
     <button type="button" class="btn danger" data-do="mpleave">Kilépés a közös projektből</button></section>${creditLine()}</div>`;return}
   v.innerHTML=`<div class="welcome">
     <h1 class="brand-logo">${LOGO_SVG}</h1>
+    ${inv?`<section class="card startcard"><h2>Meghívtak egy közös diszpóba</h2><p class="muted">A kód már be van írva. Add meg a neved, és csatlakozz: a szerkesztő látni fogja, ki vagy.</p>${joinHTML()}</section>`:""}
     <p class="muted">Egy forgatási nap vezérlője: óra, visszaszámláló, várható wrap, shotonként a beállítás, a fény, a kellék és a forgatókönyv.</p>
     <section class="card startcard"><h2>Diszpó készítése</h2>
       <p class="muted">Írd meg a napot itt az appban, lépésről lépésre. Minden azonnal mentődik.</p>
       <ol class="steps"><li><b>Projekt</b><span>cím, dátum, crew call, helyszín</span></li><li><b>Shotlist</b><span>jelenetek, shotok, plán, optika</span></li><li><b>Időrend</b><span>a nap blokkjai, húzással rendezve</span></li><li><b>Emberek, forgatókönyv</b><span>szereplők, stáb, a sztori jelölése</span></li></ol>
+      ${MP_AVAIL?`<p class="muted small">Nem egyedül írod? A Terv fülön a <b>Meghívás</b> gombbal linket küldhetsz a csapatnak, és együtt dolgozhattok rajta.</p>`:""}
       <button class="btn solid big" type="button" data-do="newproj">${ic("plus",18)}Új diszpó</button></section>
     <div class="wgrid">
       <button class="btn" type="button" data-do="minta">${ic("play",16)}Minta megnyitása</button>
       <button class="btn" type="button" data-do="tour">${ic("play",16)}Bemutató · 2 perc</button>
     </div>
-    ${MP_AVAIL?`<section class="card joincard"><div class="card-head"><h2>Kódot kaptál a stábtól?</h2><button class="btn sm solid" type="button" data-do="joinform">${ic("users",14)}Csatlakozás kóddal</button></div><div id="joinbox" hidden>${joinHTML()}</div></section>`:""}
+    ${MP_AVAIL&&!inv?`<section class="card joincard"><div class="card-head"><h2>Kódot kaptál a stábtól?</h2><button class="btn sm solid" type="button" data-do="joinform">${ic("users",14)}Csatlakozás kóddal</button></div><div id="joinbox" hidden>${joinHTML()}</div></section>`:""}
     ${plLoad().length?`<section class="card"><h2>Korábbi projektek</h2>${projectsHTML()}</section>`:""}
     <details class="card xlcard"><summary><b>Már megvan Excelben vagy fájlban?</b><span class="muted small">Táblázat vagy APERATION-projektfájl betöltése</span></summary>
       <label class="drop sm" id="drop">${ic("upload",22)}<b>Fájl betöltése</b><span class="muted small">Koppints, vagy húzd ide (Excel vagy APERATION-projektfájl)</span><input type="file" accept=".xlsx,.xls,.xlsm,.ods,.csv,.json" data-import hidden></label>
@@ -380,7 +387,7 @@ const dupMove=k=>P.blocks[k]&&P.blocks[k].type==="move"&&((P.blocks[k-1]||{}).ty
 const dupMoveCount=()=>P.blocks.reduce((n,b,k)=>n+(b.type==="move"&&(P.blocks[k-1]||{}).type==="move"?1:0),0);
 function blockCard(b,k){
   const open=openEB===b._id;
-  return`<div class="eb" data-k="${k}" data-list="blocks" data-type="${b.type}">
+  return`<div class="eb" data-k="${k}" data-id="${b._id}" data-list="blocks" data-type="${b.type}">
     <div class="eb-top"><button type="button" class="eb-drag" aria-label="Húzd az átrendezéshez (vagy nyilakkal léptesd): ${esc(b.label||TNAME[b.type])}"><svg width="14" height="20" viewBox="0 0 14 20" fill="currentColor" aria-hidden="true"><circle cx="4" cy="4" r="1.6"/><circle cx="10" cy="4" r="1.6"/><circle cx="4" cy="10" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="4" cy="16" r="1.6"/><circle cx="10" cy="16" r="1.6"/></svg></button><span class="eb-t num" data-bs="${k}">${B[k]?hm(B[k].s):""}</span>
       <select data-f="type" aria-label="Típus">${TYPES.map(t=>`<option value="${t}" ${t===b.type?"selected":""}>${TNAME[t]}</option>`).join("")}</select>
       <label class="fi mins"><input data-f="d" type="number" inputmode="numeric" min="0" step="5" value="${b.d}" aria-label="Perc"><span>perc</span></label>
@@ -405,7 +412,7 @@ function imgEditor(r,kinds){
     <input type="url" placeholder="vagy kép-link (https://…)" data-imgurl aria-label="Kép linkje">${kinds.length>1?`<select data-imgkind aria-label="Kép fajtája">${kinds.map(([k,l])=>`<option value="${k}">${l}</option>`).join("")}</select>`:`<input type="hidden" data-imgkind value="${kinds[0][0]}">`}<button type="button" class="btn sm" data-act="imgurl">Hozzáad</button></div></div>`;
 }
 function rowsTable(list,cols,addLabel,extra){
-  return`<div class="etab">${P[list].map((r,k)=>`<div class="er" data-list="${list}" data-k="${k}">${cols.map(([f,l,o])=>fld(f,r[f]||"",Object.assign({label:l},o||{}))).join("")}${extra?extra(r,k):""}<button type="button" class="ib del" data-act="rowdel" aria-label="Sor törlése">${ic("x",16)}</button></div>`).join("")}</div>
+  return`<div class="etab">${P[list].map((r,k)=>`<div class="er" data-list="${list}" data-k="${k}" data-id="${r._id||""}">${cols.map(([f,l,o])=>fld(f,r[f]||"",Object.assign({label:l},o||{}))).join("")}${extra?extra(r,k):""}<button type="button" class="ib del" data-act="rowdel" aria-label="Sor törlése">${ic("x",16)}</button></div>`).join("")}</div>
     <button type="button" class="btn sm" data-act="rowadd" data-list="${list}">${ic("plus",14)}${addLabel}</button>`;
 }
 function importPreview(){
@@ -454,7 +461,7 @@ function renderEdit(){
   document.documentElement.style.setProperty("--hdr-h",($(".hdr")?$(".hdr").offsetHeight:96)+"px");
   renderTabs();$$(".tabs a").forEach(a=>{if(a.getAttribute("href")==="#terv")a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});placeInd();
   {const ord=secs.filter(x=>x[0]!=="fajl"),ix=ord.findIndex(x=>x[0]===editSec);if(ix>=0&&ix<ord.length-1&&!pending)body+=`<div class="nextsec"><button class="btn" type="button" data-sec="${ord[ix+1][0]}">Tovább: ${ord[ix+1][1]}${ic("chev",16)}</button></div>`}
-  v.innerHTML=`<div class="vh-row"><div class="vh">Terv</div><span class="vh-act"><span class="savedind" id="savedind" aria-live="polite">${savedText()}</span><button class="btn sm" type="button" data-do="projlist">${ic("list",14)}Projektek</button><button class="btn sm" type="button" data-do="newproj">${ic("plus",14)}Új projekt</button></span></div><div class="seg esec" role="group" aria-label="Szakasz">${secs.map(([k,l])=>`<button type="button" data-sec="${k}" aria-pressed="${editSec===k}">${l}</button>`).join("")}</div><div class="stack">${body}</div>`;
+  v.innerHTML=`<div class="vh-row"><div class="vh">Terv</div><span class="vh-act"><span class="savedind" id="savedind" aria-live="polite">${savedText()}</span>${MP_AVAIL&&!isMember()?`<button class="btn sm ${MP.on?"":"solid"}" type="button" data-sec="csapat">${ic("users",14)}${MP.on?"Közös":"Meghívás"}</button>`:""}<button class="btn sm" type="button" data-do="projlist">${ic("list",14)}Projektek</button><button class="btn sm" type="button" data-do="newproj">${ic("plus",14)}Új projekt</button></span></div><div class="seg esec" role="group" aria-label="Szakasz">${secs.map(([k,l])=>`<button type="button" data-sec="${k}" aria-pressed="${editSec===k}">${l}</button>`).join("")}</div><div class="stack">${body}</div>`;
   if(editSec==="fajl")backupListFill();
 }
 /* blokkok átrendezése húzással: a fogantyút megfogva a kártya követi az ujjat, a többi félrecsúszik,
@@ -502,7 +509,7 @@ document.addEventListener("pointerup",e=>{if(DR&&e.pointerId===DR.id)drEnd(false
 document.addEventListener("pointercancel",e=>{if(DR&&e.pointerId===DR.id)drEnd(true)});
 document.addEventListener("keydown",e=>{
   const h=e.target.closest&&e.target.closest(".eb-drag");if(!h||!/^Arrow(Up|Down)$/.test(e.key))return;e.preventDefault();
-  const L=h.closest("[data-list]").dataset.list,k=+h.closest("[data-k]").dataset.k,to=k+(e.key==="ArrowUp"?-1:1);if(to<0||to>=P[L].length)return;
+  const L=h.closest("[data-list]").dataset.list,k=hostK(h.closest("[data-k]")),to=k+(e.key==="ArrowUp"?-1:1);if(to<0||to>=P[L].length)return;
   if(L==="blocks")withRemap(()=>{const b=P.blocks.splice(k,1)[0];P.blocks.splice(to,0,b)});else{const it=P[L].splice(k,1)[0];P[L].splice(to,0,it);commit()}
   renderEdit();
   const n=$(`.eb[data-list="${L}"][data-k="${to}"] .eb-drag`);n&&n.focus();
@@ -511,8 +518,11 @@ document.addEventListener("keydown",e=>{
 /* események (egyszer, delegálva) */
 function sure(btn,msg){if(btn.dataset.armed)return true;const h=btn.innerHTML;btn.dataset.armed="1";btn.classList.add("armed");btn.textContent=msg;
   setTimeout(()=>{if(btn.isConnected){delete btn.dataset.armed;btn.classList.remove("armed");btn.innerHTML=h}},4000);return false}
+// sor azonosítása: közös szerkesztésnél a sorszám elcsúszhat (más beszúrt egy sort), ezért az _id dönt
+function hostK(h){const L=h.dataset.list||(h.closest("[data-list]")||{dataset:{}}).dataset.list,id=h.dataset.id;
+  if(id&&L&&P[L]){const i=P[L].findIndex(x=>x._id===id);if(i>=0)return i}return +h.dataset.k}
 function fieldSet(el){
-  const f=el.dataset.f,host=el.closest("[data-list]"),list=host&&host.dataset.list,k=host?+host.dataset.k:-1;
+  const f=el.dataset.f,host=el.closest("[data-list]"),list=host&&host.dataset.list,k=host?hostK(host):-1;
   const obj=list?P[list][k]:P;if(!obj)return;
   let val=el.type==="checkbox"?el.checked:el.value;
   if(f==="d")val=Math.max(0,Math.round(+val||0));
@@ -531,7 +541,7 @@ document.addEventListener("change",e=>{const el=e.target;
   if(el.dataset&&el.dataset.addimg){addImages(el,[...el.files]);return}
   if(el.dataset&&el.dataset.f&&el.closest('[data-view="terv"]')){if(el.tagName==="SELECT"||el.type==="checkbox"||el.type==="date"||el.type==="time")fieldSet(el);else{clearTimeout(cTimer);commit()}}});
 async function addImages(el,files){
-  const host=el.closest("[data-list]"),k=+host.dataset.k,b=P[host.dataset.list][k],kind=el.dataset.addimg;b.images=b.images||[];
+  const host=el.closest("[data-list]"),k=hostK(host),b=P[host.dataset.list][k],kind=el.dataset.addimg;b.images=b.images||[];
   for(const f of files){const key="img-"+uid();try{const bl=await shrink(f);await idb.put(key,bl);IMG[key]=URL.createObjectURL(bl);b.images.push({kind,idb:key,name:f.name})}catch(e){toast("A képet nem sikerült elmenteni ezen az eszközön.",{tone:"late"})}}
   commit();renderEdit();
 }
@@ -545,6 +555,8 @@ document.addEventListener("click",async e=>{
     else if(d.do==="ures"){if(P.blocks.length&&!sure(t,"Biztos? A mostani terv törlődik"))return;
       setProject({title:"",call:480,blocks:[{type:"prep",d:30,label:"Érkezés, setup"},{type:"shoot",d:30,label:"1/1"}]},{reset:true});editSec="idorend";openEB=P.blocks[1]._id;location.hash="#terv";renderEdit()}
     else if(d.do==="newproj")newProject(t);
+    else if(d.do==="gotoplan"){editSec="projekt";location.hash="#terv";renderEdit()}
+    else if(d.do==="gototeam"){editSec="csapat";location.hash="#terv";renderEdit()}
     else if(d.do==="projexport")exportProjectFile();
     else if(d.do==="projlist"){editSec="fajl";renderEdit();const c=document.getElementById("projcard");c&&c.scrollIntoView({block:"start",behavior:"smooth"})}
     else if(d.do==="sablon")downloadSablon();
@@ -558,9 +570,9 @@ document.addEventListener("click",async e=>{
   if(d.addb){withRemap(()=>{const b=normP({blocks:[{type:d.addb,d:d.addb==="shoot"?20:d.addb==="lunch"?45:10,label:d.addb==="shoot"?"":TNAME[d.addb]}]}).blocks[0];P.blocks.push(b);openEB=b._id});renderEdit();
     const last=$$(".eb");last.length&&last[last.length-1].scrollIntoView({block:"center"});return}
   if(!d.act&&d.imgdel==null)return;
-  const host=t.closest("[data-k]"),k=host?+host.dataset.k:-1;
+  const host=t.closest("[data-k]"),k=host?hostK(host):-1;
   if(d.act==="tog"){const b=P.blocks[k];openEB=openEB===b._id?null:b._id;renderEdit();return}
-  if(d.act==="rowadd"){const L=d.list;P[L].push(L==="script"?{t:"ac",x:"",ids:[]}:L==="groups"?{code:"",name:"",desc:""}:L==="cast"?normP({cast:[{}]}).cast[0]:normP({crew:[{}]}).crew[0]);commit();renderEdit();const r=$$(`[data-list="${L}"].er`);r.length&&r[r.length-1].querySelector("input,textarea,select").focus();return}
+  if(d.act==="rowadd"){const L=d.list;P[L].push(L==="script"?{t:"ac",x:"",ids:[]}:L==="groups"?normP({groups:[{}]}).groups[0]:L==="cast"?normP({cast:[{}]}).cast[0]:normP({crew:[{}]}).crew[0]);commit();renderEdit();const r=$$(`[data-list="${L}"].er`);r.length&&r[r.length-1].querySelector("input,textarea,select").focus();return}
   if(d.act==="rowdel"){const L=host.dataset.list,old=P[L][k];P[L].splice(k,1);commit();renderEdit();toast("Sor törölve.",{action:"Visszavonás",fn:()=>{P[L].splice(k,0,old);commit();renderEdit()}});return}
   if(d.act==="imgurl"){const u=host.querySelector("[data-imgurl]").value.trim();if(!/^https?:\/\//.test(u)){toast("Teljes linket adj meg (https://…).");return}const it=P[host.dataset.list][k];(it.images=it.images||[]).push({kind:host.querySelector("[data-imgkind]").value,url:u});commit();renderEdit();return}
   if(d.imgdel!=null){const b=P[host.dataset.list][k],x=b.images.splice(+d.imgdel,1)[0];if(x&&x.idb)idb.del(x.idb).catch(()=>{});commit();renderEdit();return}

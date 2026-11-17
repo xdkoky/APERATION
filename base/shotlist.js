@@ -21,7 +21,7 @@ function slCard(s,k){
   const status=!code?`<span class="eb-warn sm">${ic("alert",14)}Adj neki számot (pl. 1/1)</span>`
     :sch.length?`<span class="slst ok">${ic("check",13)}Időrendben: ${sch.map(b=>`${hm(b.s)} · ${b.d}′`).join(", ")}</span>`
     :`<span class="slst">Még nincs az időrendben</span>`;
-  return`<div class="eb sl" data-k="${k}" data-list="shots" data-type="shoot">
+  return`<div class="eb sl" data-k="${k}" data-id="${s._id}" data-list="shots" data-type="shoot">
     <div class="eb-top"><button type="button" class="eb-drag" aria-label="Húzd az átrendezéshez: ${esc(code||"shot")}"><svg width="14" height="20" viewBox="0 0 14 20" fill="currentColor" aria-hidden="true"><circle cx="4" cy="4" r="1.6"/><circle cx="10" cy="4" r="1.6"/><circle cx="4" cy="10" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="4" cy="16" r="1.6"/><circle cx="10" cy="16" r="1.6"/></svg></button>
       ${fld("code",s.code,{ph:"1/1",cls:"slcode"})}
       <select data-f="size" aria-label="Plánméret"><option value="">Plán…</option>${SL_SIZES.map(x=>`<option ${x===s.size?"selected":""}>${x}</option>`).join("")}${s.size&&!SL_SIZES.includes(s.size)?`<option selected>${esc(s.size)}</option>`:""}</select>
@@ -57,7 +57,7 @@ function slToPlan(list){
 }
 document.addEventListener("click",e=>{
   const t=e.target.closest&&e.target.closest("button");if(!t||!t.closest('[data-view="terv"]'))return;const a=t.dataset.act;if(!a||!/^sl/.test(a))return;
-  const host=t.closest('[data-list="shots"]'),k=host?+host.dataset.k:-1,s=P.shots[k];
+  const host=t.closest('[data-list="shots"]'),k=host?hostK(host):-1,s=P.shots[k];
   if(a==="sltog"){openSL=openSL===s._id?null:s._id;renderEdit();return}
   if(a==="sladd"||a==="slscene"){const c=a==="slscene"?slNewScene():slNextCode(P.shots[P.shots.length-1]);
     const ns=normP({shots:[{code:c}]}).shots[0];P.shots.push(ns);openSL=ns._id;commit();renderEdit();

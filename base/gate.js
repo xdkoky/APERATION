@@ -10,6 +10,9 @@ const STANDALONE=IS_IOS?navigator.standalone===true:(matchMedia("(display-mode: 
 const DEV_BYPASS=/^(localhost|127\.)/.test(location.hostname)&&/[?&]nogate\b/.test(location.search);
 const GATED=GATE&&(IS_IOS||IS_ANDROID)&&!STANDALONE&&!DEV_BYPASS;
 let installEvt=null;
+// meghívó link (?join=KÓD): a kódot telepítés előtt is megmutatjuk, mert iPhone-on a főképernyős app nem kapja meg a linket
+const GJOIN=(()=>{const m=location.search.match(/[?&]join=([A-Za-z0-9-]{8,9})/);let c=m?m[1]:"";if(!c)try{c=localStorage.getItem("aperation-join")||""}catch(e){}
+  c=c.toUpperCase().replace(/[^A-Z0-9]/g,"");return c.length===8?c.slice(0,4)+"-"+c.slice(4):""})();
 function gateHTML(){
   const shareIc='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-4px"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
   const dots='<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="vertical-align:-4px"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>';
@@ -33,6 +36,7 @@ function gateHTML(){
       <li>Erősítsd meg: <b>Telepítés</b>.</li>
       <li>Indítsd az appot a kezdőképernyőn vagy az alkalmazások között az <b>APERATION</b> ikonnal.</li></ol>`;
   return`<div class="gate-in"><div class="brand-logo" style="margin:0 auto 6px">${LOGO_SVG}</div>
+    ${GJOIN?`<section class="card"><h2>Meghívtak egy közös diszpóba</h2><p class="muted">A meghívókódod:</p><p class="gcode num">${GJOIN}</p><p class="muted small">Jegyezd meg vagy másold ki. Telepítés után az appban: <b>Kezdés → Csatlakozás kóddal</b>, és írd be ezt a kódot.</p><button type="button" class="btn" id="gcode">Kód másolása</button></section>`:""}
     <section class="card"><h2>Tedd ki a főképernyőre</h2>
       <p class="muted">Az APERATION telefonon csak a főképernyőről indítva működik. Így <b>net nélkül is</b> fut a forgatáson, teljes képernyős, nem alszik el, és a terved biztonságban az appban marad.</p>
       ${steps}<p class="gdone" id="gdone" hidden>${ic("check",18)}Kész! Most indítsd az appot a főképernyőről.</p></section>
@@ -41,7 +45,8 @@ function gateHTML(){
 function gateShow(){
   const g=document.createElement("div");g.className="gate";g.id="gate";g.setAttribute("role","dialog");g.setAttribute("aria-modal","true");g.setAttribute("aria-label","Telepítés a főképernyőre");
   g.innerHTML=gateHTML();document.body.append(g);document.documentElement.classList.add("gated");
-  const c=g.querySelector("#gcopy");c&&(c.onclick=()=>copyText(location.href.split("#")[0]));
+  const c=g.querySelector("#gcopy");c&&(c.onclick=()=>copyText(location.origin+location.pathname+(GJOIN?"?join="+GJOIN:"")));
+  const gc=g.querySelector("#gcode");gc&&(gc.onclick=()=>copyText(GJOIN));
   const ib=g.querySelector("#ginstall");
   const offer=()=>{if(ib&&installEvt){ib.hidden=false}};
   offer();addEventListener("gate-prompt",offer);
