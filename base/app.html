@@ -390,7 +390,9 @@ body.dragging::after{content:"Engedd el: beolvasom a táblázatot";position:fixe
 .vh-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 0 14px}
 .vh-row .vh{margin:0}
 .ib.del.armed{width:auto;padding:0 10px;font-size:12px;font-weight:700}
-.vh-act{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.vh-act{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
+.savedind{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--ok);white-space:nowrap}
+.savedind:empty{display:none}
 /* húzás */
 .eb-drag{display:grid;place-items:center;width:24px;height:40px;margin-left:-4px;border:0;border-radius:8px;background:transparent;color:var(--fg-3);cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none}
 .eb-drag:hover,.eb-drag:focus-visible{color:var(--fg);background:var(--surface-2)}
@@ -1475,9 +1477,10 @@ function applyProject(){
   if(st.cur&&st.cur.i>=B.length)st.cur=B.length?{...st.cur,i:B.length-1}:null;
   document.title=(p.title?p.title+" · ":"")+"APERATION";
 }
-function saveP(){if(tour)return;if(isMpAdmin()&&!mpApplying)mpPublishSoon();try{localStorage.setItem(PKEY,JSON.stringify(P))}catch(e){toast("Nem sikerült menteni ezen az eszközön (betelt a tárhely?).",{tone:"late"})}}
+function saveP(){if(tour)return;if(isMpAdmin()&&!mpApplying)mpPublishSoon();try{localStorage.setItem(PKEY,JSON.stringify(P));savedMark()}catch(e){toast("Nem sikerült menteni ezen az eszközön (betelt a tárhely?). Mentsd a projektet fájlba: Terv → Fájl → Projekt exportálása.",{tone:"late"})}}
 function commit(){saveP();applyProject();tick(true);$$("[data-bs]").forEach(x=>{const b=B[+x.dataset.bs];if(b)x.textContent=hm(b.s)});const w=$("#edwrap");w&&(w.innerHTML=wrapLine())}
-let cTimer=null;const commitSoon=()=>{clearTimeout(cTimer);cTimer=setTimeout(commit,350)};
+// minden leütés azonnal a készülékre mentődik; a nézet frissítése kis késleltetéssel jön
+let cTimer=null;const commitSoon=()=>{saveP();clearTimeout(cTimer);cTimer=setTimeout(()=>{cTimer=null;commit()},350)};
 /* korábbi projektek: új projektnél / betöltésnél az előző ide kerül, innen visszanyitható */
 const PLKEY="diszpo-app-projects-v1";
 const plLoad=()=>{try{return JSON.parse(localStorage.getItem(PLKEY)||"[]")}catch(e){return[]}};
@@ -1687,7 +1690,7 @@ function importBook(wb,fname){
 let pending=null;
 async function importFile(file){
   if(!file)return;
-  if(/\.json$/i.test(file.name)){try{pending=normP(JSON.parse(await file.text()));pending._warn=[];pending.src=file.name;editSec="fajl";location.hash="#terv";renderEdit()}catch(e){toast("Ez a fájl nem olvasható.",{tone:"late"})}return}
+  if(/\.json$/i.test(file.name)){try{pending=readProjectFile(JSON.parse(await file.text()),file.name);editSec="fajl";location.hash="#terv";renderEdit()}catch(e){toast("Ez a fájl nem olvasható.",{tone:"late"})}return}
   toast("Táblázat beolvasása…");
   try{const X=await needXLSX();const wb=X.read(await file.arrayBuffer(),{type:"array"});pending=importBook(wb,file.name)}
   catch(e){toast(e&&e.message==="xlsx"?"Az Excel-olvasó nem töltődött be. Van internet?":"Ezt a fájlt nem sikerült beolvasni.",{tone:"late"});return}
@@ -1760,7 +1763,7 @@ function renderWelcome(v){
   v.innerHTML=`<div class="welcome">
     <h1 class="brand-logo">${LOGO_SVG}</h1>
     <p class="muted">Egy forgatási nap vezérlője: óra, visszaszámláló, várható wrap, shotonként a beállítás, a fény, a kellék és a forgatókönyv. Kezdd egy Excel-táblázattal, vagy írd be itt a napot.</p>
-    <label class="drop" id="drop">${ic("upload",28)}<b>Excel-táblázat betöltése</b><span class="muted small">Koppints, vagy húzd ide a fájlt (.xlsx, .xls, .ods, .csv)</span><input type="file" accept=".xlsx,.xls,.xlsm,.ods,.csv,.json" data-import hidden></label>
+    <label class="drop" id="drop">${ic("upload",28)}<b>Excel-táblázat betöltése</b><span class="muted small">Koppints, vagy húzd ide a fájlt (Excel vagy APERATION-projektfájl)</span><input type="file" accept=".xlsx,.xls,.xlsm,.ods,.csv,.json" data-import hidden></label>
     <div class="wgrid">
       <button class="btn" type="button" data-do="minta">${ic("play",16)}Minta megnyitása</button>
       <button class="btn" type="button" data-do="newproj">${ic("plus",16)}Új projekt</button>
@@ -1819,7 +1822,7 @@ function importPreview(){
     <div class="rows">${[["Cím",p.title||"–"],["Dátum",p.date||"nincs megadva"],["Crew call",hm(p.call)],["Időrend",`${p.blocks.length} blokk, ebből ${sh} forgatás · ${Math.floor(tot/60)} óra ${tot%60} perc · vége ${hm(p.call+tot)}`],
       ["Szereplők",p.cast.length+" fő"],["Stáb",p.crew.length+" fő"],["Fények",p.groups.length+" beállítás"],["Forgatókönyv",p.script.length+" sor"]].map(([a,b])=>`<div class="row" style="grid-template-columns:96px minmax(0,1fr)"><small>${a}</small><b>${esc(b)}</b></div>`).join("")}</div>
     ${(p._warn||[]).length?`<ul class="list">${p._warn.map(w=>`<li class="warn">${esc(w)}</li>`).join("")}</ul>`:""}
-    <p class="muted small">A betöltés után ${MP.on?"a közös projektben mindenkinél ez lesz a terv":"a mostani terv a Projektek közé kerül"}, a nap állása (kész blokkok, take-ek) nullázódik. A nap állását (kész blokkok, take-ek) is nullázza.</p>
+    <p class="muted small">${p._full?`<b>Teljes APERATION-projektfájl</b>${Object.keys(p._images||{}).length?`, ${Object.keys(p._images).length} képpel`:""}${p._state&&p._state.cur?", a nap állásával együtt":""}. `:""}A betöltés után ${MP.on?"a közös projektben mindenkinél ez lesz a terv":"a mostani terv a Projektek közé kerül"}${p._full?".":", a nap állása (kész blokkok, take-ek) nullázódik."}</p>
     <div class="wgrid"><button class="btn solid" type="button" data-do="load" ${p.blocks.length?"":"disabled"}>Betöltés</button><button class="btn" type="button" data-do="cancel">Mégse</button></div></section>`;
 }
 function renderEdit(){
@@ -1828,12 +1831,13 @@ function renderEdit(){
   let body="";
   if(editSec==="fajl")body=`${pending?importPreview():""}
     <section class="card"><h2>Excel-táblázat betöltése</h2>
-      <label class="drop" id="drop">${ic("upload",26)}<b>Fájl kiválasztása</b><span class="muted small">vagy húzd ide (.xlsx, .xls, .ods, .csv)</span><input type="file" accept=".xlsx,.xls,.xlsm,.ods,.csv,.json" data-import hidden></label>
+      <label class="drop" id="drop">${ic("upload",26)}<b>Fájl kiválasztása</b><span class="muted small">vagy húzd ide (Excel vagy APERATION-projektfájl)</span><input type="file" accept=".xlsx,.xls,.xlsm,.ods,.csv,.json" data-import hidden></label>
       <p class="muted small">A <b>Forgatási sablon</b> lapjait (Projekt, Időrend, Szereplők, Stáb, Fények, Forgatókönyv) pontosan ismeri. Más táblázatból a fejlécsorok alapján dolgozik: időrendhez kell <b>Perc</b> vagy <b>Kezdés</b>, <b>Típus</b> és <b>Blokk / shot</b> oszlop.</p></section>
     <section class="card"><h2>Mentés és sablon</h2><div class="wgrid">
       <button class="btn" type="button" data-do="export" ${P.blocks.length?"":"disabled"}>${ic("down",16)}Terv mentése Excelbe</button>
       <button class="btn" type="button" data-do="sablon">${ic("down",16)}Üres sablon letöltése</button></div>
       <p class="muted small">Az elmentett Excel ugyanebben a formában van, mint a sablon: átküldheted, javíthatod gépen, és visszatöltheted.</p></section>
+    ${exportCard()}
     ${printCard()}
     <section class="card" id="projcard" style="scroll-margin-top:120px"><div class="card-head"><h2>Projektek</h2><button class="btn sm solid" type="button" data-do="newproj">${ic("plus",14)}Új projekt</button></div>
       ${projectsHTML()}<div class="wgrid"><button class="btn" type="button" data-do="minta">${ic("play",16)}Minta megnyitása</button></div></section>`;
@@ -1856,7 +1860,8 @@ function renderEdit(){
   else body=scriptEditHTML();
   document.documentElement.style.setProperty("--hdr-h",($(".hdr")?$(".hdr").offsetHeight:96)+"px");
   renderTabs();$$(".tabs a").forEach(a=>{if(a.getAttribute("href")==="#terv")a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});placeInd();
-  v.innerHTML=`<div class="vh-row"><div class="vh">Terv</div><span class="vh-act"><button class="btn sm" type="button" data-do="projlist">${ic("list",14)}Projektek</button><button class="btn sm" type="button" data-do="newproj">${ic("plus",14)}Új projekt</button></span></div><div class="seg esec" role="group" aria-label="Szakasz">${secs.map(([k,l])=>`<button type="button" data-sec="${k}" aria-pressed="${editSec===k}">${l}</button>`).join("")}</div><div class="stack">${body}</div>`;
+  v.innerHTML=`<div class="vh-row"><div class="vh">Terv</div><span class="vh-act"><span class="savedind" id="savedind" aria-live="polite">${savedText()}</span><button class="btn sm" type="button" data-do="projlist">${ic("list",14)}Projektek</button><button class="btn sm" type="button" data-do="newproj">${ic("plus",14)}Új projekt</button></span></div><div class="seg esec" role="group" aria-label="Szakasz">${secs.map(([k,l])=>`<button type="button" data-sec="${k}" aria-pressed="${editSec===k}">${l}</button>`).join("")}</div><div class="stack">${body}</div>`;
+  if(editSec==="fajl")backupListFill();
 }
 /* blokkok átrendezése húzással: a fogantyút megfogva a kártya követi az ujjat, a többi félrecsúszik,
    a kezdési idők élőben az új sorrendet mutatják; elengedve a terv átrendeződik (visszavonható). */
@@ -1942,11 +1947,12 @@ document.addEventListener("click",async e=>{
     else if(d.do==="ures"){if(P.blocks.length&&!sure(t,"Biztos? A mostani terv törlődik"))return;
       setProject({title:"",call:480,blocks:[{type:"prep",d:30,label:"Érkezés, setup"},{type:"shoot",d:30,label:"1/1"}]},{reset:true});editSec="idorend";openEB=P.blocks[1]._id;location.hash="#terv";renderEdit()}
     else if(d.do==="newproj")newProject(t);
+    else if(d.do==="projexport")exportProjectFile();
     else if(d.do==="projlist"){editSec="fajl";renderEdit();const c=document.getElementById("projcard");c&&c.scrollIntoView({block:"start",behavior:"smooth"})}
     else if(d.do==="sablon")downloadSablon();
     else if(d.do==="tour")tourStart();
     else if(d.do==="export")exportNow();
-    else if(d.do==="load"&&pending){const p=pending;pending=null;delete p._warn;setProject(p,{reset:true,archive:!MP.on});editSec="idorend";location.hash="#most";toast("Terv betöltve: "+p.blocks.length+" blokk.",{tone:"ok"})}
+    else if(d.do==="load"&&pending){const p=pending;pending=null;delete p._warn;setProject(p,{reset:true,archive:!MP.on});if(p._full)applyProjectFileExtras(p);editSec="idorend";location.hash="#most";toast("Terv betöltve: "+p.blocks.length+" blokk.",{tone:"ok"})}
     else if(d.do==="cancel"){pending=null;renderEdit()}
     else if(d.do==="scradd"||d.do==="scrrep"){const x=parseScript($("#scrpaste").value);if(!x.length)return;P.script=d.do==="scradd"?P.script.concat(x):x;commit();renderEdit();editSec="szkript";scrMode="mark";toast(x.length+" sor beolvasva. Most válassz fent egy beállítást, és koppints a sorokra, amelyeket az vesz.")}
     return;
@@ -2059,6 +2065,86 @@ function sceneRead(ids){
 document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-rsize]");if(!b)return;
   readSize=Math.max(13,Math.min(26,readSize+(+b.dataset.rsize)*2));try{localStorage.setItem("aperation-read-size",readSize)}catch(x){}
   $$(".script.read").forEach(x=>x.style.fontSize=readSize+"px")});
+
+/* ---------- automatikus mentés és teljes projektfájl ----------
+   1) Minden módosítás azonnal a készülékre mentődik; ha az app háttérbe kerül vagy bezárják, a függő mentés is lezárul.
+   2) Percenként (ha változott valami) biztonsági pillanatkép készül egy külön adatbázisba; az utolsó 30 megmarad,
+      és a Terv → Fájl → Automatikus mentések részen bármelyik visszaállítható.
+   3) „Projekt exportálása”: egyetlen fájl (.aperation.json) a teljes tervvel, a forgatókönyv-jelölésekkel, a képekkel
+      és a nap állásával; bármelyik APERATION-ben visszatölthető (Fájl → betöltés, vagy ráhúzva). */
+const BK_MAX=30;
+const bkdb=(()=>{let o;const open=()=>o=o||new Promise((res,rej)=>{const r=indexedDB.open("aperation-backup",1);
+    r.onupgradeneeded=()=>r.result.createObjectStore("snap",{keyPath:"ts"});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+  const tx=(m,f)=>open().then(db=>new Promise((res,rej)=>{const t=db.transaction("snap",m),q=f(t.objectStore("snap"));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)}));
+  return{put:v=>tx("readwrite",s=>s.put(v)),all:()=>tx("readonly",s=>s.getAll()),del:k=>tx("readwrite",s=>s.delete(k))}})();
+let bkSig="",lastSaved=0;
+function savedMark(){lastSaved=Date.now();const el=$("#savedind");if(el)el.innerHTML=savedText()}
+const savedText=()=>lastSaved?`${ic("check",13)}Mentve ${new Date(lastSaved).toLocaleTimeString("hu-HU",{hour:"2-digit",minute:"2-digit"})}`:"";
+async function backupNow(reason){
+  if(tour||!P||(!P.blocks.length&&!P.title))return;
+  const pj=JSON.stringify(P),sj=JSON.stringify({...st,sim:fresh().sim,sw:null}),sig=pj.length+":"+pj+sj;
+  if(sig===bkSig)return;bkSig=sig;
+  try{await bkdb.put({ts:Date.now(),title:P.title||"Névtelen projekt",n:P.blocks.length,reason:reason||"",P:pj,st:sj});
+    const all=(await bkdb.all()).sort((a,b)=>b.ts-a.ts);for(const x of all.slice(BK_MAX))await bkdb.del(x.ts)}catch(e){}
+}
+function flushSave(){if(cTimer){clearTimeout(cTimer);cTimer=null;commit()}else saveP();save()}
+setInterval(()=>backupNow("percenként"),60000);
+setTimeout(()=>backupNow("indulás"),4000);
+addEventListener("pagehide",()=>{flushSave();backupNow("bezárás")});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"){flushSave();backupNow("háttérbe")}});
+addEventListener("beforeunload",()=>flushSave());
+try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{})}catch(e){}
+
+async function backupListFill(){
+  const box=$("#bklist");if(!box)return;
+  let all=[];try{all=(await bkdb.all()).sort((a,b)=>b.ts-a.ts)}catch(e){}
+  if(!all.length){box.innerHTML=`<p class="muted small">Még nincs pillanatkép. Az app percenként készít egyet, ha változott valami.</p>`;return}
+  const fmt=ts=>new Date(ts).toLocaleString("hu-HU",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});
+  box.innerHTML=`<div class="rows">${all.slice(0,12).map(x=>`<div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div><b>${esc(x.title)}</b><small>${fmt(x.ts)} · ${x.n} blokk</small></div>
+    <button type="button" class="btn sm" data-bkrestore="${x.ts}">Visszaállítás</button></div>`).join("")}</div>
+    ${all.length>12?`<p class="muted small">További ${all.length-12} régebbi pillanatkép is megvan.</p>`:""}`;
+}
+async function backupRestore(ts,btn){
+  if(MP.on&&isMember())return;
+  if(!sure(btn,"Biztos? Koppints újra"))return;
+  let x=null;try{x=(await bkdb.all()).find(s=>s.ts===+ts)}catch(e){}
+  if(!x){toast("Ezt a pillanatképet nem találom.",{tone:"late"});return}
+  archiveCurrent();
+  P=normP(JSON.parse(x.P));saveP();const snd=st.sound;st=Object.assign(fresh(),JSON.parse(x.st||"{}"));st.sound=snd;st.sim=fresh().sim;save();
+  applyProject();loadImgs();lastHero=null;tabKey="";location.hash="#most";renderAll();
+  toast("Visszaállítva: "+new Date(x.ts).toLocaleTimeString("hu-HU",{hour:"2-digit",minute:"2-digit"})+" állapot. Az előző a Projektek közé került.",{tone:"ok"});
+}
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-bkrestore]");if(b)backupRestore(b.dataset.bkrestore,b)});
+
+/* teljes projektfájl */
+const blobToURL=bl=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(bl)});
+async function urlToBlob(u){return(await fetch(u)).blob()}
+function projFileName(){const t=(P.title||"projekt").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_|_$/g,"").slice(0,40)||"projekt";
+  return`${t}${P.date?"_"+P.date:""}.aperation.json`}
+async function exportProjectFile(){
+  flushSave();
+  const images={};
+  for(const b of [...P.blocks,...P.groups])for(const x of b.images||[])if(x.idb&&!images[x.idb]){try{const bl=await idb.get(x.idb);if(bl)images[x.idb]=await blobToURL(bl)}catch(e){}}
+  const data={app:"APERATION",kind:"projekt",version:1,saved:new Date().toISOString(),project:P,state:{...st,sim:fresh().sim,sw:null},images};
+  await saveFile(projFileName(),new Blob([JSON.stringify(data)],{type:"application/json"}),"application/json");
+}
+function readProjectFile(obj,name){
+  if(obj&&obj.app==="APERATION"&&obj.project){const p=normP(obj.project);p._state=obj.state||null;p._images=obj.images||{};p.src=name;p._full=true;p._warn=[];return p}
+  const p=normP(obj);p._warn=[];p.src=name;return p;
+}
+async function applyProjectFileExtras(p){
+  const imgs=p._images||{};
+  for(const [k,u] of Object.entries(imgs)){try{const bl=await urlToBlob(u);await idb.put(k,bl);IMG[k]=URL.createObjectURL(bl)}catch(e){}}
+  if(p._state){const snd=st.sound;st=Object.assign(fresh(),p._state);st.sound=snd;st.sim=fresh().sim;save()}
+  applyProject();lastHero=null;renderAll();
+}
+function exportCard(){
+  return`<section class="card"><div class="card-head"><h2>Teljes mentés egy fájlba</h2><span class="chip neutral" id="savedind">${savedText()}</span></div>
+    <p class="muted small">Ha kész a terv, mentsd el egyetlen fájlba: benne van <b>minden</b> (időrend, emberek, fények, forgatókönyv a jelölésekkel, képek, a nap állása). Bármelyik üres APERATION-ben visszatölthető: Fájl → betöltés, vagy húzd rá.</p>
+    <div class="wgrid"><button class="btn solid" type="button" data-do="projexport" ${P.blocks.length||P.title?"":"disabled"}>${ic("down",16)}Projekt exportálása</button></div></section>
+    <section class="card"><h2>Automatikus mentések</h2><p class="muted small">Minden módosítás azonnal mentődik ezen az eszközön. Emellett az app percenként biztonsági pillanatképet készít (az utolsó ${BK_MAX} megmarad), ha valami mégis elveszne.</p>
+    <div id="bklist"><p class="muted small">Betöltés…</p></div></section>`;
+}
 
 /* ---------- nyomtatható változatok ----------
    Diszpó, forgatókönyv (a sztori), shotlist, szkript (a szkriptes lapja) az aktuális tervből. Nyomtatás (vagy PDF-mentés) a böngésző
@@ -2254,9 +2340,10 @@ const TOUR_F=()=>[
  {state:"move",view:"terv",sec:"fajl",sel:"#drop",title:"A saját napod: Excelből",html:"A <b>Terv</b> fül <b>Fájl</b> részén töltöd be a táblázatot: koppints ide, vagy húzd rá a fájlt az appra. A legbiztosabb a <b>Forgatási sablon</b>, ugyanitt letölthető. Más táblázatot is felismer, ha van benne <b>Perc</b> (vagy Kezdés), <b>Típus</b> és <b>Blokk / shot</b> oszlop. Betöltés előtt megmutatja, mit talált, és csak a <b>Betöltés</b> gombra cseréli a tervet."},
  {state:"move",view:"terv",sec:"idorend",sel:"#tourblock",title:"Vagy írd be itt",html:"Az <b>Időrend</b>ben minden blokk egy kártya: <b>típus, perc, shot</b>. A kezdési idők maguktól számolódnak a crew callból. A jobb oldali nyíl nyitja a részleteket: beállítás, fény, szereplők, kellékek, sztori, képek. Új blokkot a lista alján adsz hozzá; a törlés visszavonható."},
  {state:"move",view:"terv",sec:"idorend",sel:"#tourblock .eb-drag",title:"Átrendezés húzással",html:"A kártya bal szélén lévő <b>⋮⋮ fogantyút</b> megfogva fel-le húzhatod a blokkot. Húzás közben a többi kártya félrecsúszik, és az időpontok már az új sorrendet mutatják. Elengedés után a nap újraszámolódik, és egy koppintással <b>visszavonható</b>. Ha két átállás kerül egymás mellé, az app <b>sárgán jelzi</b>, de engedi."},
+ {state:"move",view:"terv",sec:"szkript",sel:".scr-tools",title:"Forgatókönyv jelölése",html:"A <b>Forgatókönyv</b> részen bemásolod a szöveget, aztán fent kiválasztasz egy beállítást (pl. <b>1/2</b>), és <b>a sorokra koppintva</b> jelölöd, melyik részt veszi. A jelenet címére koppintva az egész jelenet ki-be kapcsol, Tartomány módban az első és az utolsó sorral jelölsz. Forgatás közben a <b>Most</b> nézetben így a teljes jelenet olvasható, a vett rész kiemelve."},
  {state:"move",view:"terv",sec:"idorend",sel:'[data-view="terv"] .esec',title:"A terv többi része",html:"<b>Projekt:</b> cím, dátum, crew call, wrap-határ, fontos tudnivalók és a fénybeállítások kódjai. <b>Emberek:</b> szereplők és stáb, érkezéssel, telefonnal. <b>Forgatókönyv:</b> másold be a szöveget, az app szétszedi; utána kiválasztasz egy beállítást, és a sorokra koppintva jelölöd, melyik részt veszi. Forgatás közben így a Most nézetben a teljes jelenet olvasható, a vett rész kiemelve. Minden azonnal mentődik ezen az eszközön."},
  {state:"move",view:"terv",sec:"csapat",sel:"#teamcard",title:"Közös munka a stábbal",html:"A <b>Csapat</b> részen megoszthatod a napot: minden pozíció (2nd AD, operatőr, szkriptes, kellékes, színész…) kap egy <b>belépőkódot</b>. Aki beírja (Kezdés → <b>Csatlakozás kóddal</b>), a saját telefonján élőben látja, mi megy most és mennyit csúsztunk. Pozíciónként te döntöd el, <b>ki mit lát</b> (pl. telefonszámok, forgatókönyv), és ki <b>vezérelheti</b> a napot. A kitiltás és az új kód egy koppintás."},
- {state:"move",view:"terv",sec:"fajl",sel:'[data-do="export"]',title:"Mentés Excelbe",html:"A kész tervet <b>Excelbe mentheted</b>. Ugyanolyan, mint a sablon: elküldheted a stábnak, gépen javíthatod, és visszatöltheted. A telefonról feltett képek nem kerülnek bele, csak a kép-linkek."},
+ {state:"move",view:"terv",sec:"fajl",sel:'[data-do="projexport"]',title:"Mentés és biztonság",html:"Minden módosítás <b>azonnal mentődik</b> ezen az eszközön, és az app percenként biztonsági pillanatképet is készít, ami a Fájl részen visszaállítható. Ha kész a terv, a <b>Projekt exportálása</b> egyetlen fájlba ment mindent (képekkel, jelölésekkel, a nap állásával), ami bármelyik APERATION-ben visszatölthető. Excelbe is mentheted, gépen javítani."},
  {state:"move",title:"Ennyi az egész",html:()=>tour&&tour.tmpP?"Kezdd a <b>Terv</b> fülön: tölts be egy Excel-táblázatot, nyisd meg a mintát, vagy írd be a napot. Ezt a bemutatót az Info fülön bármikor újranézheted.":"Forgatás előtt érdemes egyszer végigmenni a napon <b>próba módban</b>, gyorsított órával. Ezt a bemutatót az Info fülön bármikor újranézheted."}
 ];
 function tourState(kind){
@@ -2281,7 +2368,7 @@ function tourStart(){
 function tourShow(){
   const s=TOUR[tour.i],first=tour.i===0,last=tour.i===TOUR.length-1;
   tourState(s.state||"shoot");
-  if(s.sec)editSec=s.sec;openEB=null;
+  if(s.sec)editSec=s.sec;if(s.sec==="szkript")scrMode="mark";openEB=null;
   const want=s.view||"most";if(view!==want)location.hash="#"+want;
   renderAll();
   if(s.sel&&s.sel.startsWith("#tourblock")&&TOUR_SHOT){const c=document.querySelector(`.eb[data-k="${TOUR_SHOT.i}"]`);if(c)c.id="tourblock"}

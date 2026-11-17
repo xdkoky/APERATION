@@ -41,7 +41,7 @@ tpl = tpl.replace("/*__GATE_JS__*/", open(os.path.join(HERE, "gate.js"), encodin
 PRINT_CSS = open(os.path.join(HERE, "print.css"), encoding="utf-8").read()
 tpl = tpl.replace("/*__PRINT_CSS_STYLE__*/", PRINT_CSS)
 tpl = tpl.replace("/*__SCRIPT_CSS__*/", open(os.path.join(HERE, "script.css"), encoding="utf-8").read())
-tpl = tpl.replace("/*__EDITOR_JS__*/", "\n".join(open(os.path.join(HERE, f), encoding="utf-8").read() for f in ("multi.js", "editor.js", "script.js", "print.js")))
+tpl = tpl.replace("/*__EDITOR_JS__*/", "\n".join(open(os.path.join(HERE, f), encoding="utf-8").read() for f in ("multi.js", "editor.js", "script.js", "backup.js", "print.js")))
 tpl = tpl.replace('const PRINT_CSS=/*__PRINT_CSS__*/"";', "const PRINT_CSS=" + json.dumps(PRINT_CSS, ensure_ascii=False) + ";")
 tpl = tpl.replace("const MINTA=/*__MINTA__*/null;", "const MINTA=" + json.dumps(MINTA, ensure_ascii=False) + ";")
 assert "/*__" not in tpl.replace("/*__XLSX__*/", "").replace("/*__FBCFG__*/", "").replace("/*__FBSRC__*/", "").replace("/*__GATE__*/", "")
