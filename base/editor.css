@@ -12,7 +12,7 @@ body.dragging::after{content:"Engedd el: beolvasom a táblázatot";position:fixe
 .esec button{white-space:nowrap;padding-inline:6px}
 .eblist{display:grid;gap:8px;margin-bottom:12px}
 .eb{border:1px solid var(--hair);border-left:3px solid var(--type);border-radius:var(--r-tile);background:var(--surface);padding:8px 8px 8px 10px;display:grid;gap:10px}
-.eb-top{display:grid;grid-template-columns:44px minmax(92px,auto) 88px minmax(0,1fr) 36px;gap:6px;align-items:center}
+.eb-top{display:grid;grid-template-columns:24px 40px minmax(92px,auto) 88px minmax(0,1fr) 36px;gap:6px;align-items:center}
 .eb-t{font-weight:700;font-size:14px;color:var(--fg-2)}
 .eb-more{display:grid;gap:10px;padding:2px 0 4px}
 .eb-act,.eimg{display:flex;flex-wrap:wrap;gap:6px}
@@ -47,10 +47,20 @@ body.dragging::after{content:"Engedd el: beolvasom a táblázatot";position:fixe
 .prev{border-color:color-mix(in srgb,var(--shoot) 45%,transparent)}
 .seghr{border:0;border-top:1px dashed var(--hair-2);margin:10px 0}
 @media (max-width:560px){
-  .eb-top{grid-template-columns:40px minmax(0,1fr) 84px 36px}
+  .eb-top{grid-template-columns:24px 40px minmax(0,1fr) 84px 36px}
   .eb-top .grow{grid-column:1/-1;order:5}
 }
 .vh-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 0 14px}
 .vh-row .vh{margin:0}
 .ib.del.armed{width:auto;padding:0 10px;font-size:12px;font-weight:700}
 .vh-act{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+/* húzás */
+.eb-drag{display:grid;place-items:center;width:24px;height:40px;margin-left:-4px;border:0;border-radius:8px;background:transparent;color:var(--fg-3);cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none}
+.eb-drag:hover,.eb-drag:focus-visible{color:var(--fg);background:var(--surface-2)}
+.eb.shift{transition:transform .18s cubic-bezier(.2,.8,.2,1)}
+.eb.dragging{position:relative;z-index:6;background:color-mix(in srgb,var(--type) 10%,#161c26);box-shadow:0 22px 44px -14px rgba(0,0,0,.85);border-color:color-mix(in srgb,var(--type) 55%,transparent)}
+.eb.dragging .eb-drag{cursor:grabbing;color:var(--fg)}
+.eb.dragging .eb-t,.eb.shift .eb-t{color:var(--shoot)}
+body.eb-dragging{-webkit-user-select:none;user-select:none;cursor:grabbing}
+.eb.dropped{animation:dropped .6s ease}
+@keyframes dropped{0%{box-shadow:0 0 0 2px var(--shoot)}100%{box-shadow:0 0 0 0 transparent}}
