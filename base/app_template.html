@@ -862,13 +862,46 @@ const VIEWS=[["most","Most","now"],["idorend","Időrend","list"],["szkript","Szk
 const VIEWS0=[["most","Kezdés","upload"],["terv","Terv","edit"],["info","Info","sliders"]];
 let tabKey="";
 function renderTabs(){const vs=B.length?VIEWS:VIEWS0,k=vs.map(v=>v[1]).join();if(k===tabKey)return;tabKey=k;
-  const t=$("#tabs");t.innerHTML=vs.map(([k,l,i])=>`<a href="#${k}">${ic(i,21)}<span>${l}</span></a>`).join("");t.classList.toggle("few",!B.length)}
+  const t=$("#tabs");t.innerHTML=`<i class="tab-ind noanim" aria-hidden="true"></i>`+vs.map(([k,l,i])=>`<a href="#${k}" draggable="false">${ic(i,21)}<span>${l}</span></a>`).join("");t.classList.toggle("few",!B.length)}
+/* fülsor: a kijelölő buborék csúszik, és húzható (mint iOS-en) */
+function placeInd(anim=true){
+  const t=$("#tabs"),ind=t&&t.querySelector(".tab-ind"),a=t&&t.querySelector('a[aria-current="page"]');if(!ind||!a)return;
+  if(!anim)ind.classList.add("noanim");
+  ind.style.width=a.offsetWidth+"px";ind.style.transform=`translateX(${a.offsetLeft}px)`;
+  if(!anim||ind.classList.contains("noanim"))requestAnimationFrame(()=>requestAnimationFrame(()=>ind.classList.remove("noanim")));
+}
+addEventListener("resize",()=>placeInd(false));
+(()=>{
+  const t=$("#tabs");let drag=null,eat=false;
+  const links=()=>[...t.querySelectorAll("a")];
+  const nearest=x=>{let best=null,bd=1e9;for(const a of links()){const c=a.offsetLeft+a.offsetWidth/2,d=Math.abs(c-x);if(d<bd){bd=d;best=a}}return best};
+  const move=x=>{const ind=t.querySelector(".tab-ind"),ls=links();if(!ind||!ls.length)return;const w=ls[0].offsetWidth,
+      lo=ls[0].offsetLeft,hi=ls[ls.length-1].offsetLeft;let left=x-w/2;
+      // gumiszalag a széleken
+      if(left<lo)left=lo-(lo-left)*.25;if(left>hi)left=hi+(left-hi)*.25;
+      ind.style.transform=`translateX(${left}px) scale(1.12,1.18)`;
+      const n=nearest(x);ls.forEach(a=>a.classList.toggle("hov",a===n));
+      if(n!==drag.over){drag.over=n;try{navigator.vibrate&&navigator.vibrate(6)}catch(e){}}};
+  const tx=e=>e.clientX-t.getBoundingClientRect().left-t.clientLeft;
+  t.addEventListener("pointerdown",e=>{if(e.button>0||tour)return;drag={id:e.pointerId,x0:e.clientX,y0:e.clientY,on:false,over:null}});
+  t.addEventListener("pointermove",e=>{if(!drag||e.pointerId!==drag.id)return;
+    if(!drag.on){if(Math.abs(e.clientX-drag.x0)<7)return;drag.on=true;t.classList.add("drag");try{t.setPointerCapture(e.pointerId)}catch(_){}}
+    e.preventDefault();move(tx(e))});
+  const end=e=>{if(!drag||e.pointerId!==drag.id)return;const d=drag;drag=null;if(!d.on)return;
+    t.classList.remove("drag");links().forEach(a=>a.classList.remove("hov"));eat=true;setTimeout(()=>eat=false,350);
+    const n=e.type==="pointercancel"?null:nearest(tx(e)),h=n&&n.getAttribute("href");
+    if(h&&h!=="#"+view)location.hash=h;else placeInd()};
+  t.addEventListener("pointerup",end);t.addEventListener("pointercancel",end);
+  t.addEventListener("click",e=>{if(eat){e.preventDefault();e.stopPropagation();eat=false}},true);
+  t.addEventListener("dragstart",e=>e.preventDefault());
+})();
 let view="most";
 function route(scroll){
   renderTabs();
   const h=location.hash.slice(1),vs=B.length?VIEWS:VIEWS0;view=vs.some(v=>v[0]===h)?h:"most";if(h&&h!==view)history.replaceState(null,"","#"+view);
   $$("[data-view]").forEach(s=>s.hidden=s.dataset.view!==view);
   $$(".tabs a").forEach(a=>{if(a.getAttribute("href")==="#"+view)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
+  placeInd();
   $("#dock").hidden=view!=="most"||!B.length;
   if(!B.length&&view!=="terv"&&view!=="info")renderWelcome($(`[data-view="${view}"]`));
   else ({most:renderMost,idorend:renderTimeline,szkript:renderScript,stab:renderCrew,terv:renderEdit,info:renderInfo})[view]();
