@@ -404,18 +404,18 @@ body.dragging::after{content:"Engedd el: beolvasom a táblázatot";position:fixe
 }
 .hdr{border-width:0 0 1px;background-color:rgba(7,9,13,.42);box-shadow:inset 0 -1px 0 rgba(255,255,255,.06)}
 .tabs{border-radius:26px;padding:5px;position:relative;touch-action:none;-webkit-user-select:none;user-select:none}
-.tabs a{position:relative;z-index:1;transition:color .2s,transform .25s;-webkit-touch-callout:none}
-.tabs a[aria-current="page"]{background:none}
-/* kijelölő buborék: koppintásra rugósan átcsúszik, húzásra az ujjat követi és kicsit megnő, elengedve a legközelebbi fülre ugrik */
-.tab-ind{position:absolute;z-index:0;top:5px;bottom:5px;left:0;width:0;border-radius:20px;pointer-events:none;
-  background:rgba(255,255,255,.13);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 0 0 .5px rgba(255,255,255,.10),0 4px 12px -6px rgba(0,0,0,.6);
-  transition:transform .5s cubic-bezier(.34,1.45,.52,1),width .3s ease,background .2s,box-shadow .2s;will-change:transform}
-.tab-ind.noanim{transition:none}
-.tabs.drag .tab-ind{transition:transform .09s ease-out,background .2s,box-shadow .2s;background:rgba(255,255,255,.17);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),inset 0 -1px 0 rgba(255,255,255,.12),inset 0 0 0 .5px rgba(255,255,255,.2),0 10px 26px -8px rgba(0,0,0,.75)}
-html.refract .tabs.drag .tab-ind{-webkit-backdrop-filter:url(#lglass);backdrop-filter:url(#lglass)}
-.tabs.drag a{color:var(--fg-3)}
-.tabs.drag a.hov{color:var(--fg);transform:scale(1.06)}
+/* Fülsor, iOS-módra. Három réteg: alul a buborék (.tab-ind), fölötte a szürke fülek (a), legfelül ugyanazok a fülek
+   kiemelő színnel (.tab-hi), amit a JS pontosan a buborék alakjára vág ki (clip-path). Így csak a buborék alatti rész színes.
+   A mozgást a JS rugója hajtja (nincs CSS-átmenet), hogy húzás közben se ugráljon. */
+.tabs a{position:relative;z-index:1;-webkit-touch-callout:none;color:var(--fg-3)}
+.tabs a[aria-current="page"]{background:none;color:var(--fg-3)}
+.tab-ind{position:absolute;z-index:0;top:5px;bottom:5px;left:0;width:0;border-radius:20px;pointer-events:none;transform-origin:50% 50%;
+  background:rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 0 0 .5px rgba(255,255,255,.10),0 4px 12px -6px rgba(0,0,0,.6);
+  transition:background .2s,box-shadow .2s;will-change:transform}
+.tabs.drag .tab-ind{background:rgba(255,255,255,.17);box-shadow:inset 0 1px 0 rgba(255,255,255,.45),inset 0 -1px 0 rgba(255,255,255,.12),inset 0 0 0 .5px rgba(255,255,255,.2),0 10px 26px -8px rgba(0,0,0,.75)}
+.tab-hi{position:absolute;inset:0;z-index:2;padding:5px;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;pointer-events:none;color:var(--shoot);clip-path:inset(50%);will-change:clip-path}
+.tab-hi .ta{display:grid;justify-items:center;gap:3px;padding:8px 1px 7px;font-size:10px;font-weight:650;letter-spacing:0;min-width:0}
+.tabs.few .tab-hi .ta{font-size:11px}
 .dk:not(.primary){border-radius:22px}
 .dk.primary{box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -2px 6px rgba(0,0,0,.08),0 12px 34px -10px color-mix(in srgb,var(--state) 70%,transparent)}
 .toast{background-color:rgba(22,28,38,.55)}
@@ -1379,33 +1379,52 @@ const VIEWS=[["most","Most","now"],["idorend","Időrend","list"],["szkript","Szk
 const VIEWS0=[["most","Kezdés","upload"],["terv","Terv","edit"],["info","Info","sliders"]];
 let tabKey="";
 function renderTabs(){const vs=B.length?VIEWS:VIEWS0,k=vs.map(v=>v[1]).join();if(k===tabKey)return;tabKey=k;
-  const t=$("#tabs");t.innerHTML=`<i class="tab-ind noanim" aria-hidden="true"></i>`+vs.map(([k,l,i])=>`<a href="#${k}" draggable="false">${ic(i,21)}<span>${l}</span></a>`).join("");t.classList.toggle("few",!B.length)}
-/* fülsor: a kijelölő buborék csúszik, és húzható (mint iOS-en) */
+  const t=$("#tabs");TB.init=false;
+  t.innerHTML=`<i class="tab-ind" aria-hidden="true"></i>`+vs.map(([k,l,i])=>`<a href="#${k}" draggable="false">${ic(i,21)}<span>${l}</span></a>`).join("")
+    +`<div class="tab-hi" aria-hidden="true">${vs.map(([k,l,i])=>`<span class="ta">${ic(i,21)}<span>${l}</span></span>`).join("")}</div>`;
+  t.classList.toggle("few",!B.length)}
+/* fülsor: a buborék rugóval mozog (koppintásra átcsúszik, húzásra követi az ujjat), a kiemelt réteg a buborék alakjára van vágva */
+const TB={init:false,drag:false,raf:0,last:0,x:0,w:0,sx:1,sy:1,vx:0,vw:0,vsx:0,vsy:0,tx:0,tw:0,tsx:1,tsy:1};
+function tbApply(){
+  const t=$("#tabs"),ind=t.querySelector(".tab-ind"),hi=t.querySelector(".tab-hi");if(!ind||!hi)return;
+  ind.style.width=TB.w+"px";ind.style.transform=`translateX(${TB.x}px) scale(${TB.sx},${TB.sy})`;
+  const top=ind.offsetTop,h=ind.offsetHeight,W=TB.w*TB.sx,H=h*TB.sy,cx=TB.x+TB.w/2,cy=top+h/2;
+  const l=cx-W/2,r=t.clientWidth-(cx+W/2),tp=cy-H/2,bt=t.clientHeight-(cy+H/2),rad=20*Math.min(TB.sx,TB.sy);
+  hi.style.clipPath=`inset(${tp.toFixed(2)}px ${r.toFixed(2)}px ${bt.toFixed(2)}px ${l.toFixed(2)}px round ${rad.toFixed(1)}px)`;
+}
+const TB_P=[["x","vx","tx"],["w","vw","tw"],["sx","vsx","tsx"],["sy","vsy","tsy"]];
+function tbTick(now){
+  const dt=TB.last?Math.min(3,(now-TB.last)/16.667):1;TB.last=now;let moving=false;
+  for(const [p,v,t] of TB_P){
+    const k=p==="x"&&TB.drag?.42:p==="x"?.13:.17,d=p==="x"&&TB.drag?.5:.72;
+    TB[v]=(TB[v]+(TB[t]-TB[p])*k*dt)*Math.pow(d,dt);TB[p]+=TB[v]*dt;
+    if(Math.abs(TB[t]-TB[p])>.04||Math.abs(TB[v])>.04)moving=true;else{TB[p]=TB[t];TB[v]=0}
+  }
+  tbApply();
+  if(moving||TB.drag)TB.raf=requestAnimationFrame(tbTick);else{TB.raf=0;TB.last=0}
+}
+const tbKick=()=>{if(!TB.raf){TB.last=0;TB.raf=requestAnimationFrame(tbTick)}};
 function placeInd(anim=true){
-  const t=$("#tabs"),ind=t&&t.querySelector(".tab-ind"),a=t&&t.querySelector('a[aria-current="page"]');if(!ind||!a)return;
-  if(!anim)ind.classList.add("noanim");
-  ind.style.width=a.offsetWidth+"px";ind.style.transform=`translateX(${a.offsetLeft}px)`;
-  if(!anim||ind.classList.contains("noanim"))requestAnimationFrame(()=>requestAnimationFrame(()=>ind.classList.remove("noanim")));
+  const t=$("#tabs"),a=t&&t.querySelector('a[aria-current="page"]');if(!a||TB.drag)return;
+  TB.tx=a.offsetLeft;TB.tw=a.offsetWidth;TB.tsx=TB.tsy=1;
+  if(!anim||!TB.init||matchMedia("(prefers-reduced-motion: reduce)").matches){TB.init=true;TB.x=TB.tx;TB.w=TB.tw;TB.sx=TB.sy=1;TB.vx=TB.vw=TB.vsx=TB.vsy=0;tbApply();return}
+  tbKick();
 }
 addEventListener("resize",()=>placeInd(false));
 (()=>{
   const t=$("#tabs");let drag=null,eat=false;
   const links=()=>[...t.querySelectorAll("a")];
   const nearest=x=>{let best=null,bd=1e9;for(const a of links()){const c=a.offsetLeft+a.offsetWidth/2,d=Math.abs(c-x);if(d<bd){bd=d;best=a}}return best};
-  const move=x=>{const ind=t.querySelector(".tab-ind"),ls=links();if(!ind||!ls.length)return;const w=ls[0].offsetWidth,
-      lo=ls[0].offsetLeft,hi=ls[ls.length-1].offsetLeft;let left=x-w/2;
-      // gumiszalag a széleken
-      if(left<lo)left=lo-(lo-left)*.25;if(left>hi)left=hi+(left-hi)*.25;
-      ind.style.transform=`translateX(${left}px) scale(1.12,1.18)`;
-      const n=nearest(x);ls.forEach(a=>a.classList.toggle("hov",a===n));
-      if(n!==drag.over){drag.over=n;try{navigator.vibrate&&navigator.vibrate(6)}catch(e){}}};
   const tx=e=>e.clientX-t.getBoundingClientRect().left-t.clientLeft;
-  t.addEventListener("pointerdown",e=>{if(e.button>0||tour)return;drag={id:e.pointerId,x0:e.clientX,y0:e.clientY,on:false,over:null}});
+  const follow=x=>{const ls=links();if(!ls.length)return;const w=ls[0].offsetWidth,lo=ls[0].offsetLeft,hi=ls[ls.length-1].offsetLeft;let left=x-w/2;
+    if(left<lo)left=lo-(lo-left)*.25;if(left>hi)left=hi+(left-hi)*.25;   // gumiszalag a széleken
+    TB.tx=left;const n=nearest(x);if(n!==drag.over){drag.over=n;try{navigator.vibrate&&navigator.vibrate(6)}catch(e){}}};
+  t.addEventListener("pointerdown",e=>{if(e.button>0||tour)return;drag={id:e.pointerId,x0:e.clientX,on:false,over:null}});
   t.addEventListener("pointermove",e=>{if(!drag||e.pointerId!==drag.id)return;
-    if(!drag.on){if(Math.abs(e.clientX-drag.x0)<7)return;drag.on=true;t.classList.add("drag");try{t.setPointerCapture(e.pointerId)}catch(_){}}
-    e.preventDefault();move(tx(e))});
+    if(!drag.on){if(Math.abs(e.clientX-drag.x0)<8)return;drag.on=true;TB.drag=true;TB.tsx=1.14;TB.tsy=1.2;t.classList.add("drag");try{t.setPointerCapture(e.pointerId)}catch(_){}tbKick()}
+    e.preventDefault();follow(tx(e))});
   const end=e=>{if(!drag||e.pointerId!==drag.id)return;const d=drag;drag=null;if(!d.on)return;
-    t.classList.remove("drag");links().forEach(a=>a.classList.remove("hov"));eat=true;setTimeout(()=>eat=false,350);
+    TB.drag=false;t.classList.remove("drag");eat=true;setTimeout(()=>eat=false,400);
     const n=e.type==="pointercancel"?null:nearest(tx(e)),h=n&&n.getAttribute("href");
     if(h&&h!=="#"+view)location.hash=h;else placeInd()};
   t.addEventListener("pointerup",end);t.addEventListener("pointercancel",end);
