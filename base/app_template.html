@@ -502,27 +502,37 @@ html.boot-in .app,html.boot-in .bottom{transition:opacity .7s ease,transform .9s
   box.querySelector(".bl").innerHTML=(logo||"")+'<div class="bar"><i></i></div>';
   const pre=document.getElementById("bootpre"),d=new Date(),p2=n=>String(n).padStart(2,"0"),on=navigator.onLine;
   const L=(k,v)=>(k+" ").padEnd(20,".")+" "+v;
-  let out=[],mem=-1,dots=0,done=false,raf=0,audio=null,t0=0;
-  const draw=()=>{let x=out.join("\n");if(mem>=0)x+=(x?"\n":"")+"Memória teszt: "+mem+"K"+(mem>=640?" OK":"");if(dots)x+=".".repeat(dots);pre.textContent=x;pre.insertAdjacentHTML("beforeend",'<span class="cur"></span>')};
-  // időzítés a hangfájl szerint (mp): gépindulás 0–5,6; csend; dallam 6,04 / 6,82 / 7,76; vége ~8,6
-  const EV=[[.02,()=>box.classList.add("on")],[.25,()=>{out=["APERATION BIOS v2.6"];draw()}],[.35,()=>{out.push("(C) 2026 Tóth Tamás János","");draw()}],
-    [.5,()=>{mem=0}],[1.25,()=>{mem=640}],
-    [1.34,()=>{out.push("Memória teszt: 640K OK");mem=-1;out.push(L("Rendszeridő",d.getFullYear()+"."+p2(d.getMonth()+1)+"."+p2(d.getDate())+" "+p2(d.getHours())+":"+p2(d.getMinutes())),"");draw()}],
-    [2.10,()=>{out.push(L("Napvezérlő","OK"));draw()}],[2.32,()=>{out.push(L("Időrend, shotlist","OK"));draw()}],[2.72,()=>{out.push(L("Forgatókönyv","OK"));draw()}],
-    [3.04,()=>{out.push(L("Take-napló","OK"));draw()}],[3.34,()=>{out.push(L("Közös munka","OK"));draw()}],[3.84,()=>{out.push(L("Hálózat",on?"OK":"HELYI MÓD"));draw()}],
-    [4.20,()=>{out.push(L("Képtár","OK"),"");draw()}],[4.68,()=>{out.push("Rendszer indítása");draw()}],[4.82,()=>{dots=1;draw()}],[4.96,()=>{dots=2;draw()}],[5.14,()=>{dots=3;draw()}],
-    [5.62,()=>{out=[];dots=0;pre.textContent=""}],
-    [6.04,()=>box.classList.add("m")],[6.82,()=>box.classList.add("w")],[7.76,()=>box.classList.add("b")],[8.35,()=>warp()]];
+  let out=[],mem=-1,dots=0,done=false,raf=0,audio=null,t0=0,line="";
+  const draw=()=>{let x=out.join("\n");if(mem>=0)x+=(x?"\n":"")+"Memória teszt: "+mem+"K"+(mem>=640?" OK":"");if(line)x+=(x?"\n":"")+line;pre.textContent=x;pre.insertAdjacentHTML("beforeend",'<span class="cur"></span>')};
+  // A billentyűhang leütései (mp, a hangfájl elejétől): minden leütésre egy betű, a szüneteknél Enter.
+  const KEYS=[.84,.98,1.05,1.11,1.21,1.34,1.40,1.46,1.52,1.58,1.67,1.74,1.80,1.86,1.94,2.01,2.08,2.18,2.31,2.37,2.44,2.57,2.68,2.79,2.85,2.92,2.99,3.05,3.11,3.19,3.27,3.33,3.40,3.46,3.55,3.61,3.69,3.75,3.83,3.90,3.97,4.06,4.19,4.26,4.32,4.67,4.79,4.87,4.94,5.03,5.10].map(x=>x+.012);
+  const P="A:\\> ",C1="run aperation.exe",C2="connect --stab --keptar -y";
+  const EV=[[.02,()=>box.classList.add("on")],[.22,()=>{out=["APERATION BIOS v2.6","(C) 2026 Tóth Tamás János",""];draw()}],
+    [.3,()=>{mem=0}],[.74,()=>{mem=-1;out.push("Memória teszt: 640K OK","");line=P;draw()}]];
+  const typeAt=(t,ch)=>EV.push([t,()=>{line+=ch;draw()}]);
+  const enter=(t,lines,next)=>EV.push([t,()=>{out.push(line);line=next;draw();lines.forEach((l,i)=>setTimeout(()=>{if(done)return;out.push(l);draw()},30+i*40))}]);
+  // 1. parancs: 17 leütés, Enter a 18.-ra
+  for(let i=0;i<17;i++)typeAt(KEYS[i],C1[i]);
+  enter(KEYS[17],[L("Napvezérlő","OK"),L("Időrend, shotlist","OK"),L("Forgatókönyv","OK"),L("Take-napló","OK"),""],P);
+  // 2. parancs: 26 leütés, Enter a hosszabb szünet előtt
+  for(let i=0;i<26;i++)typeAt(KEYS[18+i],C2[i]);
+  enter(KEYS[44],[L("Közös munka","OK"),L("Hálózat",on?"OK":"HELYI MÓD"),L("Képtár","OK"),""],"Jelszó: ");
+  // jelszó: 5 csillag, Enter
+  for(let i=0;i<5;i++)typeAt(KEYS[45+i],"*");
+  enter(KEYS[50],["Hozzáférés megadva. Indítás…"],"");
+  // dallam: 5,32 / 6,10 / 7,04 – a szöveg a dallam előtt elsötétül
+  EV.push([5.26,()=>{out=[];line="";pre.textContent=""}],[5.32,()=>box.classList.add("m")],[6.10,()=>box.classList.add("w")],[7.04,()=>box.classList.add("b")],[7.5,()=>warp()]);
+  EV.sort((x,y)=>x[0]-y[0]);
   let ei=0;
   const loop=()=>{if(done)return;const t=audio&&!audio.paused?audio.currentTime:(performance.now()-t0)/1000;
-    if(mem>=0&&mem<640){mem=Math.min(640,Math.round((t-.5)/.75*640/16)*16);draw()}
+    if(mem>=0&&mem<640){mem=Math.max(0,Math.min(640,Math.round((t-.3)/.42*640/16)*16));draw()}
     while(ei<EV.length&&t>=EV[ei][0])EV[ei++][1]();
     raf=requestAnimationFrame(loop)};
   function warp(){if(box.classList.contains("warp"))return;box.classList.add("warp");
     setTimeout(()=>{root.classList.add("boot-in");root.classList.remove("booting")},120);
     setTimeout(finish,760)}
   function finish(){if(done)return;done=true;cancelAnimationFrame(raf);root.classList.remove("booting");root.classList.add("boot-in");
-    if(audio){const a=audio,v0=a.volume,st=performance.now();const f=()=>{const k=(performance.now()-st)/400;if(k>=1||a.paused){a.pause();return}a.volume=Math.max(0,v0*(1-k));requestAnimationFrame(f)};f()}
+    if(audio&&!audio.paused&&audio.currentTime<7.3){const a=audio,v0=a.volume,st=performance.now();const f=()=>{const k=(performance.now()-st)/1400;if(k>=1||a.paused){a.pause();return}a.volume=Math.max(0,v0*(1-k)*(1-k));requestAnimationFrame(f)};f()}
     if(box.parentNode)box.parentNode.removeChild(box);setTimeout(()=>root.classList.remove("boot-in"),1200)}
   const start=withSound=>{const tp=box.querySelector(".tap");if(tp)tp.parentNode.removeChild(tp);
     if(reduce){box.classList.add("on","m","w");setTimeout(warp,700);return}
