@@ -1591,11 +1591,32 @@ async function importFile(file){
 /* ---------- terv → Excel ---------- */
 function exportBook(p){
   const wb=XLSX.utils.book_new();wb.Props={Title:p.title||"Forgatási terv",Author:AUTHOR,Company:"APERATION"};const add=(name,rows,w)=>{const ws=XLSX.utils.aoa_to_sheet(rows);ws["!cols"]=w.map(x=>({wch:x}));XLSX.utils.book_append_sheet(wb,ws,name)};
-  const yn=b=>b?"igen":"";let t=p.call;
-  add("Projekt",[["Mező","Érték"],["Cím",p.title],["Dátum",p.date],["Crew call",hhmm(p.call)],["Tervezett wrap",p.wrapTarget?hhmm(p.wrapTarget):""],["Helyszín",p.location],["Parkolás",p.parking],...(p.notes.length?p.notes:[""]).map(n=>["Fontos",n])],[18,60]);
-  add("Időrend",[["Kezdés","Vége","Perc","Típus","Blokk / shot","Beállítás","Megjegyzés","Fény","Szereplők","Kellékek","Sztori","Kihagyható","Storyboard kép (URL)","Vilkó kép (URL)"],
-    ...p.blocks.map(b=>{const s=t;t+=b.d;const u=k=>(b.images||[]).filter(x=>x.kind===k&&x.url).map(x=>x.url).join("\n");
-      return[hm(s),hm(t),b.d,TNAME[b.type],b.label,b.setup,b.note,b.group,b.talent,b.props,b.story,yn(b.skippable),u("sb"),u("vk")]})],[7,7,6,12,16,26,34,7,16,28,30,10,24,24]);
+  const yn=b=>b?"igen":"";
+  add("Projekt",[["Mező","Érték"],["Cím",p.title],["Dátum",p.date],["Crew call",""],["Tervezett wrap",""],["Helyszín",p.location],["Parkolás",p.parking],...(p.notes.length?p.notes:[""]).map(n=>["Fontos",n])],[18,60]);
+  // időpontok számként (h:mm), hogy a képletek számolni tudjanak velük – mint a sablonban
+  const pj=wb.Sheets["Projekt"],tcell=m=>({t:"n",v:m/1440,z:"h:mm"});
+  pj["B4"]=tcell(p.call);if(p.wrapTarget)pj["B5"]=tcell(p.wrapTarget);
+  // Időrend: fejléc a 3. sorban, fölötte összesítő; a Kezdés/Vége képlete nem függ a sor helyétől, így a sorok húzhatók
+  const HR=3,R0=4,EXTRA=30,rows=[],total=p.blocks.reduce((a,b)=>a+b.d,0);
+  rows.push(["Crew call","","Vége","","Wrap-határ","",""]);
+  rows.push(["Sort áthelyezni: jelöld ki a sor számát, és húzd a helyére (Excelben Shift-tel). Új blokk: húzz fel egy üres sort a lista aljáról. Az idők maguktól számolódnak."]);
+  rows.push(["Kezdés","Vége","Perc","Típus","Blokk / shot","Beállítás","Megjegyzés","Fény","Szereplők","Kellékek","Sztori","Kihagyható","Storyboard kép (URL)","Vilkó kép (URL)"]);
+  p.blocks.forEach(b=>{const u=k=>(b.images||[]).filter(x=>x.kind===k&&x.url).map(x=>x.url).join("\n");
+    rows.push(["","",b.d,TNAME[b.type],b.label,b.setup,b.note,b.group,b.talent,b.props,b.story,yn(b.skippable),u("sb"),u("vk")])});
+  add("Időrend",rows,[8,8,6,12,16,26,34,7,16,28,30,10,24,24]);
+  const ir=wb.Sheets["Időrend"],RL=R0+p.blocks.length+EXTRA-1;
+  ir["B1"]={t:"n",v:p.call/1440,f:"Projekt!$B$4",z:"h:mm"};
+  ir["D1"]={t:"n",v:(p.call+total)/1440,f:`Projekt!$B$4+SUM(C${R0}:C${RL})/1440`,z:"h:mm"};
+  ir["F1"]=p.wrapTarget?{t:"n",v:p.wrapTarget/1440,f:'IF(Projekt!$B$5="","",Projekt!$B$5)',z:"h:mm"}:{t:"s",v:"",f:'IF(Projekt!$B$5="","",Projekt!$B$5)'};
+  const over=p.wrapTarget?p.call+total-p.wrapTarget:null;
+  ir["G1"]={t:"s",v:over==null?"":over>0?`⚠ ${over} perc túllépés`:`${-over} perc tartalék`,f:'IF(F1="","",IF(D1>F1,"⚠ "&ROUND((D1-F1)*1440,0)&" perc túllépés",ROUND((F1-D1)*1440,0)&" perc tartalék"))'};
+  const fA=r=>`IF(AND(C${r}="",E${r}=""),"",Projekt!$B$4+SUM(C$${HR}:INDEX(C:C,ROW()-1))/1440)`,fB=r=>`IF(A${r}="","",A${r}+C${r}/1440)`;
+  let acc=p.call;
+  for(let r=R0;r<=RL;r++){const b=p.blocks[r-R0];   // a lista alján üres, képletes sorok: ezeket lehet felhúzni új blokknak
+    ir["A"+r]=b?{t:"n",v:acc/1440,z:"h:mm",f:fA(r)}:{t:"s",v:"",f:fA(r)};
+    ir["B"+r]=b?{t:"n",v:(acc+b.d)/1440,z:"h:mm",f:fB(r)}:{t:"s",v:"",f:fB(r)};
+    if(b)acc+=b.d}
+  ir["!ref"]=`A1:N${RL}`;
   add("Szereplők",[["Szerep","Színész","Érkezés","Ruha","Smink","Haj","Setre","Telefon"],...p.cast.map(c=>[c.role,c.name,c.arr,c.ruha,c.smink,c.haj,c.onset,c.phone])],[14,20,8,8,8,8,8,16]);
   add("Stáb",[["Részleg","Pozíció","Név","Érkezés","Telefon"],...p.crew.map(c=>[c.dept,c.pos,c.name,c.arr,c.phone])],[20,18,22,8,16]);
   add("Fények",[["Kód","Név","Leírás","Kép (URL)"],...p.groups.map(g=>[g.code,g.name,g.desc,(g.images||[]).filter(x=>x.url).map(x=>x.url).join("\n")])],[8,24,60,30]);

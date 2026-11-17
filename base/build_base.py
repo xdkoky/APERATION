@@ -88,7 +88,10 @@ lines = [
     ("Projekt", Font(bold=True, size=12)),
     ("Cím, dátum, crew call, wrap-határ (eddig kell végezni), helyszín, parkolás. A „Fontos” sorokból annyi lehet, amennyi kell; a BIZTONSÁG kezdetű piros lesz az appban.", None),
     ("Időrend", Font(bold=True, size=12)),
-    ("Egy sor = egy blokk, abban a sorrendben, ahogy a nap megy. A Kezdés és a Vége magától számolódik a crew callból és a Percekből.", None),
+    ("Egy sor = egy blokk, abban a sorrendben, ahogy a nap megy. Csak a Percet, a Típust és a Blokk / shot nevét kell beírni: a Kezdés és a Vége magától számolódik a crew callból, akármilyen sorrendbe rakod a sorokat.", None),
+    ("Áthelyezés: jelöld ki a sor számát, és húzd a helyére. Excelben gépen: kijelölés szélét megfogva Shift-tel húzd. Google Táblázatokban: a sorszámot húzd. Telefonon: Kivágás, majd a célsornál Kivágott cellák beszúrása.", None),
+    ("Új blokk: húzz fel egy üres sort a lista aljáról oda, ahová kell (abban már benne vannak a képletek). Törlés: a sor tartalmát töröld, vagy a sort.", None),
+    ("A lap tetején látod a számolt véget és hogy mennyi a tartalék vagy a túllépés. Sárga: két átállás egymás után (nem hiba, csak nézd át). Piros idő: a blokk a wrap-határ után ér véget.", None),
     ("Típus: Előkészület, Prezentálás, Forgatás, Átállás, Ebéd, Tartalék (legördülő lista).", None),
     ("Blokk / shot: forgatásnál a shot száma (pl. 1/1, vagy több: 2/1A + 2/1B). Erre hivatkozik a Szkript lap Shotok oszlopa.", None),
     ("Fény: a Fények lap kódja (pl. A). Az app ebből tudja, mikor változik a fény.", None),
@@ -122,7 +125,7 @@ ws["B3"].number_format = "yyyy.mm.dd."
 ws["B4"].number_format = ws["B5"].number_format = "h:mm"
 last = len(rows) + 3
 ws.cell(row=last, column=1, value="Számolt vége").font = Font(bold=True, color="555555")
-ws.cell(row=last, column=2, value="=B4+SUM(Időrend!C2:C200)/1440").number_format = "h:mm"
+ws.cell(row=last, column=2, value="=B4+SUM(Időrend!C4:C200)/1440").number_format = "h:mm"
 ws.cell(row=last + 1, column=1, value="Túllépés (perc)").font = Font(bold=True, color="555555")
 ws.cell(row=last + 1, column=2, value=f'=IF(B5="","",MAX(0,ROUND((B{last}-B5)*1440,0)))')
 for r in (last, last + 1):
@@ -130,31 +133,50 @@ for r in (last, last + 1):
         ws.cell(row=r, column=c).fill = CALC; ws.cell(row=r, column=c).border = BOX
 ws.conditional_formatting.add(f"B{last + 1}", FormulaRule(formula=[f'AND(ISNUMBER(B{last + 1}),B{last + 1}>0)'], fill=F("FFD7DB"), font=Font(bold=True, color="B00020")))
 
-# Időrend
+# Időrend – úgy működik, mint az appban: a sorok szabadon húzhatók, a Kezdés/Vége képlete nem függ a sor helyétől
+# (a fölötte lévő percek összege: SUM(C$3:INDEX(C:C,ROW()-1))), a tetején összesítő, sárga jel két egymás utáni átállásnál.
 ws = wb.create_sheet("Időrend")
 cols = [("Kezdés", 8), ("Vége", 8), ("Perc", 7), ("Típus", 13), ("Blokk / shot", 16), ("Beállítás", 26), ("Megjegyzés", 34), ("Fény", 7),
         ("Szereplők", 16), ("Kellékek", 28), ("Sztori", 30), ("Kihagyható", 11), ("Storyboard kép (URL)", 24), ("Vilkó kép (URL)", 24)]
-header(ws, cols)
-N = 120
-for i, b in enumerate(MINTA["blocks"], 2):
+HR, R0, N = 3, 4, 120                      # fejlécsor, első adatsor, előre kitöltött sorok
+RL = R0 + N - 1
+header(ws, cols, row=HR)
+for c in range(1, 15):                     # az összesítő sorok szélessége ne zavarjon
+    ws.cell(row=1, column=c).fill = PatternFill(fill_type=None)
+summ = [("A1", "Crew call", "B1", "=Projekt!$B$4"), ("C1", "Vége", "D1", f"=Projekt!$B$4+SUM(C{R0}:C{RL})/1440"),
+        ("E1", "Wrap-határ", "F1", '=IF(Projekt!$B$5="","",Projekt!$B$5)')]
+for lc, lab, vc, f in summ:
+    ws[lc] = lab; ws[lc].font = Font(bold=True, color="555555"); ws[lc].alignment = Alignment(horizontal="right")
+    ws[vc] = f; ws[vc].number_format = "h:mm"; ws[vc].font = Font(bold=True, size=13)
+ws["G1"] = '=IF(F1="","",IF(D1>F1,"⚠ "&ROUND((D1-F1)*1440,0)&" perc túllépés",ROUND((F1-D1)*1440,0)&" perc tartalék"))'
+ws["G1"].font = Font(bold=True, size=12)
+ws["A2"] = "Sort áthelyezni: jelöld ki a sor számát, és húzd a helyére (Excelben Shift-tel). Új blokk: húzz fel egy üres sort a lista aljáról. Az idők maguktól számolódnak."
+ws["A2"].font = Font(italic=True, color="777777", size=9)
+ws.conditional_formatting.add("G1", FormulaRule(formula=['LEFT($G$1,1)="⚠"'], font=Font(bold=True, color="B00020")))
+ws.conditional_formatting.add("G1", FormulaRule(formula=['AND($G$1<>"",LEFT($G$1,1)<>"⚠")'], font=Font(bold=True, color="1E7F4F")))
+for i, b in enumerate(MINTA["blocks"], R0):
     vals = [None, None, b["d"], TN[b["type"]], b.get("label", ""), b.get("setup", ""), b.get("note", ""), b.get("group", ""),
             b.get("talent", ""), b.get("props", ""), b.get("story", ""), "igen" if b.get("skippable") else "", "", ""]
     for c, v in enumerate(vals, 1):
         if v not in (None, ""):
             ws.cell(row=i, column=c, value=v)
-for r in range(2, N + 2):
-    ws.cell(row=r, column=1, value=f'=IF(AND(C{r}="",E{r}=""),"",Projekt!$B$4+SUM(C$1:C{r - 1})/1440)').number_format = "h:mm"
+for r in range(R0, RL + 1):
+    ws.cell(row=r, column=1, value=f'=IF(AND(C{r}="",E{r}=""),"",Projekt!$B$4+SUM(C${HR}:INDEX(C:C,ROW()-1))/1440)').number_format = "h:mm"
     ws.cell(row=r, column=2, value=f'=IF(A{r}="","",A{r}+C{r}/1440)').number_format = "h:mm"
-body(ws, 2, N + 1, len(cols), calc=(1, 2))
+body(ws, R0, RL, len(cols), calc=(1, 2))
+ws.freeze_panes = ws.cell(row=R0, column=1)
 dv = DataValidation(type="list", formula1='"Előkészület,Prezentálás,Forgatás,Átállás,Ebéd,Tartalék"', allow_blank=True)
-dv.error = "Válassz a listából."; ws.add_data_validation(dv); dv.add(f"D2:D{N + 1}")
-dv2 = DataValidation(type="list", formula1='"igen,nem"', allow_blank=True); ws.add_data_validation(dv2); dv2.add(f"L2:L{N + 1}")
+dv.error = "Válassz a listából."; ws.add_data_validation(dv); dv.add(f"D{R0}:D{RL}")
+dv2 = DataValidation(type="list", formula1='"igen,nem"', allow_blank=True); ws.add_data_validation(dv2); dv2.add(f"L{R0}:L{RL}")
 dv3 = DataValidation(type="whole", operator="between", formula1="0", formula2="600", allow_blank=True)
-dv3.error = "A Perc egész szám (0–600)."; ws.add_data_validation(dv3); dv3.add(f"C2:C{N + 1}")
-rng = f"A2:N{N + 1}"
+dv3.error = "A Perc egész szám (0–600)."; ws.add_data_validation(dv3); dv3.add(f"C{R0}:C{RL}")
+rng = f"A{R0}:N{RL}"
+# figyelmeztetések (nem tiltanak): két egymás utáni átállás sárga, a wrap-határ után végződő blokk ideje piros
+ws.conditional_formatting.add(rng, FormulaRule(formula=[f'AND($D{R0}="Átállás",OR($D{R0 - 1}="Átállás",$D{R0 + 1}="Átállás"))'], fill=F("FFE9A8"), stopIfTrue=True))
+ws.conditional_formatting.add(f"A{R0}:B{RL}", FormulaRule(formula=[f'AND(ISNUMBER($B{R0}),ISNUMBER($F$1),$B{R0}>$F$1)'], font=Font(bold=True, color="B00020")))
 for t, col in (("Forgatás", "D9F4F7"), ("Átállás", "E6EAFF"), ("Ebéd", "F1E6FF")):
-    ws.conditional_formatting.add(rng, FormulaRule(formula=[f'$D2="{t}"'], fill=F(col)))
-ws.conditional_formatting.add(f"E2:E{N + 1}", FormulaRule(formula=['$D2="Forgatás"'], font=Font(bold=True)))
+    ws.conditional_formatting.add(rng, FormulaRule(formula=[f'$D{R0}="{t}"'], fill=F(col)))
+ws.conditional_formatting.add(f"E{R0}:E{RL}", FormulaRule(formula=[f'$D{R0}="Forgatás"'], font=Font(bold=True)))
 
 # Szereplők, Stáb, Fények, Szkript
 def table(name, cols, data, n=40, valid=None):
