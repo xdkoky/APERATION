@@ -14,7 +14,7 @@ sym=light&(yy<390*S); txt=light&(yy>=390*S)
 # (forrás-pixelben): R lába [824+0.65t, 845+0.65t], A bal szára [867.2-0.4t, 879.7-0.4t], t = y-502.
 xx=np.arange(W*S)[None,:]/S; yv=yy/S; t=yv-502
 LA=867.2-0.4*t
-zone=(yv>=500)&(yv<537)&(xx>=812)&(xx<=884)
+zone=(yv>=516)&(yv<537)&(xx>=812)&(xx<=884)
 polyR=zone&(xx>=824+0.65*t)&(xx<845+0.65*t)
 polyA=zone&(xx>=LA)&(xx<LA+12.5)
 ation=(txt&(xx>=LA-1)&~zone)|polyA|(txt&zone&(xx>=LA+6))   # az A keresztvonala is megmarad
