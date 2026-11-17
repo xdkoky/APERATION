@@ -36,9 +36,10 @@ LOGO_SVG = open(os.path.join(HERE, "brand", "aperation-logo.svg"), encoding="utf
 tpl = tpl.replace("/*__LOGO__*/null", json.dumps(LOGO_SVG, ensure_ascii=False))
 tpl = tpl.replace("/*__GLASS_CSS__*/", open(os.path.join(HERE, "glass.css"), encoding="utf-8").read())
 tpl = tpl.replace("/*__MULTI_CSS__*/", open(os.path.join(HERE, "multi.css"), encoding="utf-8").read())
+tpl = tpl.replace("/*__GATE_JS__*/", open(os.path.join(HERE, "gate.js"), encoding="utf-8").read())
 tpl = tpl.replace("/*__EDITOR_JS__*/", open(os.path.join(HERE, "multi.js"), encoding="utf-8").read() + "\n" + open(os.path.join(HERE, "editor.js"), encoding="utf-8").read())
 tpl = tpl.replace("const MINTA=/*__MINTA__*/null;", "const MINTA=" + json.dumps(MINTA, ensure_ascii=False) + ";")
-assert "/*__" not in tpl.replace("/*__XLSX__*/", "").replace("/*__FBCFG__*/", "").replace("/*__FBSRC__*/", "")
+assert "/*__" not in tpl.replace("/*__XLSX__*/", "").replace("/*__FBCFG__*/", "").replace("/*__FBSRC__*/", "").replace("/*__GATE__*/", "")
 open(os.path.join(HERE, "app.html"), "w", encoding="utf-8").write(tpl)
 print("kész: base/app.html")
 
@@ -195,6 +196,7 @@ for f in ("aperation-logo.svg", "aperation-mark.svg", "aperation-icon.svg"):
     shutil.copy(os.path.join(HERE, "brand", f), os.path.join(PAGES, "brand", f))
 
 src = tpl.replace('/*__XLSX__*/"' + XLSX_CDN + '"', '"vendor/xlsx.full.min.js"')
+src = src.replace("const GATE=/*__GATE__*/false;", "const GATE=true;")   # telefonon csak főképernyőről indítva
 # közös munka: Firebase SDK helyben (npm-ből), konfiguráció a base/firebase/config.json-ból (ha van)
 FBV = "11.10.0"
 fbfiles = ["firebase-app-compat.js", "firebase-auth-compat.js", "firebase-firestore-compat.js"]
