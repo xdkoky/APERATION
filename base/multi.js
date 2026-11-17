@@ -26,7 +26,7 @@ const normCode=c=>String(c||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
 let MP={on:false};
 try{MP=Object.assign({on:false},JSON.parse(localStorage.getItem(MPKEY)||"null")||{})}catch(e){}
 MP.ready=false;MP.roles=[];MP.members=[];MP.lastPub=0;MP.lastPush=0;MP.liveTs=0;
-const mpSaveLocal=()=>{try{const {on,mode,pid,roleId,code,name,perm,roleName,title}=MP;localStorage.setItem(MPKEY,JSON.stringify({on,mode,pid,roleId,code,name,perm,roleName,title}))}catch(e){}};
+const mpSaveLocal=()=>{if(typeof PV!=="undefined"&&PV)return;try{const {on,mode,pid,roleId,code,name,perm,roleName,title}=MP;localStorage.setItem(MPKEY,JSON.stringify({on,mode,pid,roleId,code,name,perm,roleName,title}))}catch(e){}};
 const isMember=()=>MP.on&&MP.mode==="member";
 const isMpAdmin=()=>MP.on&&MP.mode==="admin";
 const canCtl=()=>!MP.on||MP.mode==="admin"||!!(MP.perm&&MP.perm.control);
@@ -181,6 +181,7 @@ async function mpJoin(raw,name){
   }catch(e){mpErr(e);return false}
 }
 async function mpLeave(silent){
+  if(PV){pvStop();return}
   const was={...MP};mpStop();
   if(was.mode==="member"&&fdb&&UID&&!silent){try{await fdb.collection("projects").doc(was.pid).collection("members").doc(UID).delete()}catch(e){}}
   MP={on:false,ready:false,roles:[],members:[],lastPub:0,lastPush:0,liveTs:0,leaving:false};mpSaveLocal();
@@ -280,3 +281,44 @@ document.addEventListener("click",async e=>{
 document.addEventListener("change",e=>{const el=e.target;if(!el.matches||!el.matches("[data-rname]"))return;const r=MP.roles.find(x=>x.id===el.closest("[data-rid]").dataset.rid);if(r){r.name=el.value.trim()||"Pozíció";mpRoleSave(r)}});
 document.addEventListener("input",e=>{const el=e.target;if(el.id==="jcode"){const c=normCode(el.value).slice(0,8);const v=c.length>4?c.slice(0,4)+"-"+c.slice(4):c;if(el.value!==v)el.value=v}});
 function mpBoot(){if(MP.on&&MP_AVAIL)fbInit().then(()=>{mpListen();renderAll()}).catch(mpErr)}
+
+/* ---------- szerepek kipróbálása (egyedül, egy eszközön) ----------
+   A szerkesztő megnézheti, mit lát és mit tehet egy pozíció. A terv a szerepre szűrve jelenik meg,
+   közben semmi nem mentődik és nem szinkronizál; kilépéskor minden visszaáll. */
+let PV=null;
+function pvRoles(){if(PV&&PV.roles)return PV.roles;return isMpAdmin()&&MP.roles.length?MP.roles.map(r=>({name:r.name,perm:r.perm})):PRESETS.map(([name,s])=>({name,perm:permOf(s)}))}
+function pvHTML(){
+  if(!P.blocks.length||isMember())return"";
+  const rs=pvRoles();
+  return`<section class="card" id="pvcard"><h2>Szerepek kipróbálása</h2>
+    <p class="muted small">Nézd meg egyedül, mit lát és mit csinálhat egy pozíció a telefonján (pl. a szkriptes mérheti és csillagozhatja a take-eket, a színész csak a napot és a forgatókönyvet látja). Próba közben semmi nem mentődik és nem megy ki a stábnak; a kilépéskor minden visszaáll.</p>
+    <div class="pvlist">${rs.map((r,i)=>`<button type="button" class="btn sm" data-pv="${i}">${ic("play",13)}${esc(r.name)}</button>`).join("")}</div></section>`;
+}
+function pvStart(i){
+  const r=pvRoles()[i];if(!r)return;
+  if(!PV){const roles=pvRoles();if(MP.on)mpStop();PV={P0:P,st0:JSON.stringify(st),MP0:MP,roles}}
+  else{P=PV.P0;st=JSON.parse(PV.st0)}
+  PV.name=r.name;PV.i=i;
+  MP={...PV.MP0,on:true,mode:"member",perm:r.perm,roleName:r.name,ready:false,roles:[],members:[]};
+  P=normP(filterP(PV.P0,r.perm));applyProject();
+  st=Object.assign(fresh(),JSON.parse(PV.st0));
+  // ha még nem indult a nap, egy forgatás közepére ugrunk, hogy minden kipróbálható legyen
+  if(!st.cur){const sb=B.find(b=>b.type==="shoot")||B[0];if(sb){for(const b of B)if(b.i<sb.i)st.act[b.i]={s:b.s,e:b.e};st.sim={on:true,start:sb.s+6,speed:1,base:Date.now()};st.cur={i:sb.i,at:sb.s+1}}}
+  lastHero=null;tabKey="";openRow=null;pvBar();location.hash="#most";renderAll();
+}
+function pvStop(){
+  if(!PV)return;const x=PV;PV=null;
+  MP=x.MP0;P=x.P0;st=JSON.parse(x.st0);applyProject();
+  if(MP.on)mpListen();
+  const b=$("#pvbar");b&&b.remove();document.body.classList.remove("pv");
+  lastHero=null;tabKey="";openRow=null;editSec="csapat";location.hash="#terv";renderAll();
+  toast("Kiléptél a próbából. Minden a régi.");
+}
+function pvBar(){
+  let b=$("#pvbar");if(!b){b=document.createElement("div");b.id="pvbar";($(".hdr")||document.body).prepend(b);document.body.classList.add("pv")}
+  const rs=pvRoles();
+  b.innerHTML=`<span class="pv-l">${ic("users",15)}Szerepben:</span><select aria-label="Szerep">${rs.map((r,i)=>`<option value="${i}" ${i===PV.i?"selected":""}>${esc(r.name)}</option>`).join("")}</select><button type="button" class="btn sm solid" data-pvstop>Kilépés</button>`;
+  b.querySelector("select").onchange=e=>pvStart(+e.target.value);
+  b.querySelector("[data-pvstop]").onclick=pvStop;
+}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-pv]");if(t)pvStart(+t.dataset.pv)});

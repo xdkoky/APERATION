@@ -56,7 +56,7 @@ function applyProject(){
   if(st.cur&&st.cur.i>=B.length)st.cur=B.length?{...st.cur,i:B.length-1}:null;
   document.title=(p.title?p.title+" · ":"")+"APERATION";
 }
-function saveP(){if(tour)return;if(isMpAdmin()&&!mpApplying)mpPublishSoon();try{localStorage.setItem(PKEY,JSON.stringify(P));savedMark()}catch(e){toast("Nem sikerült menteni ezen az eszközön (betelt a tárhely?). Mentsd a projektet fájlba: Terv → Fájl → Projekt exportálása.",{tone:"late"})}}
+function saveP(){if(tour||PV)return;if(isMpAdmin()&&!mpApplying)mpPublishSoon();try{localStorage.setItem(PKEY,JSON.stringify(P));savedMark()}catch(e){toast("Nem sikerült menteni ezen az eszközön (betelt a tárhely?). Mentsd a projektet fájlba: Terv → Fájl → Projekt exportálása.",{tone:"late"})}}
 function commit(){saveP();applyProject();tick(true);$$("[data-bs]").forEach(x=>{const b=B[+x.dataset.bs];if(b)x.textContent=hm(b.s)});const w=$("#edwrap");w&&(w.innerHTML=wrapLine())}
 // minden leütés azonnal a készülékre mentődik; a nézet frissítése kis késleltetéssel jön
 let cTimer=null;const commitSoon=()=>{saveP();clearTimeout(cTimer);cTimer=setTimeout(()=>{cTimer=null;commit()},350)};
@@ -444,7 +444,7 @@ function renderEdit(){
   else if(editSec==="emberek")body=`<section class="card"><h2>Szereplők</h2><p class="muted small">A Szerep (pl. Anna) ugyanaz legyen, amit az Időrendben a Szereplők mezőbe írsz.</p>
       ${rowsTable("cast",[["role","Szerep"],["name","Színész"],["arr","Érkezés",{ph:"8:00",cls:"w1",im:"numeric"}],["ruha","Ruha",{cls:"w1"}],["smink","Smink",{cls:"w1"}],["haj","Haj",{cls:"w1"}],["onset","Setre",{cls:"w1"}],["phone","Telefon",{type:"tel"}]],"Új szereplő")}</section>
     <section class="card"><h2>Stáb</h2>${rowsTable("crew",[["dept","Részleg"],["pos","Pozíció"],["name","Név"],["arr","Érkezés",{ph:"8:00",cls:"w1"}],["phone","Telefon",{type:"tel"}]],"Új stábtag")}</section>`;
-  else if(editSec==="csapat")body=teamHTML();
+  else if(editSec==="csapat")body=teamHTML()+pvHTML();
   else if(editSec==="shotlist")body=shotlistHTML();
   else body=scriptEditHTML();
   document.documentElement.style.setProperty("--hdr-h",($(".hdr")?$(".hdr").offsetHeight:96)+"px");

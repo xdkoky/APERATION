@@ -565,6 +565,13 @@ html.gated,html.gated body{overflow:hidden}
 body.ro #dock,body.ro:not(.cantake) .rec,body.ro .tl-x,body.ro [data-skipnow],body.ro [data-unskip],body.ro #extclr,body.ro #demo{display:none!important}
 body.ro .chk{pointer-events:none;opacity:.55}
 
+/* szerepek kipróbálása */
+.pvlist{display:flex;flex-wrap:wrap;gap:8px}
+#pvbar{display:flex;width:fit-content;margin:0 auto 8px;align-items:center;gap:8px;padding:6px 6px 6px 12px;border-radius:999px;background:color-mix(in srgb,var(--warn,#f5b84a) 22%,var(--surface-2,#1c1f26));border:1px solid color-mix(in srgb,var(--warn,#f5b84a) 60%,transparent);box-shadow:0 8px 24px rgba(0,0,0,.35);max-width:calc(100vw - 24px);font-size:13px;font-weight:650;color:var(--fg)}
+#pvbar .pv-l{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+#pvbar select{min-width:0;max-width:44vw;background:var(--surface-3);color:var(--fg);border:1px solid var(--hair);border-radius:999px;padding:6px 10px;font:inherit}
+#pvbar .btn{white-space:nowrap}
+
 .credit-line{margin:22px 0 6px;text-align:center;font-size:11.5px;letter-spacing:.02em;color:var(--fg-3)}
 .credit p+p{margin-top:2px}
 /* üveg: a lebegő elemek (fejléc, fülsor, akciósáv, értesítés, bemutató) áttetsző, fényes peremű lapok.
@@ -765,7 +772,7 @@ const fresh=()=>({v:1,cur:null,act:{},skip:{},ext:{},takes:{},sw:null,checkin:{}
 let st=fresh();
 try{const x=JSON.parse(localStorage.getItem(KEY)||"null");if(x&&x.v===1)st=Object.assign(fresh(),x)}catch(e){}
 let tour=null;
-function save(){if(tour)return;st.upd=Date.now();try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}cloudSave()}
+function save(){if(tour||PV)return;st.upd=Date.now();try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}cloudSave()}
 function tod(){
   if(st.sim.on)return st.sim.start+(Date.now()-st.sim.base)/60000*st.sim.speed;
   const d=new Date();return d.getHours()*60+d.getMinutes()+d.getSeconds()/60+d.getMilliseconds()/60000;
@@ -1252,7 +1259,7 @@ const normCode=c=>String(c||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
 let MP={on:false};
 try{MP=Object.assign({on:false},JSON.parse(localStorage.getItem(MPKEY)||"null")||{})}catch(e){}
 MP.ready=false;MP.roles=[];MP.members=[];MP.lastPub=0;MP.lastPush=0;MP.liveTs=0;
-const mpSaveLocal=()=>{try{const {on,mode,pid,roleId,code,name,perm,roleName,title}=MP;localStorage.setItem(MPKEY,JSON.stringify({on,mode,pid,roleId,code,name,perm,roleName,title}))}catch(e){}};
+const mpSaveLocal=()=>{if(typeof PV!=="undefined"&&PV)return;try{const {on,mode,pid,roleId,code,name,perm,roleName,title}=MP;localStorage.setItem(MPKEY,JSON.stringify({on,mode,pid,roleId,code,name,perm,roleName,title}))}catch(e){}};
 const isMember=()=>MP.on&&MP.mode==="member";
 const isMpAdmin=()=>MP.on&&MP.mode==="admin";
 const canCtl=()=>!MP.on||MP.mode==="admin"||!!(MP.perm&&MP.perm.control);
@@ -1407,6 +1414,7 @@ async function mpJoin(raw,name){
   }catch(e){mpErr(e);return false}
 }
 async function mpLeave(silent){
+  if(PV){pvStop();return}
   const was={...MP};mpStop();
   if(was.mode==="member"&&fdb&&UID&&!silent){try{await fdb.collection("projects").doc(was.pid).collection("members").doc(UID).delete()}catch(e){}}
   MP={on:false,ready:false,roles:[],members:[],lastPub:0,lastPush:0,liveTs:0,leaving:false};mpSaveLocal();
@@ -1507,6 +1515,47 @@ document.addEventListener("change",e=>{const el=e.target;if(!el.matches||!el.mat
 document.addEventListener("input",e=>{const el=e.target;if(el.id==="jcode"){const c=normCode(el.value).slice(0,8);const v=c.length>4?c.slice(0,4)+"-"+c.slice(4):c;if(el.value!==v)el.value=v}});
 function mpBoot(){if(MP.on&&MP_AVAIL)fbInit().then(()=>{mpListen();renderAll()}).catch(mpErr)}
 
+/* ---------- szerepek kipróbálása (egyedül, egy eszközön) ----------
+   A szerkesztő megnézheti, mit lát és mit tehet egy pozíció. A terv a szerepre szűrve jelenik meg,
+   közben semmi nem mentődik és nem szinkronizál; kilépéskor minden visszaáll. */
+let PV=null;
+function pvRoles(){if(PV&&PV.roles)return PV.roles;return isMpAdmin()&&MP.roles.length?MP.roles.map(r=>({name:r.name,perm:r.perm})):PRESETS.map(([name,s])=>({name,perm:permOf(s)}))}
+function pvHTML(){
+  if(!P.blocks.length||isMember())return"";
+  const rs=pvRoles();
+  return`<section class="card" id="pvcard"><h2>Szerepek kipróbálása</h2>
+    <p class="muted small">Nézd meg egyedül, mit lát és mit csinálhat egy pozíció a telefonján (pl. a szkriptes mérheti és csillagozhatja a take-eket, a színész csak a napot és a forgatókönyvet látja). Próba közben semmi nem mentődik és nem megy ki a stábnak; a kilépéskor minden visszaáll.</p>
+    <div class="pvlist">${rs.map((r,i)=>`<button type="button" class="btn sm" data-pv="${i}">${ic("play",13)}${esc(r.name)}</button>`).join("")}</div></section>`;
+}
+function pvStart(i){
+  const r=pvRoles()[i];if(!r)return;
+  if(!PV){const roles=pvRoles();if(MP.on)mpStop();PV={P0:P,st0:JSON.stringify(st),MP0:MP,roles}}
+  else{P=PV.P0;st=JSON.parse(PV.st0)}
+  PV.name=r.name;PV.i=i;
+  MP={...PV.MP0,on:true,mode:"member",perm:r.perm,roleName:r.name,ready:false,roles:[],members:[]};
+  P=normP(filterP(PV.P0,r.perm));applyProject();
+  st=Object.assign(fresh(),JSON.parse(PV.st0));
+  // ha még nem indult a nap, egy forgatás közepére ugrunk, hogy minden kipróbálható legyen
+  if(!st.cur){const sb=B.find(b=>b.type==="shoot")||B[0];if(sb){for(const b of B)if(b.i<sb.i)st.act[b.i]={s:b.s,e:b.e};st.sim={on:true,start:sb.s+6,speed:1,base:Date.now()};st.cur={i:sb.i,at:sb.s+1}}}
+  lastHero=null;tabKey="";openRow=null;pvBar();location.hash="#most";renderAll();
+}
+function pvStop(){
+  if(!PV)return;const x=PV;PV=null;
+  MP=x.MP0;P=x.P0;st=JSON.parse(x.st0);applyProject();
+  if(MP.on)mpListen();
+  const b=$("#pvbar");b&&b.remove();document.body.classList.remove("pv");
+  lastHero=null;tabKey="";openRow=null;editSec="csapat";location.hash="#terv";renderAll();
+  toast("Kiléptél a próbából. Minden a régi.");
+}
+function pvBar(){
+  let b=$("#pvbar");if(!b){b=document.createElement("div");b.id="pvbar";($(".hdr")||document.body).prepend(b);document.body.classList.add("pv")}
+  const rs=pvRoles();
+  b.innerHTML=`<span class="pv-l">${ic("users",15)}Szerepben:</span><select aria-label="Szerep">${rs.map((r,i)=>`<option value="${i}" ${i===PV.i?"selected":""}>${esc(r.name)}</option>`).join("")}</select><button type="button" class="btn sm solid" data-pvstop>Kilépés</button>`;
+  b.querySelector("select").onchange=e=>pvStart(+e.target.value);
+  b.querySelector("[data-pvstop]").onclick=pvStop;
+}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-pv]");if(t)pvStart(+t.dataset.pv)});
+
 /* ---------- terv (projekt): betöltés, szerkesztés, Excel be/ki ---------- */
 const PKEY="diszpo-app-project-v1";
 const TYPES=["prep","pres","shoot","move","lunch","res"];
@@ -1565,7 +1614,7 @@ function applyProject(){
   if(st.cur&&st.cur.i>=B.length)st.cur=B.length?{...st.cur,i:B.length-1}:null;
   document.title=(p.title?p.title+" · ":"")+"APERATION";
 }
-function saveP(){if(tour)return;if(isMpAdmin()&&!mpApplying)mpPublishSoon();try{localStorage.setItem(PKEY,JSON.stringify(P));savedMark()}catch(e){toast("Nem sikerült menteni ezen az eszközön (betelt a tárhely?). Mentsd a projektet fájlba: Terv → Fájl → Projekt exportálása.",{tone:"late"})}}
+function saveP(){if(tour||PV)return;if(isMpAdmin()&&!mpApplying)mpPublishSoon();try{localStorage.setItem(PKEY,JSON.stringify(P));savedMark()}catch(e){toast("Nem sikerült menteni ezen az eszközön (betelt a tárhely?). Mentsd a projektet fájlba: Terv → Fájl → Projekt exportálása.",{tone:"late"})}}
 function commit(){saveP();applyProject();tick(true);$$("[data-bs]").forEach(x=>{const b=B[+x.dataset.bs];if(b)x.textContent=hm(b.s)});const w=$("#edwrap");w&&(w.innerHTML=wrapLine())}
 // minden leütés azonnal a készülékre mentődik; a nézet frissítése kis késleltetéssel jön
 let cTimer=null;const commitSoon=()=>{saveP();clearTimeout(cTimer);cTimer=setTimeout(()=>{cTimer=null;commit()},350)};
@@ -1953,7 +2002,7 @@ function renderEdit(){
   else if(editSec==="emberek")body=`<section class="card"><h2>Szereplők</h2><p class="muted small">A Szerep (pl. Anna) ugyanaz legyen, amit az Időrendben a Szereplők mezőbe írsz.</p>
       ${rowsTable("cast",[["role","Szerep"],["name","Színész"],["arr","Érkezés",{ph:"8:00",cls:"w1",im:"numeric"}],["ruha","Ruha",{cls:"w1"}],["smink","Smink",{cls:"w1"}],["haj","Haj",{cls:"w1"}],["onset","Setre",{cls:"w1"}],["phone","Telefon",{type:"tel"}]],"Új szereplő")}</section>
     <section class="card"><h2>Stáb</h2>${rowsTable("crew",[["dept","Részleg"],["pos","Pozíció"],["name","Név"],["arr","Érkezés",{ph:"8:00",cls:"w1"}],["phone","Telefon",{type:"tel"}]],"Új stábtag")}</section>`;
-  else if(editSec==="csapat")body=teamHTML();
+  else if(editSec==="csapat")body=teamHTML()+pvHTML();
   else if(editSec==="shotlist")body=shotlistHTML();
   else body=scriptEditHTML();
   document.documentElement.style.setProperty("--hdr-h",($(".hdr")?$(".hdr").offsetHeight:96)+"px");
@@ -2534,7 +2583,7 @@ const TOUR_F=()=>[
  {state:"move",view:"terv",sec:"idorend",sel:"#tourblock .eb-drag",title:"Átrendezés húzással",html:"A kártya bal szélén lévő <b>⋮⋮ fogantyút</b> megfogva fel-le húzhatod a blokkot. Húzás közben a többi kártya félrecsúszik, és az időpontok már az új sorrendet mutatják. Elengedés után a nap újraszámolódik, és egy koppintással <b>visszavonható</b>. Ha két átállás kerül egymás mellé, az app <b>sárgán jelzi</b>, de engedi."},
  {state:"move",view:"terv",sec:"szkript",sel:".scr-tools",title:"Forgatókönyv jelölése",html:"A <b>Forgatókönyv</b> részen bemásolod a szöveget, aztán fent kiválasztasz egy beállítást (pl. <b>1/2</b>), és <b>a sorokra koppintva</b> jelölöd, melyik részt veszi. A jelenet címére koppintva az egész jelenet ki-be kapcsol, Tartomány módban az első és az utolsó sorral jelölsz. Forgatás közben a <b>Most</b> nézetben így a teljes jelenet olvasható, a vett rész kiemelve."},
  {state:"move",view:"terv",sec:"idorend",sel:'[data-view="terv"] .esec',title:"A terv többi része",html:"<b>Shotlist:</b> a shotok a sztori sorrendjében (plán, optika, mozgás, leírás, storyboard); egy gombbal kerülnek az időrendbe. <b>Projekt:</b> cím, dátum, crew call, wrap-határ, fontos tudnivalók és a fénybeállítások kódjai. <b>Emberek:</b> szereplők és stáb, érkezéssel, telefonnal. <b>Forgatókönyv:</b> másold be a szöveget, az app szétszedi; utána kiválasztasz egy beállítást, és a sorokra koppintva jelölöd, melyik részt veszi. Forgatás közben így a Most nézetben a teljes jelenet olvasható, a vett rész kiemelve. Minden azonnal mentődik ezen az eszközön."},
- {state:"move",view:"terv",sec:"csapat",sel:"#teamcard",title:"Közös munka a stábbal",html:"A <b>Csapat</b> részen megoszthatod a napot: minden pozíció (2nd AD, operatőr, szkriptes, kellékes, színész…) kap egy <b>belépőkódot</b>. Aki beírja (Kezdés → <b>Csatlakozás kóddal</b>), a saját telefonján élőben látja, mi megy most és mennyit csúsztunk. Pozíciónként te döntöd el, <b>ki mit lát</b> (pl. telefonszámok, forgatókönyv), és ki <b>vezérelheti</b> a napot. A <b>szkriptes</b> alapból <b>Take-napló</b> jogot kap: mérheti a take-eket, csillagozhat és jegyzetelhet, de a napot nem lépteti. A kitiltás és az új kód egy koppintás."},
+ {state:"move",view:"terv",sec:"csapat",sel:"#teamcard",title:"Közös munka a stábbal",html:"A <b>Csapat</b> részen megoszthatod a napot: minden pozíció (2nd AD, operatőr, szkriptes, kellékes, színész…) kap egy <b>belépőkódot</b>. Aki beírja (Kezdés → <b>Csatlakozás kóddal</b>), a saját telefonján élőben látja, mi megy most és mennyit csúsztunk. Pozíciónként te döntöd el, <b>ki mit lát</b> (pl. telefonszámok, forgatókönyv), és ki <b>vezérelheti</b> a napot. A <b>szkriptes</b> alapból <b>Take-napló</b> jogot kap: mérheti a take-eket, csillagozhat és jegyzetelhet, de a napot nem lépteti. Lent a <b>Szerepek kipróbálása</b> gombjaival egyedül is megnézheted, mit lát és mit tehet az egyes pozíció. A kitiltás és az új kód egy koppintás."},
  {state:"move",view:"terv",sec:"fajl",sel:'[data-do="projexport"]',title:"Mentés és biztonság",html:"Minden módosítás <b>azonnal mentődik</b> ezen az eszközön, és az app percenként biztonsági pillanatképet is készít, ami a Fájl részen visszaállítható. Ha kész a terv, a <b>Projekt exportálása</b> egyetlen fájlba ment mindent (képekkel, jelölésekkel, a nap állásával), ami bármelyik APERATION-ben visszatölthető. Excelbe is mentheted, gépen javítani."},
  {state:"move",title:"Ennyi az egész",html:()=>tour&&tour.tmpP?"Kezdd a <b>Terv</b> fülön: tölts be egy Excel-táblázatot, nyisd meg a mintát, vagy írd be a napot. Ezt a bemutatót az Info fülön bármikor újranézheted.":"Forgatás előtt érdemes egyszer végigmenni a napon <b>próba módban</b>, gyorsított órával. Ezt a bemutatót az Info fülön bármikor újranézheted."}
 ];
