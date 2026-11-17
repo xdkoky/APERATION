@@ -893,6 +893,10 @@ details[open]>:not(summary){animation:openIn .32s var(--ease-out) both}
 /* az app beúszása a splash mögül */
 html.booting .app,html.booting .bottom{transform:scale(.84);transform-origin:var(--po,50% 30%)}
 html.boot-in .app,html.boot-in .bottom{transition:transform 1.25s cubic-bezier(.2,.75,.2,1);transform:none;transform-origin:var(--po,50% 30%)}
+/* átmenet közben a fekete réteget, az ablakot és a jelet vászon rajzolja, valódi mozgási elmosással */
+.boot.cv{background:transparent}
+.boot.cv .scr,.boot.cv .bl .lg-m,.boot.cv .bl circle{visibility:hidden}
+.boot canvas.mb{position:absolute;left:0;top:0;pointer-events:none}
 </style>
 
 <div class="boot" id="boot" role="presentation" aria-hidden="true"><div class="scr"><pre id="bootpre"></pre></div><div class="bl"></div><div class="flash"></div></div>
@@ -910,6 +914,11 @@ html.boot-in .app,html.boot-in .bottom{transition:transform 1.25s cubic-bezier(.
   let soundOn=true;try{soundOn=localStorage.getItem("aperation-boot-sound")!=="0"}catch(e){}
   const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
   box.querySelector(".bl").innerHTML=(logo||"")+'<div class="bar"><i></i></div>';
+  // a jel (hatszög-gyűrű) külön képként a vászonhoz: felirat és sötét középkör nélkül
+  const markImg=new Image();
+  if(logo){const m=logo.replace(/<title>[\s\S]*?<\/title>/,"").replace(/<path class="lg-t"[^>]*?\/>/g,"").replace(/<circle[^>]*?\/>/g,"")
+      .replace(/fill="#[0-9A-Fa-f]{3,6}"/g,'fill="#eeeeee"').replace("<svg ",'<svg width="792" height="477" ');
+    markImg.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(m)}
   const pre=document.getElementById("bootpre"),d=new Date(),p2=n=>String(n).padStart(2,"0"),on=navigator.onLine;
   const L=(k,v)=>(k+" ").padEnd(20,".")+" "+v;
   let out=[],mem=-1,dots=0,done=false,raf=0,audio=null,t0=0,line="";
@@ -931,34 +940,59 @@ html.boot-in .app,html.boot-in .bottom{transition:transform 1.25s cubic-bezier(.
   for(let i=0;i<5;i++)typeAt(KEYS[45+i],"*");
   enter(KEYS[50],["Hozzáférés megadva. Indítás…"],"");
   // dallam: 5,32 / 6,10 / 7,04 – a szöveg a dallam előtt elsötétül
-  EV.push([5.26,()=>{out=[];line="";pre.textContent=""}],[5.32,()=>box.classList.add("m")],[6.10,()=>box.classList.add("w")],[7.04,()=>box.classList.add("b")],[7.5,()=>warp()]);
+  EV.push([5.26,()=>{out=[];line="";pre.textContent=""}],[5.32,()=>box.classList.add("m")],[6.10,()=>box.classList.add("w")],[7.04,()=>{box.classList.add("b");setTimeout(prep,60)}],[7.5,()=>warp()]);
   EV.sort((x,y)=>x[0]-y[0]);
   let ei=0;
   const loop=()=>{if(done)return;const t=audio&&!audio.paused?audio.currentTime:(performance.now()-t0)/1000;
     if(mem>=0&&mem<640){mem=Math.max(0,Math.min(640,Math.round((t-.3)/.42*640/16)*16));draw()}
     while(ei<EV.length&&t>=EV[ei][0])EV[ei++][1]();
     raf=requestAnimationFrame(loop)};
+  // az átmenet vásznait és a jel nagy felbontású képét előre elkészítjük (a töltősáv alatt), hogy az átmenet ne akadjon meg
+  let PR=null;
+  function prep(){if(PR)return PR;const svg=box.querySelector(".bl svg");if(!svg||reduce)return null;
+    // a jel helye és mérete a képernyőn (viewBox 493 60 792 477; a jel közepe 679,9/215,9, befoglaló doboza 545–815 × 60–372)
+    const r=svg.getBoundingClientRect(),ux=r.width/792,uy=r.height/477,X=v=>r.left+(v-493)*ux,Y=v=>r.top+(v-60)*uy;
+    const cx=X(679.87),cy=Y(215.87),mw=270*ux,W=innerWidth,Hh=innerHeight,bs=Math.min(1.5,devicePixelRatio||1);
+    const far=Math.max(Math.hypot(cx,cy),Math.hypot(W-cx,cy),Math.hypot(cx,Hh-cy),Math.hypot(W-cx,Hh-cy));
+    const mk=()=>{const c=document.createElement("canvas");c.width=Math.round(W*bs);c.height=Math.round(Hh*bs);return c};
+    const cv=mk();cv.className="mb";cv.style.width=W+"px";cv.style.height=Hh+"px";cv.style.visibility="hidden";box.insertBefore(cv,box.querySelector(".bl"));
+    const mL=X(545),mT=Y(60),mW=270*ux,mH=312*uy,K=4*bs,mc=document.createElement("canvas");mc.width=Math.round(mW*K);mc.height=Math.round(mH*K);
+    let markOk=false;try{if(markImg.complete&&markImg.naturalWidth){mc.getContext("2d").drawImage(markImg,-(545-493)*ux*K,0,792*ux*K,477*uy*K);markOk=true}}catch(e){}
+    const hc=mk(),rc=mk();
+    return PR={cx,cy,mw,W,Hh,bs,far,cv,ctx:cv.getContext("2d"),hc,hx:hc.getContext("2d"),rc,rx:rc.getContext("2d"),mc,mL,mT,mW,mH,markOk}}
   function warp(){if(box.classList.contains("warp"))return;box.classList.add("warp");
-    const svg=box.querySelector(".bl svg");
-    if(!svg||reduce){root.classList.add("boot-in");box.style.transition="opacity .5s";box.style.opacity="0";setTimeout(finish,520);return}
-    // a jel közepe és mérete a képernyőn (a logó viewBox-ában a jel közepe 680/216, szélessége 270 egység)
-    const r=svg.getBoundingClientRect(),cx=r.left+r.width*.236,cy=r.top+r.height*.327,mw=r.width*270/792;
+    const q=prep();
+    if(!q){root.classList.add("boot-in");box.style.transition="opacity .5s";box.style.opacity="0";setTimeout(finish,520);return}
+    const {cx,cy,mw,W,Hh,bs,far,cv,ctx,hc,hx,rc,rx,mc,mL,mT,mW,mH,markOk}=q;
     root.style.setProperty("--po",cx+"px "+cy+"px");
-    const far=Math.max(Math.hypot(cx,cy),Math.hypot(innerWidth-cx,cy),Math.hypot(cx,innerHeight-cy),Math.hypot(innerWidth-cx,innerHeight-cy));
-    const w0=mw*.34,wEnd=far*2.3,sEnd=wEnd/w0,H=1.1547;
-    const hex="url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 86.6 100' preserveAspectRatio='none'%3E%3Cpath d='M43.3 0L86.6 25V75L43.3 100L0 75V25Z'/%3E%3C/svg%3E\")";
-    const bs=box.style;bs.webkitMaskImage=bs.maskImage="linear-gradient(#000,#000),"+hex;bs.webkitMaskRepeat=bs.maskRepeat="no-repeat";
-    bs.webkitMaskComposite="xor";bs.maskComposite="exclude";
-    svg.style.transformOrigin="23.6% 32.7%";svg.style.willChange="transform";
+    const w0=mw*.34,sEnd=far*2.35/w0,HX=1.1547;
+    cv.style.visibility="";box.classList.add("cv");
     setTimeout(()=>{root.classList.add("boot-in")},30);
-    const st=performance.now(),D=1050,ease=k=>k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
-    const f=()=>{if(done)return;const k=Math.min(1,(performance.now()-st)/D),e=ease(k),sc=Math.pow(sEnd,e),w=w0*sc,h=w*H;
-      // a hatszög-ablak a jel közepéből nő; a jel ugyanannyira nő, így a gyűrűje az ablak peremén marad
-      svg.style.transform="scale("+(w/(mw*.34))+")";
-      const sz="100% 100%,"+w+"px "+h+"px",pos="0 0,"+(cx-w/2)+"px "+(cy-h/2)+"px";bs.webkitMaskSize=bs.maskSize=sz;bs.webkitMaskPosition=bs.maskPosition=pos;
-      if(k<1)requestAnimationFrame(f);else finish()};
-    // egy pillanatig csak a jel közepe nyílik (fény a hatszög közepén), aztán kitárul
-    bs.webkitMaskSize=bs.maskSize="100% 100%,0px 0px";requestAnimationFrame(f)}
+    const st=performance.now(),D=1100,ease=k=>k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
+    const scaleAt=ms=>Math.pow(sEnd,ease(Math.min(1,Math.max(0,ms/D))));
+    // mozgási elmosás: egy képkockán belül a „záridő” (26 ms) alatti mozgást gyűjtjük össze, sok köztes állapot átlagaként.
+    // Így a gyűrű és az ablak pereme a nagyítás középpontjából sugárirányban csíkozódik, gyorsabb mozgásnál hosszabban.
+    const SHUT=26;
+    // a gyűrű képéből csak a képernyőre eső részt rajzoljuk (nagy nagyításnál ez a különbség a sima és a szaggatott futás között)
+    const blit=(dx,dy,dw,dh)=>{const x0=Math.max(0,dx),y0=Math.max(0,dy),x1=Math.min(W,dx+dw),y1=Math.min(Hh,dy+dh);if(x1<=x0||y1<=y0)return;
+      const kx=mc.width/dw,ky=mc.height/dh;rx.drawImage(mc,(x0-dx)*kx,(y0-dy)*ky,(x1-x0)*kx,(y1-y0)*ky,x0,y0,x1-x0,y1-y0)};
+    const hexPath=(c,x,y,w)=>{const h=w*HX;c.beginPath();c.moveTo(x,y-h/2);c.lineTo(x+w/2,y-h/4);c.lineTo(x+w/2,y+h/4);c.lineTo(x,y+h/2);c.lineTo(x-w/2,y+h/4);c.lineTo(x-w/2,y-h/4);c.closePath()};
+    const f=()=>{if(done)return;const ms=performance.now()-st;
+      // a minták száma a csík hosszához igazodik (kb. 4 képpontonként egy), a kis véletlen eltolás elsimítja a maradék lépcsőket
+      const sNow=scaleAt(ms),streak=(sNow/scaleAt(ms-SHUT)-1)*far,N=Math.max(3,Math.min(mw*.2*sNow>W*.5?12:24,Math.ceil(streak/4))),jit=Math.random()/N;  // nagy gyűrűnél kevesebb minta (a véletlen eltolás elsimítja)
+      hx.setTransform(bs,0,0,bs,0,0);rx.setTransform(bs,0,0,bs,0,0);
+      hx.globalCompositeOperation=rx.globalCompositeOperation="source-over";hx.globalAlpha=rx.globalAlpha=1;hx.clearRect(0,0,W,Hh);rx.clearRect(0,0,W,Hh);
+      hx.globalCompositeOperation=rx.globalCompositeOperation="lighter";hx.globalAlpha=rx.globalAlpha=1/N;hx.fillStyle="#fff";
+      for(let i=0;i<N;i++){const sc=scaleAt(ms-SHUT*Math.min(1,i/N+jit));
+        // ha az ablak már az egész képernyőt lefedi, vagy a gyűrű teljesen kívül esik, azt a mintát nem kell rajzolni
+        if(w0*sc*.5>far)hx.fillRect(0,0,W,Hh);else{hexPath(hx,cx,cy,w0*sc);hx.fill()}
+        if(markOk&&mw*.2*sc<far)blit(cx+(mL-cx)*sc,cy+(mT-cy)*sc,mW*sc,mH*sc)}
+      // összerakás: fekete réteg, kivágva belőle az (elmosott) ablak, rá az (elmosott) gyűrű
+      ctx.globalCompositeOperation="source-over";ctx.globalAlpha=1;ctx.fillStyle="#000";ctx.fillRect(0,0,cv.width,cv.height);
+      ctx.globalCompositeOperation="destination-out";ctx.drawImage(hc,0,0);
+      ctx.globalCompositeOperation="source-over";ctx.drawImage(rc,0,0);
+      if(ms<D)requestAnimationFrame(f);else finish()};
+    f()}
   function finish(){if(done)return;done=true;cancelAnimationFrame(raf);root.classList.remove("booting");root.classList.add("boot-in");
     if(audio&&!audio.paused&&audio.currentTime<7.3){const a=audio,v0=a.volume,st=performance.now();const f=()=>{const k=(performance.now()-st)/1400;if(k>=1||a.paused){a.pause();return}a.volume=Math.max(0,v0*(1-k)*(1-k));requestAnimationFrame(f)};f()}
     if(box.parentNode)box.parentNode.removeChild(box);setTimeout(()=>root.classList.remove("boot-in"),1200)}
