@@ -1,8 +1,8 @@
 /* ---------- nyomtatható változatok ----------
-   Diszpó, forgatókönyv, shotlist, szkriptlap az aktuális tervből. Nyomtatás (vagy PDF-mentés) a böngésző
+   Diszpó, forgatókönyv (a sztori), shotlist, szkript (a szkriptes lapja) az aktuális tervből. Nyomtatás (vagy PDF-mentés) a böngésző
    nyomtatási ablakával; ha az nem érhető el, a dokumentum HTML-fájlként menthető és onnan nyomtatható. */
 const PRINT_CSS=/*__PRINT_CSS__*/"";
-const PR_KINDS=[["diszpo","Diszpó"],["forgatokonyv","Forgatókönyv"],["shotlist","Shotlist"],["szkriptlap","Szkriptlap"]];
+const PR_KINDS=[["diszpo","Diszpó"],["forgatokonyv","Forgatókönyv"],["shotlist","Shotlist"],["szkriptlap","Szkript"]];
 const prDate=()=>HASDATE?SHOOT_DATE.toLocaleDateString("hu-HU",{year:"numeric",month:"long",day:"numeric",weekday:"long"}):"";
 const prHead=(kind)=>`<div class="pr-head"><div><div class="kind">${kind}</div><h1>${esc(D.title||"Forgatási nap")}</h1></div><div class="meta">${esc(prDate())}${D.location?`<br>${esc(D.location)}`:""}</div></div>`;
 const prFoot=()=>`<div class="foot">APERATION™ · © ${COPY_YEAR} ${esc(AUTHOR)} · nyomtatva ${new Date().toLocaleString("hu-HU",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}</div>`;
@@ -28,7 +28,7 @@ function prDiszpo(){
     ${prFoot()}</div>`;
 }
 function prScript(){
-  if(!D.script.length)return`<div class="pr-doc">${prHead("Forgatókönyv")}<p>A tervben nincs szkript. A Terv → Szkript részen bemásolható.</p>${prFoot()}</div>`;
+  if(!D.script.length)return`<div class="pr-doc">${prHead("Forgatókönyv")}<p>A tervben nincs forgatókönyv. A Terv → Forgatókönyv részen bemásolható.</p>${prFoot()}</div>`;
   let prev="";
   return`<div class="pr-doc">${prHead("Forgatókönyv")}<div class="scr">${D.script.map(l=>{const ids=[...new Set(l.cov.flatMap(c=>c.ids))],key=ids.join(", "),show=key&&key!==prev;prev=key;
     return`<div class="ln"><div class="tag">${show?esc(key):""}</div><div class="${l.t}">${esc(l.x)}</div></div>`}).join("")}</div>${prFoot()}</div>`;
@@ -46,13 +46,13 @@ function prShotlist(){
 }
 function prSkript(){
   const sh=prShoots();
-  if(!sh.length)return`<div class="pr-doc">${prHead("Szkriptlap")}<p>A tervben nincs forgatási blokk.</p></div>`;
+  if(!sh.length)return`<div class="pr-doc">${prHead("Szkript")}<p>A tervben nincs forgatási blokk.</p></div>`;
   const rows=10;
   return`<div class="pr-doc">${sh.map((b,n)=>{const s=D.shots[b.label]||{talent:[],segs:[],props:[]};
     const ex=s.segs.flatMap(g=>g.lines).slice(0,14);
     return`<div class="sk"><div class="sk-head"><div class="shot">${esc(b.label)}</div>
       <div class="info"><b>${esc(b.setup||"")}</b>${b.group?` · fény ${esc(b.group)}`:""}<br>${hm(b.s)}–${hm(b.e)} · ${b.d}′${s.talent.length?` · ${esc(s.talent.join(", "))}`:""}</div>
-      <div class="proj">${esc(D.title||"")}<br>Szkriptlap ${n+1} / ${sh.length}</div></div>
+      <div class="proj">${esc(D.title||"")}<br>Szkript ${n+1} / ${sh.length}</div></div>
       ${ex.length?`<div class="sk-ex">${prLines(ex)}</div>`:""}
       <table><thead><tr><th style="width:12mm">Take</th><th style="width:16mm">Idő</th><th style="width:14mm">Hossz</th><th style="width:12mm">Jó?</th><th>Megjegyzés (játék, szöveg, technika)</th></tr></thead>
       <tbody>${Array.from({length:rows},(_,i)=>`<tr><td class="num">${i+1}</td><td></td><td></td><td style="text-align:center">☐</td><td></td></tr>`).join("")}</tbody></table>
@@ -77,7 +77,7 @@ async function doPrint(kinds){
 function prSave(kinds){saveFile(prName(kinds)+".html",new Blob([prDoc(kinds)],{type:"text/html"}),"text/html")}
 function printCard(){
   return`<section class="card"><h2>Nyomtatás</h2>
-    <p class="muted small">A mostani tervből készül, A4-re. A nyomtatás ablakában <b>PDF-be is mentheted</b> (iPhone-on: Nyomtatás → Megosztás → Mentés a Fájlokba). A szkriptlapon shotonként egy oldal, sok hellyel a jegyzeteknek.</p>
+    <p class="muted small">A mostani tervből készül, A4-re. A nyomtatás ablakában <b>PDF-be is mentheted</b> (iPhone-on: Nyomtatás → Megosztás → Mentés a Fájlokba). A <b>Szkript</b> a szkriptes lapja: shotonként egy oldal, sok hellyel a jegyzeteknek.</p>
     <div class="wgrid">${PR_KINDS.map(([k,l])=>`<button class="btn" type="button" data-print="${k}" ${B.length?"":"disabled"}>${ic("doc",16)}${l}</button>`).join("")}</div>
     <div class="wgrid"><button class="btn solid" type="button" data-print="all" ${B.length?"":"disabled"}>${ic("doc",16)}Mind a négy egyben</button></div>
     <p class="muted small">Ha a nyomtatás nem nyílik meg: <button type="button" class="linkbtn" data-printsave="all" ${B.length?"":"disabled"}>mentés fájlba</button>, és onnan nyomtatható.</p></section>`;

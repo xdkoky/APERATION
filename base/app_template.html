@@ -696,9 +696,9 @@ function recCard(b){
 function shootDetail(b){
   const sh=D.shots[b.label];if(!sh)return"";
   if(detailSeg!=="szkript")detailSeg="setre";
-  const tabs=[["setre","Setre · kellék"],["szkript","Szkript"]];
+  const tabs=[["setre","Setre · kellék"],["szkript","Forgatókönyv"]];
   const body=detailSeg==="szkript"
-    ?`<div class="script">${sh.segs.map(s=>`${s.lab?`<div><span class="seglab">${esc(s.lab)}</span></div>`:""}${screenplay(s.lines)}`).join('<hr class="seghr">')||'<p class="muted">Ehhez a shothoz nincs szkript-részlet. A Terv fül Szkript részén jelölheted, melyik sort veszi.</p>'}</div>`
+    ?`<div class="script">${sh.segs.map(s=>`${s.lab?`<div><span class="seglab">${esc(s.lab)}</span></div>`:""}${screenplay(s.lines)}`).join('<hr class="seghr">')||'<p class="muted">Ehhez a shothoz nincs forgatókönyv-részlet. A Terv fül Forgatókönyv részén jelölheted, melyik sort veszi.</p>'}</div>`
     :`${sh.story?`<div class="sect"><span class="cap">Sztori</span><p>${esc(sh.story)}</p></div>`:""}${sh.talent.length?`<div class="sect"><span class="cap">Kell a setre</span>${people(sh.talent)}</div>`:""}<div class="sect"><span class="cap">Kellék · kontinuitás</span>${propList(sh.props)}</div>`;
   return`<section class="card" id="detailcard">${shotImgs(sh)}<div class="seg" role="group" aria-label="Részletek">${tabs.map(([k,l])=>`<button type="button" data-seg="${k}" aria-pressed="${detailSeg===k}">${l}</button>`).join("")}</div>${body}</section>`;
 }
@@ -830,7 +830,7 @@ function renderScript(){
     if(onlyCur&&!hot&&l.t!=="sh")return"";
     const key=ids.join(","),show=key!==prev;prev=key;
     return`<div class="ln ${hot?"hot":""}"><div class="gut">${(show?ids:[]).map(x=>`<span class="mini ${curIds.includes(x)?"hot":""}">${esc(x)}</span>`).join("")}</div><div class="script"><div class="${map[l.t]||"ac"}">${esc(l.x)}</div></div></div>`}).join("");
-  v.innerHTML=`<div class="vh">Szkript</div><div class="seg" style="margin-bottom:14px" role="group" aria-label="Szűrés"><button type="button" data-only="0" aria-pressed="${!onlyCur}">Teljes szkript</button><button type="button" data-only="1" aria-pressed="${onlyCur}">Csak: ${esc(curIds.join(", ")||"–")}</button></div>
+  v.innerHTML=`<div class="vh">Forgatókönyv</div><div class="seg" style="margin-bottom:14px" role="group" aria-label="Szűrés"><button type="button" data-only="0" aria-pressed="${!onlyCur}">Teljes forgatókönyv</button><button type="button" data-only="1" aria-pressed="${onlyCur}">Csak: ${esc(curIds.join(", ")||"–")}</button></div>
     <section class="card fs" style="padding:14px 8px;gap:0">${lines}</section>`;
   v.querySelectorAll("[data-only]").forEach(x=>x.onclick=()=>{onlyCur=x.dataset.only==="1";renderScript();scrollToHot()});
 }
@@ -897,7 +897,7 @@ function renderInfo(){
 
 /*__EDITOR_JS__*/
 /* ---------- útvonal ---------- */
-const VIEWS=[["most","Most","now"],["idorend","Időrend","list"],["szkript","Szkript","doc"],["stab","Stáb","users"],["terv","Terv","edit"],["info","Info","sliders"]];
+const VIEWS=[["most","Most","now"],["idorend","Időrend","list"],["szkript","Könyv","doc"],["stab","Stáb","users"],["terv","Terv","edit"],["info","Info","sliders"]];
 // Terv nélkül csak az kap fület, aminek van értelme: Kezdés (betöltés), Terv (beírás), Info.
 const VIEWS0=[["most","Kezdés","upload"],["terv","Terv","edit"],["info","Info","sliders"]];
 let tabKey="";
@@ -991,15 +991,15 @@ const TOUR_F=()=>[
  {state:"shoot",sel:"#go",title:"Kész: ezt nyomod a legtöbbször",html:"Amikor egy blokk véget ér, nyomd meg a <b>Kész</b> gombot. Az app rögzíti az időt, és elindítja a következő blokkot. A gomb alján mindig látod, mi jön."},
  {state:"shoot",sel:"#dock",title:"Vissza és +5 perc",html:"<b>‹</b>&nbsp; Mellényomtál? Visszalép az előző blokkra. Minden lépés után pár másodpercig egy Visszavonás gomb is megjelenik.<br><b>+5′</b>&nbsp; Több idő kell? Öt percet ad a mostani blokkhoz, a várható wrap azonnal frissül."},
  {state:"shoot",sel:".rec",title:"Take-ek",html:"A piros gomb indítja és megállítja a take stopperét. A take-ek sorban megjelennek alatta, a <b>csillaggal</b> megjelölöd a jót."},
- {state:"shoot",sel:"#detailcard",title:"Minden, ami a shothoz kell",html:"Fent a shot <b>storyboard-rajza és világítási terve</b>: koppintásra teljes minőségben nyílnak meg, csíptetéssel nagyíthatók. <b>Setre · kellék:</b> kit kell hívni, mi legyen a képben. <b>Szkript:</b> a szövegrész, amit most veszünk."},
+ {state:"shoot",sel:"#detailcard",title:"Minden, ami a shothoz kell",html:"Fent a shot <b>storyboard-rajza és világítási terve</b>: koppintásra teljes minőségben nyílnak meg, csíptetéssel nagyíthatók. <b>Setre · kellék:</b> kit kell hívni, mi legyen a képben. <b>Forgatókönyv:</b> a szövegrész, amit most veszünk."},
  {state:"shoot",sel:"#formcard",title:"Mi jön utána",html:"Már forgatás közben látod a következő beállítást: mennyi idő az átállás, <b>változik-e a fény</b>, és kit kell majd a setre hívni. Így időben szólhatsz a részlegeknek."},
  {state:"move",sel:HERO,title:"Átállás",html:"Átálláskor a kártya azt mutatja, <b>mire álltok át</b>. Alatta ott a fényváltás, a kellékek, a storyboard és a vilkó. Öt perccel a vége előtt az app jelez: <b>Színészeket a setre!</b>"},
- {state:"move",sel:"#tabs",title:"A többi nézet",html:"<b>Időrend:</b> az egész nap; egy sorra koppintva odaugorhatsz vagy kihagyhatod. <b>Szkript:</b> a teljes szöveg, shotonként jelölve. <b>Stáb:</b> érkezések pipálása, telefonszámok. <b>Terv:</b> itt viszed be és írod át a napot. <b>Info:</b> próba mód, hang, nullázás, ez a bemutató."},
+ {state:"move",sel:"#tabs",title:"A többi nézet",html:"<b>Időrend:</b> az egész nap; egy sorra koppintva odaugorhatsz vagy kihagyhatod. <b>Könyv:</b> a teljes forgatókönyv, shotonként jelölve. <b>Stáb:</b> érkezések pipálása, telefonszámok. <b>Terv:</b> itt viszed be és írod át a napot. <b>Info:</b> próba mód, hang, nullázás, ez a bemutató."},
  {state:"move",view:"terv",sec:"fajl",sel:"#drop",title:"A saját napod: Excelből",html:"A <b>Terv</b> fül <b>Fájl</b> részén töltöd be a táblázatot: koppints ide, vagy húzd rá a fájlt az appra. A legbiztosabb a <b>Forgatási sablon</b>, ugyanitt letölthető. Más táblázatot is felismer, ha van benne <b>Perc</b> (vagy Kezdés), <b>Típus</b> és <b>Blokk / shot</b> oszlop. Betöltés előtt megmutatja, mit talált, és csak a <b>Betöltés</b> gombra cseréli a tervet."},
  {state:"move",view:"terv",sec:"idorend",sel:"#tourblock",title:"Vagy írd be itt",html:"Az <b>Időrend</b>ben minden blokk egy kártya: <b>típus, perc, shot</b>. A kezdési idők maguktól számolódnak a crew callból. A jobb oldali nyíl nyitja a részleteket: beállítás, fény, szereplők, kellékek, sztori, képek. Új blokkot a lista alján adsz hozzá; a törlés visszavonható."},
  {state:"move",view:"terv",sec:"idorend",sel:"#tourblock .eb-drag",title:"Átrendezés húzással",html:"A kártya bal szélén lévő <b>⋮⋮ fogantyút</b> megfogva fel-le húzhatod a blokkot. Húzás közben a többi kártya félrecsúszik, és az időpontok már az új sorrendet mutatják. Elengedés után a nap újraszámolódik, és egy koppintással <b>visszavonható</b>. Ha két átállás kerül egymás mellé, az app <b>sárgán jelzi</b>, de engedi."},
- {state:"move",view:"terv",sec:"idorend",sel:'[data-view="terv"] .esec',title:"A terv többi része",html:"<b>Projekt:</b> cím, dátum, crew call, wrap-határ, fontos tudnivalók és a fénybeállítások kódjai. <b>Emberek:</b> szereplők és stáb, érkezéssel, telefonnal. <b>Szkript:</b> másold be a forgatókönyvet, az app szétszedi; utána soronként beírod, melyik shot veszi. Minden azonnal mentődik ezen az eszközön."},
- {state:"move",view:"terv",sec:"csapat",sel:"#teamcard",title:"Közös munka a stábbal",html:"A <b>Csapat</b> részen megoszthatod a napot: minden pozíció (2nd AD, operatőr, szkriptes, kellékes, színész…) kap egy <b>belépőkódot</b>. Aki beírja (Kezdés → <b>Csatlakozás kóddal</b>), a saját telefonján élőben látja, mi megy most és mennyit csúsztunk. Pozíciónként te döntöd el, <b>ki mit lát</b> (pl. telefonszámok, szkript), és ki <b>vezérelheti</b> a napot. A kitiltás és az új kód egy koppintás."},
+ {state:"move",view:"terv",sec:"idorend",sel:'[data-view="terv"] .esec',title:"A terv többi része",html:"<b>Projekt:</b> cím, dátum, crew call, wrap-határ, fontos tudnivalók és a fénybeállítások kódjai. <b>Emberek:</b> szereplők és stáb, érkezéssel, telefonnal. <b>Forgatókönyv:</b> másold be a szöveget, az app szétszedi; utána soronként beírod, melyik shot veszi. Minden azonnal mentődik ezen az eszközön."},
+ {state:"move",view:"terv",sec:"csapat",sel:"#teamcard",title:"Közös munka a stábbal",html:"A <b>Csapat</b> részen megoszthatod a napot: minden pozíció (2nd AD, operatőr, szkriptes, kellékes, színész…) kap egy <b>belépőkódot</b>. Aki beírja (Kezdés → <b>Csatlakozás kóddal</b>), a saját telefonján élőben látja, mi megy most és mennyit csúsztunk. Pozíciónként te döntöd el, <b>ki mit lát</b> (pl. telefonszámok, forgatókönyv), és ki <b>vezérelheti</b> a napot. A kitiltás és az új kód egy koppintás."},
  {state:"move",view:"terv",sec:"fajl",sel:'[data-do="export"]',title:"Mentés Excelbe",html:"A kész tervet <b>Excelbe mentheted</b>. Ugyanolyan, mint a sablon: elküldheted a stábnak, gépen javíthatod, és visszatöltheted. A telefonról feltett képek nem kerülnek bele, csak a kép-linkek."},
  {state:"move",title:"Ennyi az egész",html:()=>tour&&tour.tmpP?"Kezdd a <b>Terv</b> fülön: tölts be egy Excel-táblázatot, nyisd meg a mintát, vagy írd be a napot. Ezt a bemutatót az Info fülön bármikor újranézheted.":"Forgatás előtt érdemes egyszer végigmenni a napon <b>próba módban</b>, gyorsított órával. Ezt a bemutatót az Info fülön bármikor újranézheted."}
 ];

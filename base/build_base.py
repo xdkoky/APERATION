@@ -93,7 +93,7 @@ lines = [
     ("Új blokk: húzz fel egy üres sort a lista aljáról oda, ahová kell (abban már benne vannak a képletek). Törlés: a sor tartalmát töröld, vagy a sort.", None),
     ("A lap tetején látod a számolt véget és hogy mennyi a tartalék vagy a túllépés. Sárga: két átállás egymás után (nem hiba, csak nézd át). Piros idő: a blokk a wrap-határ után ér véget.", None),
     ("Típus: Előkészület, Prezentálás, Forgatás, Átállás, Ebéd, Tartalék (legördülő lista).", None),
-    ("Blokk / shot: forgatásnál a shot száma (pl. 1/1, vagy több: 2/1A + 2/1B). Erre hivatkozik a Szkript lap Shotok oszlopa.", None),
+    ("Blokk / shot: forgatásnál a shot száma (pl. 1/1, vagy több: 2/1A + 2/1B). Erre hivatkozik a Forgatókönyv lap Shotok oszlopa.", None),
     ("Fény: a Fények lap kódja (pl. A). Az app ebből tudja, mikor változik a fény.", None),
     ("Szereplők: vesszővel (pl. Anna, Bence), ugyanúgy írva, mint a Szereplők lap Szerep oszlopában. Kellékek: cellán belül soronként (Alt+Enter).", None),
     ("Kihagyható: „igen”, ha csúszásnál ezt lehet elhagyni; az app késésnél felajánlja.", None),
@@ -102,9 +102,9 @@ lines = [
     ("Időpontok óra:perc formában (8:30). A Stáb lapon a részleg minden sorba írható; a telefonszám az appban hívható.", None),
     ("Fények", Font(bold=True, size=12)),
     ("Kód (rövid, pl. A, K1, E), név és leírás: lámpák, szűrők, mi változik. Kép (URL): a fényterv / vilkó nyilvános linkje; telefonról az appban is feltölthető (Terv → Projekt → Fénybeállítások).", None),
-    ("Szkript", Font(bold=True, size=12)),
+    ("Forgatókönyv", Font(bold=True, size=12)),
     ("Soronként: Típus (Jelenet, Akció, Szereplő, Instrukció, Dialógus, Vége), Szöveg, és Shotok: melyik shot veszi ezt a sort (pl. 1/1, 1/3).", None),
-    ("A szkriptet az appba szövegként is bemásolhatod (Terv → Szkript), ott magától szétszedi.", None),
+    ("A forgatókönyvet az appba szövegként is bemásolhatod (Terv → Forgatókönyv), ott magától szétszedi.", None),
     ("", None),
     ("Más táblázat is működik: az app a fejlécsorok alapján keresi a Perc/Kezdés, Típus, Blokk / shot oszlopokat, és a Színész, Pozíció + Név, Kód, Szöveg + Típus táblázatokat.", Font(color="555555")),
 ]
@@ -178,7 +178,7 @@ for t, col in (("Forgatás", "D9F4F7"), ("Átállás", "E6EAFF"), ("Ebéd", "F1E
     ws.conditional_formatting.add(rng, FormulaRule(formula=[f'$D{R0}="{t}"'], fill=F(col)))
 ws.conditional_formatting.add(f"E{R0}:E{RL}", FormulaRule(formula=[f'$D{R0}="Forgatás"'], font=Font(bold=True)))
 
-# Szereplők, Stáb, Fények, Szkript
+# Szereplők, Stáb, Fények, Forgatókönyv
 def table(name, cols, data, n=40, valid=None):
     ws = wb.create_sheet(name); header(ws, cols)
     for i, row in enumerate(data, 2):
@@ -199,7 +199,7 @@ ws = table("Stáb", [("Részleg", 20), ("Pozíció", 20), ("Név", 24), ("Érkez
 for r in ws.iter_rows(min_row=2, min_col=4, max_col=4):
     for c in r: c.number_format = "h:mm"
 table("Fények", [("Kód", 8), ("Név", 26), ("Leírás", 70), ("Kép (URL)", 30)], [(g["code"], g["name"], g["desc"], "") for g in MINTA["groups"]], 20)
-table("Szkript", [("Típus", 13), ("Szöveg", 80), ("Shotok", 16)], [(ST[l["t"]], l["x"], ", ".join(l["ids"])) for l in MINTA["script"]], 300,
+table("Forgatókönyv", [("Típus", 13), ("Szöveg", 80), ("Shotok", 16)], [(ST[l["t"]], l["x"], ", ".join(l["ids"])) for l in MINTA["script"]], 300,
       valid=("A", ",".join(ST.values())))
 wb.properties.creator = "Tóth Tamás János"; wb.properties.title = "Forgatási sablon · APERATION"
 wb.active = 1

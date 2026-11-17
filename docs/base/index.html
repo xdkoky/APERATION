@@ -959,9 +959,9 @@ function recCard(b){
 function shootDetail(b){
   const sh=D.shots[b.label];if(!sh)return"";
   if(detailSeg!=="szkript")detailSeg="setre";
-  const tabs=[["setre","Setre · kellék"],["szkript","Szkript"]];
+  const tabs=[["setre","Setre · kellék"],["szkript","Forgatókönyv"]];
   const body=detailSeg==="szkript"
-    ?`<div class="script">${sh.segs.map(s=>`${s.lab?`<div><span class="seglab">${esc(s.lab)}</span></div>`:""}${screenplay(s.lines)}`).join('<hr class="seghr">')||'<p class="muted">Ehhez a shothoz nincs szkript-részlet. A Terv fül Szkript részén jelölheted, melyik sort veszi.</p>'}</div>`
+    ?`<div class="script">${sh.segs.map(s=>`${s.lab?`<div><span class="seglab">${esc(s.lab)}</span></div>`:""}${screenplay(s.lines)}`).join('<hr class="seghr">')||'<p class="muted">Ehhez a shothoz nincs forgatókönyv-részlet. A Terv fül Forgatókönyv részén jelölheted, melyik sort veszi.</p>'}</div>`
     :`${sh.story?`<div class="sect"><span class="cap">Sztori</span><p>${esc(sh.story)}</p></div>`:""}${sh.talent.length?`<div class="sect"><span class="cap">Kell a setre</span>${people(sh.talent)}</div>`:""}<div class="sect"><span class="cap">Kellék · kontinuitás</span>${propList(sh.props)}</div>`;
   return`<section class="card" id="detailcard">${shotImgs(sh)}<div class="seg" role="group" aria-label="Részletek">${tabs.map(([k,l])=>`<button type="button" data-seg="${k}" aria-pressed="${detailSeg===k}">${l}</button>`).join("")}</div>${body}</section>`;
 }
@@ -1093,7 +1093,7 @@ function renderScript(){
     if(onlyCur&&!hot&&l.t!=="sh")return"";
     const key=ids.join(","),show=key!==prev;prev=key;
     return`<div class="ln ${hot?"hot":""}"><div class="gut">${(show?ids:[]).map(x=>`<span class="mini ${curIds.includes(x)?"hot":""}">${esc(x)}</span>`).join("")}</div><div class="script"><div class="${map[l.t]||"ac"}">${esc(l.x)}</div></div></div>`}).join("");
-  v.innerHTML=`<div class="vh">Szkript</div><div class="seg" style="margin-bottom:14px" role="group" aria-label="Szűrés"><button type="button" data-only="0" aria-pressed="${!onlyCur}">Teljes szkript</button><button type="button" data-only="1" aria-pressed="${onlyCur}">Csak: ${esc(curIds.join(", ")||"–")}</button></div>
+  v.innerHTML=`<div class="vh">Forgatókönyv</div><div class="seg" style="margin-bottom:14px" role="group" aria-label="Szűrés"><button type="button" data-only="0" aria-pressed="${!onlyCur}">Teljes forgatókönyv</button><button type="button" data-only="1" aria-pressed="${onlyCur}">Csak: ${esc(curIds.join(", ")||"–")}</button></div>
     <section class="card fs" style="padding:14px 8px;gap:0">${lines}</section>`;
   v.querySelectorAll("[data-only]").forEach(x=>x.onclick=()=>{onlyCur=x.dataset.only==="1";renderScript();scrollToHot()});
 }
@@ -1170,8 +1170,8 @@ const MP_AVAIL=!!(FB_SRC&&FBC);
 const PAGES_URL="https://xdkoky.github.io/APERATION/base/";
 const MPKEY="diszpo-app-multi-v1",LOCALP="diszpo-app-project-local",LOCALS="diszpo-app-state-local";
 const LIVEKEYS=["cur","act","skip","ext","takes","sw","checkin"];
-const PERMS=[["most","Most"],["idorend","Időrend"],["szkript","Szkript"],["stab","Stáb"],["phones","Telefonszámok"],["images","Képek"],["props","Kellékek"],["notes","Megjegyzések"],["lights","Fények"],["control","Vezérlés"]];
-const PERM_HELP={most:"a Most nézet",idorend:"a napi időrend",szkript:"a szkript szövege és a sztori",stab:"a stáblista",phones:"a telefonszámok",images:"storyboard és vilkó",props:"kellékek, kontinuitás",notes:"megjegyzések, fontos tudnivalók",lights:"a fények leírása",control:"Kész, Vissza, +5′, take, érkezés"};
+const PERMS=[["most","Most"],["idorend","Időrend"],["szkript","Forgatókönyv"],["stab","Stáb"],["phones","Telefonszámok"],["images","Képek"],["props","Kellékek"],["notes","Megjegyzések"],["lights","Fények"],["control","Vezérlés"]];
+const PERM_HELP={most:"a Most nézet",idorend:"a napi időrend",szkript:"a forgatókönyv szövege és a sztori",stab:"a stáblista",phones:"a telefonszámok",images:"storyboard és vilkó",props:"kellékek, kontinuitás",notes:"megjegyzések, fontos tudnivalók",lights:"a fények leírása",control:"Kész, Vissza, +5′, take, érkezés"};
 const permOf=s=>Object.fromEntries(PERMS.map(([k])=>[k,s.split(" ").includes(k)]));
 const ALLPERM=permOf(PERMS.map(p=>p[0]).join(" "));
 const PRESETS=[["2nd AD","most idorend szkript stab phones images props notes lights control"],["Rendező","most idorend szkript stab phones images props notes lights"],
@@ -1351,7 +1351,7 @@ function teamHTML(){
     <p class="muted small">Ott a terved Excelként átvihető: itt Fájl → Terv mentése Excelbe, ott Excel betöltése.</p></section>`;
   if(!MP.on)return`<section class="card" id="teamcard"><h2>Közös munka a stábbal</h2>
     <p class="muted">Ha megosztod a tervet, minden pozíció (2nd AD, operatőr, szkriptes, kellékes, színész…) kap egy <b>belépőkódot</b>. Aki beírja, a saját telefonján élőben látja a napot: mi megy most, mennyit csúsztunk, mi jön. Te döntöd el pozíciónként, <b>ki mit lát</b>, és ki <b>vezérelheti</b> a napot (Kész, +5′, take, érkezések).</p>
-    <ul class="list"><li>A rejtett adatot (pl. telefonszám, szkript) a szerver el sem küldi annak, akinek nem szabad látnia.</li><li>Térerő nélkül is megy tovább; amikor visszajön a net, szinkronizál.</li><li>A terv szerkesztése nálad marad. A változtatások pár másodperc múlva mindenkinél megjelennek.</li></ul>
+    <ul class="list"><li>A rejtett adatot (pl. telefonszám, forgatókönyv) a szerver el sem küldi annak, akinek nem szabad látnia.</li><li>Térerő nélkül is megy tovább; amikor visszajön a net, szinkronizál.</li><li>A terv szerkesztése nálad marad. A változtatások pár másodperc múlva mindenkinél megjelennek.</li></ul>
     <button class="btn solid" type="button" data-do="mpcreate" ${P.blocks.length?"":"disabled"}>${ic("users",16)}Közös projekt indítása</button>
     ${P.blocks.length?"":`<p class="muted small">Előbb legyen egy terv a Fájl vagy az Időrend részen.</p>`}</section>`;
   const cnt=id=>MP.members.filter(m=>m.roleId===id).length;
@@ -1696,7 +1696,7 @@ function exportBook(p){
   add("Szereplők",[["Szerep","Színész","Érkezés","Ruha","Smink","Haj","Setre","Telefon"],...p.cast.map(c=>[c.role,c.name,c.arr,c.ruha,c.smink,c.haj,c.onset,c.phone])],[14,20,8,8,8,8,8,16]);
   add("Stáb",[["Részleg","Pozíció","Név","Érkezés","Telefon"],...p.crew.map(c=>[c.dept,c.pos,c.name,c.arr,c.phone])],[20,18,22,8,16]);
   add("Fények",[["Kód","Név","Leírás","Kép (URL)"],...p.groups.map(g=>[g.code,g.name,g.desc,(g.images||[]).filter(x=>x.url).map(x=>x.url).join("\n")])],[8,24,60,30]);
-  add("Szkript",[["Típus","Szöveg","Shotok"],...p.script.map(l=>[(STYPES.find(s=>s[0]===l.t)||[])[1]||"Akció",l.x,(l.ids||[]).join(", ")])],[12,80,16]);
+  add("Forgatókönyv",[["Típus","Szöveg","Shotok"],...p.script.map(l=>[(STYPES.find(s=>s[0]===l.t)||[])[1]||"Akció",l.x,(l.ids||[]).join(", ")])],[12,80,16]);
   return new Blob([XLSX.write(wb,{bookType:"xlsx",type:"array"})],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
 }
 async function exportNow(){
@@ -1729,7 +1729,7 @@ function renderWelcome(v){
     <button type="button" class="btn danger" data-do="mpleave">Kilépés a közös projektből</button></section>${creditLine()}</div>`;return}
   v.innerHTML=`<div class="welcome">
     <h1 class="brand-logo">${LOGO_SVG}</h1>
-    <p class="muted">Egy forgatási nap vezérlője: óra, visszaszámláló, várható wrap, shotonként a beállítás, a fény, a kellék és a szkript. Kezdd egy Excel-táblázattal, vagy írd be itt a napot.</p>
+    <p class="muted">Egy forgatási nap vezérlője: óra, visszaszámláló, várható wrap, shotonként a beállítás, a fény, a kellék és a forgatókönyv. Kezdd egy Excel-táblázattal, vagy írd be itt a napot.</p>
     <label class="drop" id="drop">${ic("upload",28)}<b>Excel-táblázat betöltése</b><span class="muted small">Koppints, vagy húzd ide a fájlt (.xlsx, .xls, .ods, .csv)</span><input type="file" accept=".xlsx,.xls,.xlsm,.ods,.csv,.json" data-import hidden></label>
     <div class="wgrid">
       <button class="btn" type="button" data-do="minta">${ic("play",16)}Minta megnyitása</button>
@@ -1786,19 +1786,19 @@ function importPreview(){
   const p=pending,sh=p.blocks.filter(b=>b.type==="shoot").length,tot=p.blocks.reduce((a,b)=>a+b.d,0);
   return`<section class="card prev"><div class="card-head"><h2>Beolvasva: ${esc(p.src)}</h2></div>
     <div class="rows">${[["Cím",p.title||"–"],["Dátum",p.date||"nincs megadva"],["Crew call",hm(p.call)],["Időrend",`${p.blocks.length} blokk, ebből ${sh} forgatás · ${Math.floor(tot/60)} óra ${tot%60} perc · vége ${hm(p.call+tot)}`],
-      ["Szereplők",p.cast.length+" fő"],["Stáb",p.crew.length+" fő"],["Fények",p.groups.length+" beállítás"],["Szkript",p.script.length+" sor"]].map(([a,b])=>`<div class="row" style="grid-template-columns:96px minmax(0,1fr)"><small>${a}</small><b>${esc(b)}</b></div>`).join("")}</div>
+      ["Szereplők",p.cast.length+" fő"],["Stáb",p.crew.length+" fő"],["Fények",p.groups.length+" beállítás"],["Forgatókönyv",p.script.length+" sor"]].map(([a,b])=>`<div class="row" style="grid-template-columns:96px minmax(0,1fr)"><small>${a}</small><b>${esc(b)}</b></div>`).join("")}</div>
     ${(p._warn||[]).length?`<ul class="list">${p._warn.map(w=>`<li class="warn">${esc(w)}</li>`).join("")}</ul>`:""}
     <p class="muted small">A betöltés után ${MP.on?"a közös projektben mindenkinél ez lesz a terv":"a mostani terv a Projektek közé kerül"}, a nap állása (kész blokkok, take-ek) nullázódik. A nap állását (kész blokkok, take-ek) is nullázza.</p>
     <div class="wgrid"><button class="btn solid" type="button" data-do="load" ${p.blocks.length?"":"disabled"}>Betöltés</button><button class="btn" type="button" data-do="cancel">Mégse</button></div></section>`;
 }
 function renderEdit(){
   const v=$('[data-view="terv"]');
-  const secs=[["fajl","Fájl"],["idorend","Időrend"],["projekt","Projekt"],["emberek","Emberek"],["szkript","Szkript"],["csapat","Csapat"]];
+  const secs=[["fajl","Fájl"],["idorend","Időrend"],["projekt","Projekt"],["emberek","Emberek"],["szkript","Forgatókönyv"],["csapat","Csapat"]];
   let body="";
   if(editSec==="fajl")body=`${pending?importPreview():""}
     <section class="card"><h2>Excel-táblázat betöltése</h2>
       <label class="drop" id="drop">${ic("upload",26)}<b>Fájl kiválasztása</b><span class="muted small">vagy húzd ide (.xlsx, .xls, .ods, .csv)</span><input type="file" accept=".xlsx,.xls,.xlsm,.ods,.csv,.json" data-import hidden></label>
-      <p class="muted small">A <b>Forgatási sablon</b> lapjait (Projekt, Időrend, Szereplők, Stáb, Fények, Szkript) pontosan ismeri. Más táblázatból a fejlécsorok alapján dolgozik: időrendhez kell <b>Perc</b> vagy <b>Kezdés</b>, <b>Típus</b> és <b>Blokk / shot</b> oszlop.</p></section>
+      <p class="muted small">A <b>Forgatási sablon</b> lapjait (Projekt, Időrend, Szereplők, Stáb, Fények, Forgatókönyv) pontosan ismeri. Más táblázatból a fejlécsorok alapján dolgozik: időrendhez kell <b>Perc</b> vagy <b>Kezdés</b>, <b>Típus</b> és <b>Blokk / shot</b> oszlop.</p></section>
     <section class="card"><h2>Mentés és sablon</h2><div class="wgrid">
       <button class="btn" type="button" data-do="export" ${P.blocks.length?"":"disabled"}>${ic("down",16)}Terv mentése Excelbe</button>
       <button class="btn" type="button" data-do="sablon">${ic("down",16)}Üres sablon letöltése</button></div>
@@ -1822,7 +1822,7 @@ function renderEdit(){
       ${rowsTable("cast",[["role","Szerep"],["name","Színész"],["arr","Érkezés",{ph:"8:00",cls:"w1",im:"numeric"}],["ruha","Ruha",{cls:"w1"}],["smink","Smink",{cls:"w1"}],["haj","Haj",{cls:"w1"}],["onset","Setre",{cls:"w1"}],["phone","Telefon",{type:"tel"}]],"Új szereplő")}</section>
     <section class="card"><h2>Stáb</h2>${rowsTable("crew",[["dept","Részleg"],["pos","Pozíció"],["name","Név"],["arr","Érkezés",{ph:"8:00",cls:"w1"}],["phone","Telefon",{type:"tel"}]],"Új stábtag")}</section>`;
   else if(editSec==="csapat")body=teamHTML();
-  else body=`<section class="card"><h2>Szkript beillesztése szövegként</h2>
+  else body=`<section class="card"><h2>Forgatókönyv beillesztése szövegként</h2>
       <textarea id="scrpaste" rows="5" placeholder="Másold ide a forgatókönyvet. BELSŐ./KÜLSŐ. = jelenet, NAGYBETŰS név = szereplő, utána a dialógus, (zárójel) = instrukció."></textarea>
       <div class="wgrid"><button class="btn sm" type="button" data-do="scradd">Hozzáfűzés a végéhez</button><button class="btn sm danger" type="button" data-do="scrrep">Csere</button></div></section>
     <section class="card"><h2>Sorok</h2><p class="muted small">A <b>Shotok</b> mezőbe írd, melyik shot veszi a sort (pl. 1/1, 1/2). A Most nézetben a shotnál ezek a sorok jelennek meg.</p>
@@ -1956,10 +1956,10 @@ addEventListener("drop",e=>{document.body.classList.remove("dragging");const f=e
 mpBoot();
 
 /* ---------- nyomtatható változatok ----------
-   Diszpó, forgatókönyv, shotlist, szkriptlap az aktuális tervből. Nyomtatás (vagy PDF-mentés) a böngésző
+   Diszpó, forgatókönyv (a sztori), shotlist, szkript (a szkriptes lapja) az aktuális tervből. Nyomtatás (vagy PDF-mentés) a böngésző
    nyomtatási ablakával; ha az nem érhető el, a dokumentum HTML-fájlként menthető és onnan nyomtatható. */
 const PRINT_CSS="/* nyomtatható változatok (diszpó, forgatókönyv, shotlist, szkriptlap): fehér papírra, A4 */\n.pr{font-family:\"Inter\",Arial,sans-serif;color:#111;background:#fff;font-size:10pt;line-height:1.35}\n.pr *{box-sizing:border-box}\n.pr-doc{padding:0}\n.pr-break{break-after:page;page-break-after:always;height:0}\n.pr-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12pt;border-bottom:2pt solid #111;padding-bottom:6pt;margin-bottom:10pt}\n.pr-head h1{font-size:18pt;margin:0;letter-spacing:-.01em;line-height:1.1}\n.pr-head .kind{font-size:9pt;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#555}\n.pr-head .meta{text-align:right;font-size:9pt;color:#333}\n.pr h2{font-size:11pt;margin:12pt 0 5pt;text-transform:uppercase;letter-spacing:.08em}\n.pr .facts{display:grid;grid-template-columns:repeat(4,1fr);gap:4pt 12pt;margin-bottom:6pt}\n.pr .facts div{border:1pt solid #bbb;border-radius:4pt;padding:4pt 6pt}\n.pr .facts small{display:block;font-size:7pt;text-transform:uppercase;letter-spacing:.08em;color:#666}\n.pr .facts b{font-size:11pt}\n.pr ul.notes{margin:0;padding-left:14pt}\n.pr ul.notes li{margin:1pt 0}\n.pr .warn{color:#b00020;font-weight:700}\n.pr table{width:100%;border-collapse:collapse;margin:0 0 6pt}\n.pr th{font-size:7.5pt;text-transform:uppercase;letter-spacing:.06em;text-align:left;color:#444;border-bottom:1.2pt solid #111;padding:3pt 4pt}\n.pr td{border-bottom:.6pt solid #ccc;padding:3pt 4pt;vertical-align:top}\n.pr tr{break-inside:avoid;page-break-inside:avoid}\n.pr tr.shoot td{font-weight:600}\n.pr tr.lunch td{background:#f1f1f1}\n.pr tr.move td{color:#444}\n.pr td.num,.pr th.num{white-space:nowrap;font-variant-numeric:tabular-nums}\n.pr .dept td{background:#eee;font-weight:800;text-transform:uppercase;font-size:8pt;letter-spacing:.06em}\n.pr .foot{margin-top:10pt;font-size:7.5pt;color:#777;text-align:center}\n/* forgatókönyv */\n.pr .scr{font-family:\"Courier Prime\",\"Courier New\",monospace;font-size:11pt;line-height:1.25;max-width:150mm;margin:0 auto}\n.pr .scr .ln{display:grid;grid-template-columns:22mm minmax(0,1fr);gap:4mm;break-inside:avoid}\n.pr .scr .tag{font-family:\"Inter\",Arial,sans-serif;font-size:7pt;color:#555;padding-top:2pt;text-align:right}\n.pr .scr .sh{font-weight:700;text-transform:uppercase;margin:12pt 0 6pt}\n.pr .scr .ac{margin:0 0 8pt}\n.pr .scr .ch{margin:8pt 0 0 38mm;text-transform:uppercase}\n.pr .scr .pa{margin:0 0 0 30mm}\n.pr .scr .dl{margin:0 18mm 8pt 22mm}\n.pr .scr .end{text-align:right;font-weight:700;margin-top:12pt}\n/* shotlist */\n.pr .sl td.img{width:44mm}\n.pr .sl img{width:42mm;height:auto;max-height:32mm;object-fit:contain;border:.6pt solid #ccc;display:block;margin-bottom:2pt;background:#fff}\n.pr .sl .shot{font-size:12pt;font-weight:800}\n/* szkriptlap */\n.pr .sk{break-after:page;page-break-after:always}\n.pr .sk:last-child{break-after:auto;page-break-after:auto}\n.pr .sk-head{display:grid;grid-template-columns:auto 1fr auto;gap:10pt;align-items:end;border-bottom:2pt solid #111;padding-bottom:5pt;margin-bottom:6pt}\n.pr .sk-head .shot{font-size:24pt;font-weight:800;line-height:1}\n.pr .sk-head .info{font-size:9pt;color:#333}\n.pr .sk-head .proj{font-size:8pt;color:#666;text-align:right}\n.pr .sk-ex{font-family:\"Courier Prime\",\"Courier New\",monospace;font-size:8.5pt;line-height:1.25;color:#333;border-left:2pt solid #bbb;padding:2pt 0 2pt 6pt;margin:0 0 6pt}\n.pr .sk-ex div{margin:0 0 2pt}\n.pr .sk table td{height:14mm;border-bottom:.8pt solid #999;border-right:.6pt solid #ddd}\n.pr .sk table td:last-child{border-right:0}\n.pr .sk .box{border:1pt solid #999;border-radius:3pt;padding:4pt 6pt;margin-top:6pt;min-height:34mm}\n.pr .sk .box small{font-size:7.5pt;text-transform:uppercase;letter-spacing:.08em;color:#555;font-weight:700}\n.pr .sk .two{display:grid;grid-template-columns:1fr 1fr;gap:6pt}\n.pr .sk .lines{background-image:repeating-linear-gradient(transparent 0 7.5mm,#ccc 7.5mm 7.8mm);min-height:30mm;margin-top:3pt}\n";
-const PR_KINDS=[["diszpo","Diszpó"],["forgatokonyv","Forgatókönyv"],["shotlist","Shotlist"],["szkriptlap","Szkriptlap"]];
+const PR_KINDS=[["diszpo","Diszpó"],["forgatokonyv","Forgatókönyv"],["shotlist","Shotlist"],["szkriptlap","Szkript"]];
 const prDate=()=>HASDATE?SHOOT_DATE.toLocaleDateString("hu-HU",{year:"numeric",month:"long",day:"numeric",weekday:"long"}):"";
 const prHead=(kind)=>`<div class="pr-head"><div><div class="kind">${kind}</div><h1>${esc(D.title||"Forgatási nap")}</h1></div><div class="meta">${esc(prDate())}${D.location?`<br>${esc(D.location)}`:""}</div></div>`;
 const prFoot=()=>`<div class="foot">APERATION™ · © ${COPY_YEAR} ${esc(AUTHOR)} · nyomtatva ${new Date().toLocaleString("hu-HU",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}</div>`;
@@ -1985,7 +1985,7 @@ function prDiszpo(){
     ${prFoot()}</div>`;
 }
 function prScript(){
-  if(!D.script.length)return`<div class="pr-doc">${prHead("Forgatókönyv")}<p>A tervben nincs szkript. A Terv → Szkript részen bemásolható.</p>${prFoot()}</div>`;
+  if(!D.script.length)return`<div class="pr-doc">${prHead("Forgatókönyv")}<p>A tervben nincs forgatókönyv. A Terv → Forgatókönyv részen bemásolható.</p>${prFoot()}</div>`;
   let prev="";
   return`<div class="pr-doc">${prHead("Forgatókönyv")}<div class="scr">${D.script.map(l=>{const ids=[...new Set(l.cov.flatMap(c=>c.ids))],key=ids.join(", "),show=key&&key!==prev;prev=key;
     return`<div class="ln"><div class="tag">${show?esc(key):""}</div><div class="${l.t}">${esc(l.x)}</div></div>`}).join("")}</div>${prFoot()}</div>`;
@@ -2003,13 +2003,13 @@ function prShotlist(){
 }
 function prSkript(){
   const sh=prShoots();
-  if(!sh.length)return`<div class="pr-doc">${prHead("Szkriptlap")}<p>A tervben nincs forgatási blokk.</p></div>`;
+  if(!sh.length)return`<div class="pr-doc">${prHead("Szkript")}<p>A tervben nincs forgatási blokk.</p></div>`;
   const rows=10;
   return`<div class="pr-doc">${sh.map((b,n)=>{const s=D.shots[b.label]||{talent:[],segs:[],props:[]};
     const ex=s.segs.flatMap(g=>g.lines).slice(0,14);
     return`<div class="sk"><div class="sk-head"><div class="shot">${esc(b.label)}</div>
       <div class="info"><b>${esc(b.setup||"")}</b>${b.group?` · fény ${esc(b.group)}`:""}<br>${hm(b.s)}–${hm(b.e)} · ${b.d}′${s.talent.length?` · ${esc(s.talent.join(", "))}`:""}</div>
-      <div class="proj">${esc(D.title||"")}<br>Szkriptlap ${n+1} / ${sh.length}</div></div>
+      <div class="proj">${esc(D.title||"")}<br>Szkript ${n+1} / ${sh.length}</div></div>
       ${ex.length?`<div class="sk-ex">${prLines(ex)}</div>`:""}
       <table><thead><tr><th style="width:12mm">Take</th><th style="width:16mm">Idő</th><th style="width:14mm">Hossz</th><th style="width:12mm">Jó?</th><th>Megjegyzés (játék, szöveg, technika)</th></tr></thead>
       <tbody>${Array.from({length:rows},(_,i)=>`<tr><td class="num">${i+1}</td><td></td><td></td><td style="text-align:center">☐</td><td></td></tr>`).join("")}</tbody></table>
@@ -2034,7 +2034,7 @@ async function doPrint(kinds){
 function prSave(kinds){saveFile(prName(kinds)+".html",new Blob([prDoc(kinds)],{type:"text/html"}),"text/html")}
 function printCard(){
   return`<section class="card"><h2>Nyomtatás</h2>
-    <p class="muted small">A mostani tervből készül, A4-re. A nyomtatás ablakában <b>PDF-be is mentheted</b> (iPhone-on: Nyomtatás → Megosztás → Mentés a Fájlokba). A szkriptlapon shotonként egy oldal, sok hellyel a jegyzeteknek.</p>
+    <p class="muted small">A mostani tervből készül, A4-re. A nyomtatás ablakában <b>PDF-be is mentheted</b> (iPhone-on: Nyomtatás → Megosztás → Mentés a Fájlokba). A <b>Szkript</b> a szkriptes lapja: shotonként egy oldal, sok hellyel a jegyzeteknek.</p>
     <div class="wgrid">${PR_KINDS.map(([k,l])=>`<button class="btn" type="button" data-print="${k}" ${B.length?"":"disabled"}>${ic("doc",16)}${l}</button>`).join("")}</div>
     <div class="wgrid"><button class="btn solid" type="button" data-print="all" ${B.length?"":"disabled"}>${ic("doc",16)}Mind a négy egyben</button></div>
     <p class="muted small">Ha a nyomtatás nem nyílik meg: <button type="button" class="linkbtn" data-printsave="all" ${B.length?"":"disabled"}>mentés fájlba</button>, és onnan nyomtatható.</p></section>`;
@@ -2044,7 +2044,7 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-print],[da
   if(t.dataset.printsave)prSave(kinds);else doPrint(kinds)});
 
 /* ---------- útvonal ---------- */
-const VIEWS=[["most","Most","now"],["idorend","Időrend","list"],["szkript","Szkript","doc"],["stab","Stáb","users"],["terv","Terv","edit"],["info","Info","sliders"]];
+const VIEWS=[["most","Most","now"],["idorend","Időrend","list"],["szkript","Könyv","doc"],["stab","Stáb","users"],["terv","Terv","edit"],["info","Info","sliders"]];
 // Terv nélkül csak az kap fület, aminek van értelme: Kezdés (betöltés), Terv (beírás), Info.
 const VIEWS0=[["most","Kezdés","upload"],["terv","Terv","edit"],["info","Info","sliders"]];
 let tabKey="";
@@ -2138,15 +2138,15 @@ const TOUR_F=()=>[
  {state:"shoot",sel:"#go",title:"Kész: ezt nyomod a legtöbbször",html:"Amikor egy blokk véget ér, nyomd meg a <b>Kész</b> gombot. Az app rögzíti az időt, és elindítja a következő blokkot. A gomb alján mindig látod, mi jön."},
  {state:"shoot",sel:"#dock",title:"Vissza és +5 perc",html:"<b>‹</b>&nbsp; Mellényomtál? Visszalép az előző blokkra. Minden lépés után pár másodpercig egy Visszavonás gomb is megjelenik.<br><b>+5′</b>&nbsp; Több idő kell? Öt percet ad a mostani blokkhoz, a várható wrap azonnal frissül."},
  {state:"shoot",sel:".rec",title:"Take-ek",html:"A piros gomb indítja és megállítja a take stopperét. A take-ek sorban megjelennek alatta, a <b>csillaggal</b> megjelölöd a jót."},
- {state:"shoot",sel:"#detailcard",title:"Minden, ami a shothoz kell",html:"Fent a shot <b>storyboard-rajza és világítási terve</b>: koppintásra teljes minőségben nyílnak meg, csíptetéssel nagyíthatók. <b>Setre · kellék:</b> kit kell hívni, mi legyen a képben. <b>Szkript:</b> a szövegrész, amit most veszünk."},
+ {state:"shoot",sel:"#detailcard",title:"Minden, ami a shothoz kell",html:"Fent a shot <b>storyboard-rajza és világítási terve</b>: koppintásra teljes minőségben nyílnak meg, csíptetéssel nagyíthatók. <b>Setre · kellék:</b> kit kell hívni, mi legyen a képben. <b>Forgatókönyv:</b> a szövegrész, amit most veszünk."},
  {state:"shoot",sel:"#formcard",title:"Mi jön utána",html:"Már forgatás közben látod a következő beállítást: mennyi idő az átállás, <b>változik-e a fény</b>, és kit kell majd a setre hívni. Így időben szólhatsz a részlegeknek."},
  {state:"move",sel:HERO,title:"Átállás",html:"Átálláskor a kártya azt mutatja, <b>mire álltok át</b>. Alatta ott a fényváltás, a kellékek, a storyboard és a vilkó. Öt perccel a vége előtt az app jelez: <b>Színészeket a setre!</b>"},
- {state:"move",sel:"#tabs",title:"A többi nézet",html:"<b>Időrend:</b> az egész nap; egy sorra koppintva odaugorhatsz vagy kihagyhatod. <b>Szkript:</b> a teljes szöveg, shotonként jelölve. <b>Stáb:</b> érkezések pipálása, telefonszámok. <b>Terv:</b> itt viszed be és írod át a napot. <b>Info:</b> próba mód, hang, nullázás, ez a bemutató."},
+ {state:"move",sel:"#tabs",title:"A többi nézet",html:"<b>Időrend:</b> az egész nap; egy sorra koppintva odaugorhatsz vagy kihagyhatod. <b>Könyv:</b> a teljes forgatókönyv, shotonként jelölve. <b>Stáb:</b> érkezések pipálása, telefonszámok. <b>Terv:</b> itt viszed be és írod át a napot. <b>Info:</b> próba mód, hang, nullázás, ez a bemutató."},
  {state:"move",view:"terv",sec:"fajl",sel:"#drop",title:"A saját napod: Excelből",html:"A <b>Terv</b> fül <b>Fájl</b> részén töltöd be a táblázatot: koppints ide, vagy húzd rá a fájlt az appra. A legbiztosabb a <b>Forgatási sablon</b>, ugyanitt letölthető. Más táblázatot is felismer, ha van benne <b>Perc</b> (vagy Kezdés), <b>Típus</b> és <b>Blokk / shot</b> oszlop. Betöltés előtt megmutatja, mit talált, és csak a <b>Betöltés</b> gombra cseréli a tervet."},
  {state:"move",view:"terv",sec:"idorend",sel:"#tourblock",title:"Vagy írd be itt",html:"Az <b>Időrend</b>ben minden blokk egy kártya: <b>típus, perc, shot</b>. A kezdési idők maguktól számolódnak a crew callból. A jobb oldali nyíl nyitja a részleteket: beállítás, fény, szereplők, kellékek, sztori, képek. Új blokkot a lista alján adsz hozzá; a törlés visszavonható."},
  {state:"move",view:"terv",sec:"idorend",sel:"#tourblock .eb-drag",title:"Átrendezés húzással",html:"A kártya bal szélén lévő <b>⋮⋮ fogantyút</b> megfogva fel-le húzhatod a blokkot. Húzás közben a többi kártya félrecsúszik, és az időpontok már az új sorrendet mutatják. Elengedés után a nap újraszámolódik, és egy koppintással <b>visszavonható</b>. Ha két átállás kerül egymás mellé, az app <b>sárgán jelzi</b>, de engedi."},
- {state:"move",view:"terv",sec:"idorend",sel:'[data-view="terv"] .esec',title:"A terv többi része",html:"<b>Projekt:</b> cím, dátum, crew call, wrap-határ, fontos tudnivalók és a fénybeállítások kódjai. <b>Emberek:</b> szereplők és stáb, érkezéssel, telefonnal. <b>Szkript:</b> másold be a forgatókönyvet, az app szétszedi; utána soronként beírod, melyik shot veszi. Minden azonnal mentődik ezen az eszközön."},
- {state:"move",view:"terv",sec:"csapat",sel:"#teamcard",title:"Közös munka a stábbal",html:"A <b>Csapat</b> részen megoszthatod a napot: minden pozíció (2nd AD, operatőr, szkriptes, kellékes, színész…) kap egy <b>belépőkódot</b>. Aki beírja (Kezdés → <b>Csatlakozás kóddal</b>), a saját telefonján élőben látja, mi megy most és mennyit csúsztunk. Pozíciónként te döntöd el, <b>ki mit lát</b> (pl. telefonszámok, szkript), és ki <b>vezérelheti</b> a napot. A kitiltás és az új kód egy koppintás."},
+ {state:"move",view:"terv",sec:"idorend",sel:'[data-view="terv"] .esec',title:"A terv többi része",html:"<b>Projekt:</b> cím, dátum, crew call, wrap-határ, fontos tudnivalók és a fénybeállítások kódjai. <b>Emberek:</b> szereplők és stáb, érkezéssel, telefonnal. <b>Forgatókönyv:</b> másold be a szöveget, az app szétszedi; utána soronként beírod, melyik shot veszi. Minden azonnal mentődik ezen az eszközön."},
+ {state:"move",view:"terv",sec:"csapat",sel:"#teamcard",title:"Közös munka a stábbal",html:"A <b>Csapat</b> részen megoszthatod a napot: minden pozíció (2nd AD, operatőr, szkriptes, kellékes, színész…) kap egy <b>belépőkódot</b>. Aki beírja (Kezdés → <b>Csatlakozás kóddal</b>), a saját telefonján élőben látja, mi megy most és mennyit csúsztunk. Pozíciónként te döntöd el, <b>ki mit lát</b> (pl. telefonszámok, forgatókönyv), és ki <b>vezérelheti</b> a napot. A kitiltás és az új kód egy koppintás."},
  {state:"move",view:"terv",sec:"fajl",sel:'[data-do="export"]',title:"Mentés Excelbe",html:"A kész tervet <b>Excelbe mentheted</b>. Ugyanolyan, mint a sablon: elküldheted a stábnak, gépen javíthatod, és visszatöltheted. A telefonról feltett képek nem kerülnek bele, csak a kép-linkek."},
  {state:"move",title:"Ennyi az egész",html:()=>tour&&tour.tmpP?"Kezdd a <b>Terv</b> fülön: tölts be egy Excel-táblázatot, nyisd meg a mintát, vagy írd be a napot. Ezt a bemutatót az Info fülön bármikor újranézheted.":"Forgatás előtt érdemes egyszer végigmenni a napon <b>próba módban</b>, gyorsított órával. Ezt a bemutatót az Info fülön bármikor újranézheted."}
 ];
