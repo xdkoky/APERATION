@@ -337,6 +337,7 @@ input[type=time],select,#simt{height:40px;border-radius:12px;border:1px solid va
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 /*__EDITOR_CSS__*/
 /*__PRINT_CSS_STYLE__*/
+/*__SCRIPT_CSS__*/
 #printroot{display:none}
 .linkbtn{border:0;background:none;padding:0;color:var(--shoot);font:inherit;text-decoration:underline;cursor:pointer}
 @media print{
@@ -638,7 +639,7 @@ function lightHTML(from,to){
 function ringHTML(){return`<button class="ring" type="button" id="ring" aria-label="Kivetítő mód: óra teljes képernyőn"><svg class="dial" viewBox="0 0 120 120"><circle class="bezel" cx="60" cy="60" r="57" fill="none" stroke-width="1.5" stroke-dasharray="1 4.969"/><circle class="trk" cx="60" cy="60" r="50" fill="none" stroke-width="7"/><circle class="bar" id="ringbar" cx="60" cy="60" r="50" fill="none" stroke-width="7" stroke-linecap="round" stroke-dasharray="314.16" stroke-dashoffset="314.16"/></svg><span class="mid"><span class="cap" id="ringcap"></span><span class="big" id="ringbig">--:--</span><span class="cap" id="ringsub"></span></span><span class="zoom">${ic("max",15)}</span></button>`}
 
 /* ---------- MOST ---------- */
-let lastHero=null,detailSeg="setre";
+let lastHero=null,detailSeg="auto";
 function renderMost(){
   const v=$('[data-view="most"]'),{P,t}=project(),b=curBlock();
   const key=st.cur?st.cur.i:-1,enter=key!==lastHero;lastHero=key;
@@ -698,10 +699,11 @@ function recCard(b){
 }
 function shootDetail(b){
   const sh=D.shots[b.label];if(!sh)return"";
-  if(detailSeg!=="szkript")detailSeg="setre";
+  // forgatás közben az a legfontosabb, hogy a jelenet olvasható legyen: ha van forgatókönyv, az nyílik meg először
+  if(detailSeg!=="szkript"&&detailSeg!=="setre")detailSeg=D.script.length?"szkript":"setre";
   const tabs=[["setre","Setre · kellék"],["szkript","Forgatókönyv"]];
   const body=detailSeg==="szkript"
-    ?`<div class="script">${sh.segs.map(s=>`${s.lab?`<div><span class="seglab">${esc(s.lab)}</span></div>`:""}${screenplay(s.lines)}`).join('<hr class="seghr">')||'<p class="muted">Ehhez a shothoz nincs forgatókönyv-részlet. A Terv fül Forgatókönyv részén jelölheted, melyik sort veszi.</p>'}</div>`
+    ?sceneRead(sh.ids)||`<div class="script">${sh.segs.map(s=>`${s.lab?`<div><span class="seglab">${esc(s.lab)}</span></div>`:""}${screenplay(s.lines)}`).join('<hr class="seghr">')||'<p class="muted">Ehhez a shothoz nincs forgatókönyv-részlet. A Terv fül Forgatókönyv részén jelölheted, melyik sort veszi.</p>'}</div>`
     :`${sh.story?`<div class="sect"><span class="cap">Sztori</span><p>${esc(sh.story)}</p></div>`:""}${sh.talent.length?`<div class="sect"><span class="cap">Kell a setre</span>${people(sh.talent)}</div>`:""}<div class="sect"><span class="cap">Kellék · kontinuitás</span>${propList(sh.props)}</div>`;
   return`<section class="card" id="detailcard">${shotImgs(sh)}<div class="seg" role="group" aria-label="Részletek">${tabs.map(([k,l])=>`<button type="button" data-seg="${k}" aria-pressed="${detailSeg===k}">${l}</button>`).join("")}</div>${body}</section>`;
 }
@@ -1002,7 +1004,7 @@ const TOUR_F=()=>[
  {state:"move",view:"terv",sec:"fajl",sel:"#drop",title:"A saját napod: Excelből",html:"A <b>Terv</b> fül <b>Fájl</b> részén töltöd be a táblázatot: koppints ide, vagy húzd rá a fájlt az appra. A legbiztosabb a <b>Forgatási sablon</b>, ugyanitt letölthető. Más táblázatot is felismer, ha van benne <b>Perc</b> (vagy Kezdés), <b>Típus</b> és <b>Blokk / shot</b> oszlop. Betöltés előtt megmutatja, mit talált, és csak a <b>Betöltés</b> gombra cseréli a tervet."},
  {state:"move",view:"terv",sec:"idorend",sel:"#tourblock",title:"Vagy írd be itt",html:"Az <b>Időrend</b>ben minden blokk egy kártya: <b>típus, perc, shot</b>. A kezdési idők maguktól számolódnak a crew callból. A jobb oldali nyíl nyitja a részleteket: beállítás, fény, szereplők, kellékek, sztori, képek. Új blokkot a lista alján adsz hozzá; a törlés visszavonható."},
  {state:"move",view:"terv",sec:"idorend",sel:"#tourblock .eb-drag",title:"Átrendezés húzással",html:"A kártya bal szélén lévő <b>⋮⋮ fogantyút</b> megfogva fel-le húzhatod a blokkot. Húzás közben a többi kártya félrecsúszik, és az időpontok már az új sorrendet mutatják. Elengedés után a nap újraszámolódik, és egy koppintással <b>visszavonható</b>. Ha két átállás kerül egymás mellé, az app <b>sárgán jelzi</b>, de engedi."},
- {state:"move",view:"terv",sec:"idorend",sel:'[data-view="terv"] .esec',title:"A terv többi része",html:"<b>Projekt:</b> cím, dátum, crew call, wrap-határ, fontos tudnivalók és a fénybeállítások kódjai. <b>Emberek:</b> szereplők és stáb, érkezéssel, telefonnal. <b>Forgatókönyv:</b> másold be a szöveget, az app szétszedi; utána soronként beírod, melyik shot veszi. Minden azonnal mentődik ezen az eszközön."},
+ {state:"move",view:"terv",sec:"idorend",sel:'[data-view="terv"] .esec',title:"A terv többi része",html:"<b>Projekt:</b> cím, dátum, crew call, wrap-határ, fontos tudnivalók és a fénybeállítások kódjai. <b>Emberek:</b> szereplők és stáb, érkezéssel, telefonnal. <b>Forgatókönyv:</b> másold be a szöveget, az app szétszedi; utána kiválasztasz egy beállítást, és a sorokra koppintva jelölöd, melyik részt veszi. Forgatás közben így a Most nézetben a teljes jelenet olvasható, a vett rész kiemelve. Minden azonnal mentődik ezen az eszközön."},
  {state:"move",view:"terv",sec:"csapat",sel:"#teamcard",title:"Közös munka a stábbal",html:"A <b>Csapat</b> részen megoszthatod a napot: minden pozíció (2nd AD, operatőr, szkriptes, kellékes, színész…) kap egy <b>belépőkódot</b>. Aki beírja (Kezdés → <b>Csatlakozás kóddal</b>), a saját telefonján élőben látja, mi megy most és mennyit csúsztunk. Pozíciónként te döntöd el, <b>ki mit lát</b> (pl. telefonszámok, forgatókönyv), és ki <b>vezérelheti</b> a napot. A kitiltás és az új kód egy koppintás."},
  {state:"move",view:"terv",sec:"fajl",sel:'[data-do="export"]',title:"Mentés Excelbe",html:"A kész tervet <b>Excelbe mentheted</b>. Ugyanolyan, mint a sablon: elküldheted a stábnak, gépen javíthatod, és visszatöltheted. A telefonról feltett képek nem kerülnek bele, csak a kép-linkek."},
  {state:"move",title:"Ennyi az egész",html:()=>tour&&tour.tmpP?"Kezdd a <b>Terv</b> fülön: tölts be egy Excel-táblázatot, nyisd meg a mintát, vagy írd be a napot. Ezt a bemutatót az Info fülön bármikor újranézheted.":"Forgatás előtt érdemes egyszer végigmenni a napon <b>próba módban</b>, gyorsított órával. Ezt a bemutatót az Info fülön bármikor újranézheted."}

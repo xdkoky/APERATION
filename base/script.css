@@ -1,0 +1,24 @@
+/* forgatókönyv-jelölés (Terv) és olvasás (Most) */
+.scr-tools{position:sticky;top:calc(var(--hdr-h,104px) + 6px);z-index:5;padding:10px 12px;gap:8px;background-color:rgba(16,20,28,.88);-webkit-backdrop-filter:blur(18px) saturate(1.6);backdrop-filter:blur(18px) saturate(1.6)}
+.scr-help{gap:8px}
+.schips{display:flex;flex-wrap:wrap;gap:6px}
+.schip{display:inline-flex;align-items:baseline;gap:5px;height:34px;padding:0 11px;border-radius:999px;border:1px solid var(--hair-2);background:var(--surface);color:var(--fg);font-weight:750;font-size:14px;font-variant-numeric:tabular-nums}
+.schip small{font-size:11px;font-weight:650;color:var(--fg-3)}
+.schip.on{background:var(--shoot);border-color:transparent;color:#0a0d12}
+.schip.on small{color:rgba(10,13,18,.65)}
+.schip.empty:not(.on){border-style:dashed;border-color:color-mix(in srgb,var(--warn) 60%,transparent)}
+.scr-row{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.scr-row .chkf{padding:0}
+.scr-mark .ln.mk{cursor:pointer;transition:background .12s}
+.scr-mark .ln.mk:hover{background:var(--surface)}
+.scr-mark .ln.mk.hot:hover{background:color-mix(in srgb,var(--shoot) 16%,transparent)}
+.scr-mark .ln.anchor{outline:2px dashed var(--shoot);outline-offset:-2px}
+.scr-mark .ln.scene .sh{margin-top:14px}
+.scn{display:inline-block;min-width:2.2em;color:var(--shoot);font-family:var(--f-ui);font-weight:800}
+.readbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.sizer{display:flex;gap:6px}
+.script.read .off{opacity:.42}
+.script.read .on{position:relative}
+.script.read .on::before{content:"";position:absolute;left:-12px;top:2px;bottom:2px;width:3px;border-radius:2px;background:var(--shoot)}
+.script.read .ch.on,.script.read .pa.on,.script.read .dl.on,.script.read .ac.on{color:var(--fg)}
+.script.read{padding-left:12px}

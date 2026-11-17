@@ -428,13 +428,8 @@ function renderEdit(){
       ${rowsTable("cast",[["role","Szerep"],["name","Színész"],["arr","Érkezés",{ph:"8:00",cls:"w1",im:"numeric"}],["ruha","Ruha",{cls:"w1"}],["smink","Smink",{cls:"w1"}],["haj","Haj",{cls:"w1"}],["onset","Setre",{cls:"w1"}],["phone","Telefon",{type:"tel"}]],"Új szereplő")}</section>
     <section class="card"><h2>Stáb</h2>${rowsTable("crew",[["dept","Részleg"],["pos","Pozíció"],["name","Név"],["arr","Érkezés",{ph:"8:00",cls:"w1"}],["phone","Telefon",{type:"tel"}]],"Új stábtag")}</section>`;
   else if(editSec==="csapat")body=teamHTML();
-  else body=`<section class="card"><h2>Forgatókönyv beillesztése szövegként</h2>
-      <textarea id="scrpaste" rows="5" placeholder="Másold ide a forgatókönyvet. BELSŐ./KÜLSŐ. = jelenet, NAGYBETŰS név = szereplő, utána a dialógus, (zárójel) = instrukció."></textarea>
-      <div class="wgrid"><button class="btn sm" type="button" data-do="scradd">Hozzáfűzés a végéhez</button><button class="btn sm danger" type="button" data-do="scrrep">Csere</button></div></section>
-    <section class="card"><h2>Sorok</h2><p class="muted small">A <b>Shotok</b> mezőbe írd, melyik shot veszi a sort (pl. 1/1, 1/2). A Most nézetben a shotnál ezek a sorok jelennek meg.</p>
-      <div class="etab">${P.script.map((l,k)=>`<div class="er sr" data-list="script" data-k="${k}"><label class="fi w2"><span class="flab">Típus</span><select data-f="t">${STYPES.map(([a,b])=>`<option value="${a}" ${a===l.t?"selected":""}>${b}</option>`).join("")}</select></label>
-        ${fld("x",l.x,{label:"Szöveg",area:1,cls:"span2"})}${fld("ids",(l.ids||[]).join(", "),{label:"Shotok",ph:"1/1, 1/2",cls:"w2"})}<button type="button" class="ib del" data-act="rowdel" aria-label="Sor törlése">${ic("x",16)}</button></div>`).join("")}</div>
-      <button type="button" class="btn sm" data-act="rowadd" data-list="script">${ic("plus",14)}Új sor</button></section>`;
+  else body=scriptEditHTML();
+  document.documentElement.style.setProperty("--hdr-h",($(".hdr")?$(".hdr").offsetHeight:96)+"px");
   renderTabs();$$(".tabs a").forEach(a=>{if(a.getAttribute("href")==="#terv")a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});placeInd();
   v.innerHTML=`<div class="vh-row"><div class="vh">Terv</div><span class="vh-act"><button class="btn sm" type="button" data-do="projlist">${ic("list",14)}Projektek</button><button class="btn sm" type="button" data-do="newproj">${ic("plus",14)}Új projekt</button></span></div><div class="seg esec" role="group" aria-label="Szakasz">${secs.map(([k,l])=>`<button type="button" data-sec="${k}" aria-pressed="${editSec===k}">${l}</button>`).join("")}</div><div class="stack">${body}</div>`;
 }
@@ -528,7 +523,7 @@ document.addEventListener("click",async e=>{
     else if(d.do==="export")exportNow();
     else if(d.do==="load"&&pending){const p=pending;pending=null;delete p._warn;setProject(p,{reset:true,archive:!MP.on});editSec="idorend";location.hash="#most";toast("Terv betöltve: "+p.blocks.length+" blokk.",{tone:"ok"})}
     else if(d.do==="cancel"){pending=null;renderEdit()}
-    else if(d.do==="scradd"||d.do==="scrrep"){const x=parseScript($("#scrpaste").value);if(!x.length)return;P.script=d.do==="scradd"?P.script.concat(x):x;commit();renderEdit();toast(x.length+" sor beolvasva. A Shotok mezőben jelöld, melyik shot veszi.")}
+    else if(d.do==="scradd"||d.do==="scrrep"){const x=parseScript($("#scrpaste").value);if(!x.length)return;P.script=d.do==="scradd"?P.script.concat(x):x;commit();renderEdit();editSec="szkript";scrMode="mark";toast(x.length+" sor beolvasva. Most válassz fent egy beállítást, és koppints a sorokra, amelyeket az vesz.")}
     return;
   }
   if(d.addb){withRemap(()=>{const b=normP({blocks:[{type:d.addb,d:d.addb==="shoot"?20:d.addb==="lunch"?45:10,label:d.addb==="shoot"?"":TNAME[d.addb]}]}).blocks[0];P.blocks.push(b);openEB=b._id});renderEdit();

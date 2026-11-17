@@ -539,6 +539,31 @@ body.eb-dragging{-webkit-user-select:none;user-select:none;cursor:grabbing}
 .pr .sk .two{display:grid;grid-template-columns:1fr 1fr;gap:6pt}
 .pr .sk .lines{background-image:repeating-linear-gradient(transparent 0 7.5mm,#ccc 7.5mm 7.8mm);min-height:30mm;margin-top:3pt}
 
+/* forgatókönyv-jelölés (Terv) és olvasás (Most) */
+.scr-tools{position:sticky;top:calc(var(--hdr-h,104px) + 6px);z-index:5;padding:10px 12px;gap:8px;background-color:rgba(16,20,28,.88);-webkit-backdrop-filter:blur(18px) saturate(1.6);backdrop-filter:blur(18px) saturate(1.6)}
+.scr-help{gap:8px}
+.schips{display:flex;flex-wrap:wrap;gap:6px}
+.schip{display:inline-flex;align-items:baseline;gap:5px;height:34px;padding:0 11px;border-radius:999px;border:1px solid var(--hair-2);background:var(--surface);color:var(--fg);font-weight:750;font-size:14px;font-variant-numeric:tabular-nums}
+.schip small{font-size:11px;font-weight:650;color:var(--fg-3)}
+.schip.on{background:var(--shoot);border-color:transparent;color:#0a0d12}
+.schip.on small{color:rgba(10,13,18,.65)}
+.schip.empty:not(.on){border-style:dashed;border-color:color-mix(in srgb,var(--warn) 60%,transparent)}
+.scr-row{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.scr-row .chkf{padding:0}
+.scr-mark .ln.mk{cursor:pointer;transition:background .12s}
+.scr-mark .ln.mk:hover{background:var(--surface)}
+.scr-mark .ln.mk.hot:hover{background:color-mix(in srgb,var(--shoot) 16%,transparent)}
+.scr-mark .ln.anchor{outline:2px dashed var(--shoot);outline-offset:-2px}
+.scr-mark .ln.scene .sh{margin-top:14px}
+.scn{display:inline-block;min-width:2.2em;color:var(--shoot);font-family:var(--f-ui);font-weight:800}
+.readbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.sizer{display:flex;gap:6px}
+.script.read .off{opacity:.42}
+.script.read .on{position:relative}
+.script.read .on::before{content:"";position:absolute;left:-12px;top:2px;bottom:2px;width:3px;border-radius:2px;background:var(--shoot)}
+.script.read .ch.on,.script.read .pa.on,.script.read .dl.on,.script.read .ac.on{color:var(--fg)}
+.script.read{padding-left:12px}
+
 #printroot{display:none}
 .linkbtn{border:0;background:none;padding:0;color:var(--shoot);font:inherit;text-decoration:underline;cursor:pointer}
 @media print{
@@ -960,7 +985,7 @@ function lightHTML(from,to){
 function ringHTML(){return`<button class="ring" type="button" id="ring" aria-label="Kivetítő mód: óra teljes képernyőn"><svg class="dial" viewBox="0 0 120 120"><circle class="bezel" cx="60" cy="60" r="57" fill="none" stroke-width="1.5" stroke-dasharray="1 4.969"/><circle class="trk" cx="60" cy="60" r="50" fill="none" stroke-width="7"/><circle class="bar" id="ringbar" cx="60" cy="60" r="50" fill="none" stroke-width="7" stroke-linecap="round" stroke-dasharray="314.16" stroke-dashoffset="314.16"/></svg><span class="mid"><span class="cap" id="ringcap"></span><span class="big" id="ringbig">--:--</span><span class="cap" id="ringsub"></span></span><span class="zoom">${ic("max",15)}</span></button>`}
 
 /* ---------- MOST ---------- */
-let lastHero=null,detailSeg="setre";
+let lastHero=null,detailSeg="auto";
 function renderMost(){
   const v=$('[data-view="most"]'),{P,t}=project(),b=curBlock();
   const key=st.cur?st.cur.i:-1,enter=key!==lastHero;lastHero=key;
@@ -1020,10 +1045,11 @@ function recCard(b){
 }
 function shootDetail(b){
   const sh=D.shots[b.label];if(!sh)return"";
-  if(detailSeg!=="szkript")detailSeg="setre";
+  // forgatás közben az a legfontosabb, hogy a jelenet olvasható legyen: ha van forgatókönyv, az nyílik meg először
+  if(detailSeg!=="szkript"&&detailSeg!=="setre")detailSeg=D.script.length?"szkript":"setre";
   const tabs=[["setre","Setre · kellék"],["szkript","Forgatókönyv"]];
   const body=detailSeg==="szkript"
-    ?`<div class="script">${sh.segs.map(s=>`${s.lab?`<div><span class="seglab">${esc(s.lab)}</span></div>`:""}${screenplay(s.lines)}`).join('<hr class="seghr">')||'<p class="muted">Ehhez a shothoz nincs forgatókönyv-részlet. A Terv fül Forgatókönyv részén jelölheted, melyik sort veszi.</p>'}</div>`
+    ?sceneRead(sh.ids)||`<div class="script">${sh.segs.map(s=>`${s.lab?`<div><span class="seglab">${esc(s.lab)}</span></div>`:""}${screenplay(s.lines)}`).join('<hr class="seghr">')||'<p class="muted">Ehhez a shothoz nincs forgatókönyv-részlet. A Terv fül Forgatókönyv részén jelölheted, melyik sort veszi.</p>'}</div>`
     :`${sh.story?`<div class="sect"><span class="cap">Sztori</span><p>${esc(sh.story)}</p></div>`:""}${sh.talent.length?`<div class="sect"><span class="cap">Kell a setre</span>${people(sh.talent)}</div>`:""}<div class="sect"><span class="cap">Kellék · kontinuitás</span>${propList(sh.props)}</div>`;
   return`<section class="card" id="detailcard">${shotImgs(sh)}<div class="seg" role="group" aria-label="Részletek">${tabs.map(([k,l])=>`<button type="button" data-seg="${k}" aria-pressed="${detailSeg===k}">${l}</button>`).join("")}</div>${body}</section>`;
 }
@@ -1903,13 +1929,8 @@ function renderEdit(){
       ${rowsTable("cast",[["role","Szerep"],["name","Színész"],["arr","Érkezés",{ph:"8:00",cls:"w1",im:"numeric"}],["ruha","Ruha",{cls:"w1"}],["smink","Smink",{cls:"w1"}],["haj","Haj",{cls:"w1"}],["onset","Setre",{cls:"w1"}],["phone","Telefon",{type:"tel"}]],"Új szereplő")}</section>
     <section class="card"><h2>Stáb</h2>${rowsTable("crew",[["dept","Részleg"],["pos","Pozíció"],["name","Név"],["arr","Érkezés",{ph:"8:00",cls:"w1"}],["phone","Telefon",{type:"tel"}]],"Új stábtag")}</section>`;
   else if(editSec==="csapat")body=teamHTML();
-  else body=`<section class="card"><h2>Forgatókönyv beillesztése szövegként</h2>
-      <textarea id="scrpaste" rows="5" placeholder="Másold ide a forgatókönyvet. BELSŐ./KÜLSŐ. = jelenet, NAGYBETŰS név = szereplő, utána a dialógus, (zárójel) = instrukció."></textarea>
-      <div class="wgrid"><button class="btn sm" type="button" data-do="scradd">Hozzáfűzés a végéhez</button><button class="btn sm danger" type="button" data-do="scrrep">Csere</button></div></section>
-    <section class="card"><h2>Sorok</h2><p class="muted small">A <b>Shotok</b> mezőbe írd, melyik shot veszi a sort (pl. 1/1, 1/2). A Most nézetben a shotnál ezek a sorok jelennek meg.</p>
-      <div class="etab">${P.script.map((l,k)=>`<div class="er sr" data-list="script" data-k="${k}"><label class="fi w2"><span class="flab">Típus</span><select data-f="t">${STYPES.map(([a,b])=>`<option value="${a}" ${a===l.t?"selected":""}>${b}</option>`).join("")}</select></label>
-        ${fld("x",l.x,{label:"Szöveg",area:1,cls:"span2"})}${fld("ids",(l.ids||[]).join(", "),{label:"Shotok",ph:"1/1, 1/2",cls:"w2"})}<button type="button" class="ib del" data-act="rowdel" aria-label="Sor törlése">${ic("x",16)}</button></div>`).join("")}</div>
-      <button type="button" class="btn sm" data-act="rowadd" data-list="script">${ic("plus",14)}Új sor</button></section>`;
+  else body=scriptEditHTML();
+  document.documentElement.style.setProperty("--hdr-h",($(".hdr")?$(".hdr").offsetHeight:96)+"px");
   renderTabs();$$(".tabs a").forEach(a=>{if(a.getAttribute("href")==="#terv")a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});placeInd();
   v.innerHTML=`<div class="vh-row"><div class="vh">Terv</div><span class="vh-act"><button class="btn sm" type="button" data-do="projlist">${ic("list",14)}Projektek</button><button class="btn sm" type="button" data-do="newproj">${ic("plus",14)}Új projekt</button></span></div><div class="seg esec" role="group" aria-label="Szakasz">${secs.map(([k,l])=>`<button type="button" data-sec="${k}" aria-pressed="${editSec===k}">${l}</button>`).join("")}</div><div class="stack">${body}</div>`;
 }
@@ -2003,7 +2024,7 @@ document.addEventListener("click",async e=>{
     else if(d.do==="export")exportNow();
     else if(d.do==="load"&&pending){const p=pending;pending=null;delete p._warn;setProject(p,{reset:true,archive:!MP.on});editSec="idorend";location.hash="#most";toast("Terv betöltve: "+p.blocks.length+" blokk.",{tone:"ok"})}
     else if(d.do==="cancel"){pending=null;renderEdit()}
-    else if(d.do==="scradd"||d.do==="scrrep"){const x=parseScript($("#scrpaste").value);if(!x.length)return;P.script=d.do==="scradd"?P.script.concat(x):x;commit();renderEdit();toast(x.length+" sor beolvasva. A Shotok mezőben jelöld, melyik shot veszi.")}
+    else if(d.do==="scradd"||d.do==="scrrep"){const x=parseScript($("#scrpaste").value);if(!x.length)return;P.script=d.do==="scradd"?P.script.concat(x):x;commit();renderEdit();editSec="szkript";scrMode="mark";toast(x.length+" sor beolvasva. Most válassz fent egy beállítást, és koppints a sorokra, amelyeket az vesz.")}
     return;
   }
   if(d.addb){withRemap(()=>{const b=normP({blocks:[{type:d.addb,d:d.addb==="shoot"?20:d.addb==="lunch"?45:10,label:d.addb==="shoot"?"":TNAME[d.addb]}]}).blocks[0];P.blocks.push(b);openEB=b._id});renderEdit();
@@ -2035,6 +2056,85 @@ addEventListener("drop",e=>{document.body.classList.remove("dragging");const f=e
 /* indulás: mentett terv, különben üres (üdvözlő) */
 (()=>{let p=null;try{p=JSON.parse(localStorage.getItem(PKEY)||"null")}catch(e){}P=normP(p||{});applyProject();loadImgs()})();
 mpBoot();
+
+/* ---------- forgatókönyv: jelölés tervezéskor, olvasás forgatás közben ----------
+   Tervezéskor (Terv → Forgatókönyv) a bemásolt szöveg forgatókönyv-formában látszik, a jelenetek számozva.
+   Fent a terv beállításai (1/1, 1/2, 2/1 …): egyet kiválasztva a sorokra koppintva jelölöd, melyik részt veszi
+   (a jelenet címére koppintva az egész jelenetet, Tartomány módban az első és utolsó sort). A margón minden
+   sornál látszik, melyik beállítás veszi. Forgatás közben a Most nézetben az épp forgó beállítás teljes
+   jelenete olvasható, a vett sorok kiemelve. */
+let scrMode="mark",markShot=null,markRange=false,markAnchor=null;
+const natCmp=(a,b)=>String(a).localeCompare(String(b),"hu",{numeric:true});
+function planShotIds(){const s=new Set();P.blocks.forEach(b=>{if(b.type==="shoot")shotIds(b.label).forEach(i=>s.add(i))});return[...s].sort(natCmp)}
+function scrPasteCard(open){
+  return`<section class="card"><h2>${P.script.length?"Szöveg hozzáadása vagy cseréje":"Forgatókönyv beillesztése"}</h2>
+    <p class="muted small">Másold be a forgatókönyvet (pl. Wordből vagy PDF-ből). Az app magától szétszedi: <b>BELSŐ. / KÜLSŐ.</b> = jelenet, <b>NAGYBETŰS név</b> = szereplő, utána a dialógus, <b>(zárójel)</b> = instrukció.</p>
+    <textarea id="scrpaste" rows="${open?8:4}" placeholder="BELSŐ. KONYHA – NAPPAL&#10;Anna az ablaknál áll.&#10;ANNA&#10;(halkan)&#10;Megint esik."></textarea>
+    <div class="wgrid"><button class="btn sm ${P.script.length?"":"solid"}" type="button" data-do="scradd">${P.script.length?"Hozzáfűzés a végéhez":"Beolvasás"}</button>${P.script.length?`<button class="btn sm danger" type="button" data-do="scrrep">Csere</button>`:""}</div></section>`;
+}
+function scriptEditHTML(){
+  const ids=planShotIds();if(!markShot||!ids.includes(markShot))markShot=ids[0]||null;
+  if(!P.script.length)return`<section class="card"><h2>Így működik</h2><ol class="gsteps">
+      <li>Másold be lent a forgatókönyvet.</li><li>Válaszd ki fent a beállítást (pl. <b>1/2</b>), és koppints a sorokra, amelyeket az a beállítás vesz.</li>
+      <li>Forgatás közben a <b>Most</b> nézetben az épp forgó beállításnál a teljes jelenet olvasható, a vett rész kiemelve.</li></ol></section>${scrPasteCard(true)}`;
+  const modes=`<div class="seg" style="margin-bottom:12px" role="group" aria-label="Mód">${[["mark","Jelölés"],["edit","Szöveg szerkesztése"]].map(([k,l])=>`<button type="button" data-scrmode="${k}" aria-pressed="${scrMode===k}">${l}</button>`).join("")}</div>`;
+  if(scrMode==="edit")return modes+`<section class="card"><h2>Sorok</h2><p class="muted small">Itt a szöveget és a sorok fajtáját javíthatod. Hogy melyik beállítás melyik sort veszi, azt a <b>Jelölés</b> módban állítod be a legkönnyebben.</p>
+      <div class="etab">${P.script.map((l,k)=>`<div class="er sr" data-list="script" data-k="${k}"><label class="fi w2"><span class="flab">Típus</span><select data-f="t">${STYPES.map(([a,b])=>`<option value="${a}" ${a===l.t?"selected":""}>${b}</option>`).join("")}</select></label>
+        ${fld("x",l.x,{label:"Szöveg",area:1,cls:"span2"})}${fld("ids",(l.ids||[]).join(", "),{label:"Beállítások",ph:"1/1, 1/2",cls:"w2"})}<button type="button" class="ib del" data-act="rowdel" aria-label="Sor törlése">${ic("x",16)}</button></div>`).join("")}</div>
+      <button type="button" class="btn sm" data-act="rowadd" data-list="script">${ic("plus",14)}Új sor</button></section>${scrPasteCard(false)}`;
+  const cnt=id=>P.script.filter(l=>(l.ids||[]).includes(id)).length,missing=ids.filter(id=>!cnt(id));
+  let sc=0;
+  const lines=P.script.map((l,k)=>{if(l.t==="sh")sc++;const has=!!markShot&&(l.ids||[]).includes(markShot);
+    return`<div class="ln mk ${has?"hot":""} ${markAnchor===k?"anchor":""} ${l.t==="sh"?"scene":""}" data-mline="${k}" ${l.t==="sh"?`data-scene="${sc}"`:""}>
+      <div class="gut">${(l.ids||[]).slice().sort(natCmp).map(x=>`<span class="mini ${x===markShot?"hot":""}">${esc(x)}</span>`).join("")}</div>
+      <div class="script"><div class="${l.t}">${l.t==="sh"?`<span class="scn">${sc}.</span>`:""}${esc(l.x)}</div></div></div>`}).join("");
+  return modes+`${ids.length?`<section class="card scr-help"><p class="muted small">Válaszd ki a beállítást, majd koppints a sorokra, amelyeket az vesz. A <b>jelenet címére</b> koppintva az egész jelenet ki-be kapcsol. Egy sor több beállításhoz is tartozhat.</p>
+      ${missing.length?`<p class="eb-warn">${ic("alert",16)}<span>${missing.length===ids.length?"Még egyik beállításhoz sincs kijelölt rész.":`Még nincs kijelölt rész: ${missing.map(esc).join(", ")}.`}</span></p>`:`<p class="muted small" style="color:var(--ok)">${ic("check",14)} Minden beállításhoz van kijelölt rész.</p>`}</section>`:""}
+    <section class="card scr-tools">
+      ${ids.length?`<div class="schips">${ids.map(id=>`<button type="button" class="schip ${id===markShot?"on":""} ${cnt(id)?"":"empty"}" data-mshot="${esc(id)}" aria-pressed="${id===markShot}">${esc(id)}<small>${cnt(id)||"–"}</small></button>`).join("")}</div>
+      <div class="scr-row"><label class="fi chkf"><input type="checkbox" data-mrange ${markRange?"checked":""}><span>Tartomány</span></label>
+        <span class="muted small">${markAnchor!=null?"<b>Most koppints az utolsó sorra.</b>":markRange?"Koppints az első, majd az utolsó sorra.":`Jelölés: <b>${esc(markShot)}</b>`}</span></div>`
+      :`<p class="muted">A jelöléshez előbb legyenek forgatási blokkok az <b>Időrend</b>ben (pl. 1/1, 1/2).</p>`}
+    </section>
+    <section class="card fs scr-mark" style="padding:14px 8px;gap:0">${lines}</section>${scrPasteCard(false)}`;
+}
+function scrSet(i,on){const l=P.script[i];if(!l||!markShot)return;l.ids=l.ids||[];const has=l.ids.includes(markShot);
+  if(on&&!has)l.ids.push(markShot);if(!on&&has)l.ids=l.ids.filter(x=>x!==markShot)}
+document.addEventListener("click",e=>{
+  if(!e.target.closest||!e.target.closest('[data-view="terv"]'))return;
+  const sm=e.target.closest("[data-scrmode]");if(sm){scrMode=sm.dataset.scrmode;markAnchor=null;renderEdit();return}
+  const ch=e.target.closest("[data-mshot]");if(ch){markShot=ch.dataset.mshot;markAnchor=null;renderEdit();
+    const f=document.querySelector(".scr-mark .ln.hot")||document.querySelector(`.scr-mark [data-scene="${parseInt(markShot)}"]`);
+    f&&f.scrollIntoView({block:"center",behavior:"smooth"});return}
+  const ln=e.target.closest("[data-mline]");if(!ln)return;
+  if(!markShot){toast("Előbb legyen forgatási blokk az Időrendben.");return}
+  const k=+ln.dataset.mline,l=P.script[k];
+  if(l.t==="sh"&&!markRange){   // jelenet címe: az egész jelenet ki/be
+    let j=k+1;const r=[];while(j<P.script.length&&P.script[j].t!=="sh")r.push(j++);
+    const all=r.length&&r.every(i=>(P.script[i].ids||[]).includes(markShot));r.forEach(i=>scrSet(i,!all));
+  }else if(markRange){
+    if(markAnchor==null){markAnchor=k;scrSet(k,true)}
+    else{const a=Math.min(markAnchor,k),b=Math.max(markAnchor,k);for(let i=a;i<=b;i++)if(P.script[i].t!=="sh")scrSet(i,true);markAnchor=null}
+  }else scrSet(k,!(l.ids||[]).includes(markShot));
+  commit();renderEdit();
+});
+document.addEventListener("change",e=>{if(e.target.matches&&e.target.matches("[data-mrange]")){markRange=e.target.checked;markAnchor=null;renderEdit()}});
+
+/* forgatás közben: a beállítás teljes jelenete(i) sztori-sorrendben, a vett sorok kiemelve */
+let readSize=17;try{readSize=+localStorage.getItem("aperation-read-size")||17}catch(e){}
+function sceneRead(ids){
+  const sc=[];let cur=null,n=0;
+  D.script.forEach(l=>{if(l.t==="sh"){n++;cur={h:l,n,lines:[]};sc.push(cur)}else{if(!cur){cur={h:null,n:0,lines:[]};sc.push(cur)}cur.lines.push(l)}});
+  const lid=l=>l.cov.flatMap(c=>c.ids),hit=sc.filter(s=>s.lines.some(l=>lid(l).some(x=>ids.includes(x))));
+  if(!hit.length)return"";
+  return`<div class="readbar"><span class="muted small">A teljes jelenet, a <b>${esc(ids.join(", "))}</b> által vett rész kiemelve.</span>
+      <span class="sizer"><button type="button" class="btn sm" data-rsize="-1" aria-label="Kisebb betű">A−</button><button type="button" class="btn sm" data-rsize="1" aria-label="Nagyobb betű">A+</button></span></div>
+    <div class="script read" style="font-size:${readSize}px">${hit.map(s=>`${s.h?`<div class="sh"><span class="scn">${s.n}.</span>${esc(s.h.x)}</div>`:""}${s.lines.map(l=>{const on=lid(l).some(x=>ids.includes(x));
+      return`<div class="${l.t} ${on?"on":"off"}">${esc(l.x)}</div>`}).join("")}`).join('<hr class="seghr">')}</div>`;
+}
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-rsize]");if(!b)return;
+  readSize=Math.max(13,Math.min(26,readSize+(+b.dataset.rsize)*2));try{localStorage.setItem("aperation-read-size",readSize)}catch(x){}
+  $$(".script.read").forEach(x=>x.style.fontSize=readSize+"px")});
 
 /* ---------- nyomtatható változatok ----------
    Diszpó, forgatókönyv (a sztori), shotlist, szkript (a szkriptes lapja) az aktuális tervből. Nyomtatás (vagy PDF-mentés) a böngésző
@@ -2230,7 +2330,7 @@ const TOUR_F=()=>[
  {state:"move",view:"terv",sec:"fajl",sel:"#drop",title:"A saját napod: Excelből",html:"A <b>Terv</b> fül <b>Fájl</b> részén töltöd be a táblázatot: koppints ide, vagy húzd rá a fájlt az appra. A legbiztosabb a <b>Forgatási sablon</b>, ugyanitt letölthető. Más táblázatot is felismer, ha van benne <b>Perc</b> (vagy Kezdés), <b>Típus</b> és <b>Blokk / shot</b> oszlop. Betöltés előtt megmutatja, mit talált, és csak a <b>Betöltés</b> gombra cseréli a tervet."},
  {state:"move",view:"terv",sec:"idorend",sel:"#tourblock",title:"Vagy írd be itt",html:"Az <b>Időrend</b>ben minden blokk egy kártya: <b>típus, perc, shot</b>. A kezdési idők maguktól számolódnak a crew callból. A jobb oldali nyíl nyitja a részleteket: beállítás, fény, szereplők, kellékek, sztori, képek. Új blokkot a lista alján adsz hozzá; a törlés visszavonható."},
  {state:"move",view:"terv",sec:"idorend",sel:"#tourblock .eb-drag",title:"Átrendezés húzással",html:"A kártya bal szélén lévő <b>⋮⋮ fogantyút</b> megfogva fel-le húzhatod a blokkot. Húzás közben a többi kártya félrecsúszik, és az időpontok már az új sorrendet mutatják. Elengedés után a nap újraszámolódik, és egy koppintással <b>visszavonható</b>. Ha két átállás kerül egymás mellé, az app <b>sárgán jelzi</b>, de engedi."},
- {state:"move",view:"terv",sec:"idorend",sel:'[data-view="terv"] .esec',title:"A terv többi része",html:"<b>Projekt:</b> cím, dátum, crew call, wrap-határ, fontos tudnivalók és a fénybeállítások kódjai. <b>Emberek:</b> szereplők és stáb, érkezéssel, telefonnal. <b>Forgatókönyv:</b> másold be a szöveget, az app szétszedi; utána soronként beírod, melyik shot veszi. Minden azonnal mentődik ezen az eszközön."},
+ {state:"move",view:"terv",sec:"idorend",sel:'[data-view="terv"] .esec',title:"A terv többi része",html:"<b>Projekt:</b> cím, dátum, crew call, wrap-határ, fontos tudnivalók és a fénybeállítások kódjai. <b>Emberek:</b> szereplők és stáb, érkezéssel, telefonnal. <b>Forgatókönyv:</b> másold be a szöveget, az app szétszedi; utána kiválasztasz egy beállítást, és a sorokra koppintva jelölöd, melyik részt veszi. Forgatás közben így a Most nézetben a teljes jelenet olvasható, a vett rész kiemelve. Minden azonnal mentődik ezen az eszközön."},
  {state:"move",view:"terv",sec:"csapat",sel:"#teamcard",title:"Közös munka a stábbal",html:"A <b>Csapat</b> részen megoszthatod a napot: minden pozíció (2nd AD, operatőr, szkriptes, kellékes, színész…) kap egy <b>belépőkódot</b>. Aki beírja (Kezdés → <b>Csatlakozás kóddal</b>), a saját telefonján élőben látja, mi megy most és mennyit csúsztunk. Pozíciónként te döntöd el, <b>ki mit lát</b> (pl. telefonszámok, forgatókönyv), és ki <b>vezérelheti</b> a napot. A kitiltás és az új kód egy koppintás."},
  {state:"move",view:"terv",sec:"fajl",sel:'[data-do="export"]',title:"Mentés Excelbe",html:"A kész tervet <b>Excelbe mentheted</b>. Ugyanolyan, mint a sablon: elküldheted a stábnak, gépen javíthatod, és visszatöltheted. A telefonról feltett képek nem kerülnek bele, csak a kép-linkek."},
  {state:"move",title:"Ennyi az egész",html:()=>tour&&tour.tmpP?"Kezdd a <b>Terv</b> fülön: tölts be egy Excel-táblázatot, nyisd meg a mintát, vagy írd be a napot. Ezt a bemutatót az Info fülön bármikor újranézheted.":"Forgatás előtt érdemes egyszer végigmenni a napon <b>próba módban</b>, gyorsított órával. Ezt a bemutatót az Info fülön bármikor újranézheted."}
