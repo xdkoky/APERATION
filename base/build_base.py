@@ -215,13 +215,17 @@ src = src.replace("const FB_SRC=/*__FBSRC__*/null;", "const FB_SRC=" + json.dump
 print("közös munka:", "beállítva (" + fbcfg.get("projectId", "?") + ")" if fbcfg else "nincs config.json, csak emulátorral próbálható")
 href = re.search(r'<link rel="stylesheet" href="(https://fonts\.googleapis\.com[^"]+)"', src).group(1).replace("&amp;", "&")
 UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"
-gcss = subprocess.check_output(["curl", "-sS", "-A", UA, href]).decode()
+for _ in range(4):   # a Google Fonts néha hibás választ ad: újrapróbáljuk
+    gcss = subprocess.check_output(["curl", "-sS", "-A", UA, href]).decode()
+    if "@font-face" in gcss and "fonts.gstatic.com" in gcss:
+        break
 faces = []
 for subset, ff in re.findall(r"/\*\s*([\w-]+)\s*\*/\s*(@font-face\s*{[^}]*})", gcss):
     if subset not in ("latin", "latin-ext"):
         continue
     url = re.search(r"url\((https://[^)]+)\)", ff).group(1)
-    fn = re.sub(r"[^A-Za-z0-9]+", "-", url.split("/s/")[1].rsplit(".", 1)[0])[-60:] + ".woff2"
+    tail = url.split("/s/")[1] if "/s/" in url else hashlib.sha1(url.encode()).hexdigest()[:16]
+    fn = re.sub(r"[^A-Za-z0-9]+", "-", tail.rsplit(".", 1)[0])[-60:] + ".woff2"
     if not os.path.exists(os.path.join(PAGES, "fonts", fn)):
         subprocess.run(["curl", "-sS", "-o", os.path.join(PAGES, "fonts", fn), url], check=True)
     faces.append(ff.replace(url, "fonts/" + fn))
