@@ -288,7 +288,10 @@ async function mpCreate(btn){
     await r0.set({owner:UID,title:P.title||"",created:ts,ts});
     const b=fdb.batch(),acode=RAND(8);
     MP={...MP,base:null,on:true,mode:"admin",pid,roleId:"__owner",code:acode,name:"",perm:ALLPERM,roleName:"Szerkesztő",title:P.title,roles:[],members:[]};
-    PRESETS.forEach(([name,s],k)=>{const id=RID(12),code=RAND(8),perm=permOf(s);MP.roles.push({id,name,perm,code,order:k});
+    let tpl=null;try{tpl=JSON.parse(localStorage.getItem("aperation-team-tpl")||"null")}catch(e){}
+    const list=Array.isArray(tpl)&&tpl.length?tpl.map(r=>[r.name,Object.assign(permOf(""),r.perm||{})]):PRESETS.map(([n,s])=>[n,permOf(s)]);
+    try{localStorage.removeItem("aperation-team-tpl")}catch(e){}
+    list.forEach(([name,perm],k)=>{const id=RID(12),code=RAND(8);MP.roles.push({id,name,perm,code,order:k});
       b.set(r0.collection("roles").doc(id),{name,perm,code,order:k});b.set(fdb.collection("codes").doc(code),{pid,roleId:id})});
     b.set(r0.collection("roles").doc("__admin"),{name:"Szerkesztő (társ-AD)",admin:true,code:acode,order:-1});b.set(fdb.collection("codes").doc(acode),{pid,roleId:"__admin"});
     await b.commit();MP.adminCode=acode;mpSaveLocal();mpListen();await mpPublish();mpPush();mpPushTakes(null);

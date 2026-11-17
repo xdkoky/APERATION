@@ -1542,7 +1542,10 @@ async function mpCreate(btn){
     await r0.set({owner:UID,title:P.title||"",created:ts,ts});
     const b=fdb.batch(),acode=RAND(8);
     MP={...MP,base:null,on:true,mode:"admin",pid,roleId:"__owner",code:acode,name:"",perm:ALLPERM,roleName:"Szerkesztő",title:P.title,roles:[],members:[]};
-    PRESETS.forEach(([name,s],k)=>{const id=RID(12),code=RAND(8),perm=permOf(s);MP.roles.push({id,name,perm,code,order:k});
+    let tpl=null;try{tpl=JSON.parse(localStorage.getItem("aperation-team-tpl")||"null")}catch(e){}
+    const list=Array.isArray(tpl)&&tpl.length?tpl.map(r=>[r.name,Object.assign(permOf(""),r.perm||{})]):PRESETS.map(([n,s])=>[n,permOf(s)]);
+    try{localStorage.removeItem("aperation-team-tpl")}catch(e){}
+    list.forEach(([name,perm],k)=>{const id=RID(12),code=RAND(8);MP.roles.push({id,name,perm,code,order:k});
       b.set(r0.collection("roles").doc(id),{name,perm,code,order:k});b.set(fdb.collection("codes").doc(code),{pid,roleId:id})});
     b.set(r0.collection("roles").doc("__admin"),{name:"Szerkesztő (társ-AD)",admin:true,code:acode,order:-1});b.set(fdb.collection("codes").doc(acode),{pid,roleId:"__admin"});
     await b.commit();MP.adminCode=acode;mpSaveLocal();mpListen();await mpPublish();mpPush();mpPushTakes(null);
@@ -2079,6 +2082,7 @@ function renderWelcome(v){
     <div class="wgrid">
       <button class="btn" type="button" data-do="minta">${ic("play",16)}Minta megnyitása</button>
       <button class="btn" type="button" data-do="tour">${ic("play",16)}Bemutató · 2 perc</button>
+      <label class="btn">${ic("upload",16)}Projektkulcs megnyitása<input type="file" accept=".json,application/json" data-import hidden></label>
     </div>
     ${MP_AVAIL&&!inv?`<section class="card joincard"><div class="card-head"><h2>Kódot kaptál a stábtól?</h2><button class="btn sm solid" type="button" data-do="joinform">${ic("users",14)}Csatlakozás kóddal</button></div><div id="joinbox" hidden>${joinHTML()}</div></section>`:""}
     ${plLoad().length?`<section class="card"><h2>Korábbi projektek</h2>${projectsHTML()}</section>`:""}
@@ -2135,7 +2139,7 @@ function importPreview(){
     <div class="rows">${[["Cím",p.title||"–"],["Dátum",p.date||"nincs megadva"],["Crew call",hm(p.call)],["Időrend",`${p.blocks.length} blokk, ebből ${sh} forgatás · ${Math.floor(tot/60)} óra ${tot%60} perc · vége ${hm(p.call+tot)}`],
       ["Szereplők",p.cast.length+" fő"],["Stáb",p.crew.length+" fő"],["Shotlist",p.shots.length+" shot"],["Fények",p.groups.length+" beállítás"],["Forgatókönyv",p.script.length+" sor"]].map(([a,b])=>`<div class="row" style="grid-template-columns:96px minmax(0,1fr)"><small>${a}</small><b>${esc(b)}</b></div>`).join("")}</div>
     ${(p._warn||[]).length?`<ul class="list">${p._warn.map(w=>`<li class="warn">${esc(w)}</li>`).join("")}</ul>`:""}
-    <p class="muted small">${p._full?`<b>Teljes APERATION-projektfájl</b>${Object.keys(p._images||{}).length?`, ${Object.keys(p._images).length} képpel`:""}${p._state&&p._state.cur?", a nap állásával együtt":""}. `:""}A betöltés után ${MP.on?"a közös projektben mindenkinél ez lesz a terv":"a mostani terv a Projektek közé kerül"}${p._full?".":", a nap állása (kész blokkok, take-ek) nullázódik."}</p>
+    <p class="muted small">${p._full?`<b>Projektkulcs</b>${Object.keys(p._images||{}).length?`, ${Object.keys(p._images).length} képpel`:""}${p._team&&p._team.length?`, ${p._team.length} pozícióval`:""}${p._state&&p._state.cur?", a nap állásával együtt":""}. `:""}A betöltés után ${MP.on?"a közös projektben mindenkinél ez lesz a terv":"a mostani terv a Projektek közé kerül"}${p._full?".":", a nap állása (kész blokkok, take-ek) nullázódik."}</p>
     <div class="wgrid"><button class="btn solid" type="button" data-do="load" ${p.blocks.length?"":"disabled"}>Betöltés</button><button class="btn" type="button" data-do="cancel">Mégse</button></div></section>`;
 }
 function renderEdit(){
@@ -2271,12 +2275,12 @@ document.addEventListener("click",async e=>{
     else if(d.do==="newproj")newProject(t);
     else if(d.do==="gotoplan"){editSec="projekt";location.hash="#terv";renderEdit()}
     else if(d.do==="gototeam"){editSec="csapat";location.hash="#terv";renderEdit()}
-    else if(d.do==="projexport")exportProjectFile();
+    else if(d.do==="projexport")exportProjectFile(t);
     else if(d.do==="projlist"){editSec="fajl";renderEdit();const c=document.getElementById("projcard");c&&c.scrollIntoView({block:"start",behavior:"smooth"})}
     else if(d.do==="sablon")downloadSablon();
     else if(d.do==="tour")tourStart();
     else if(d.do==="export")exportNow();
-    else if(d.do==="load"&&pending){const p=pending;pending=null;delete p._warn;setProject(p,{reset:true,archive:!MP.on});if(p._full)applyProjectFileExtras(p);editSec="idorend";location.hash="#most";toast("Terv betöltve: "+p.blocks.length+" blokk.",{tone:"ok"})}
+    else if(d.do==="load"&&pending){const p=pending;pending=null;const {_warn,_state,_images,_team,_full,...clean}=p;setProject(clean,{reset:true,archive:!MP.on});if(_full)applyProjectFileExtras({_state,_images,_team});editSec="idorend";location.hash="#most";toast("Terv betöltve: "+p.blocks.length+" blokk.",{tone:"ok"})}
     else if(d.do==="cancel"){pending=null;renderEdit()}
     else if(d.do==="scradd"||d.do==="scrrep"){const x=parseScript($("#scrpaste").value);if(!x.length)return;P.script=d.do==="scradd"?P.script.concat(x):x;commit();renderEdit();editSec="szkript";scrMode="mark";toast(x.length+" sor beolvasva. Most válassz fent egy beállítást, és koppints a sorokra, amelyeket az vesz.")}
     return;
@@ -2519,28 +2523,40 @@ document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest
 const blobToURL=bl=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(bl)});
 async function urlToBlob(u){return(await fetch(u)).blob()}
 function projFileName(){const t=(P.title||"projekt").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_|_$/g,"").slice(0,40)||"projekt";
-  return`${t}${P.date?"_"+P.date:""}.aperation.json`}
-async function exportProjectFile(){
-  flushSave();
-  const images={};
-  for(const b of [...P.blocks,...P.groups,...P.shots])for(const x of b.images||[])if(x.idb&&!images[x.idb]){try{const bl=await idb.get(x.idb);if(bl)images[x.idb]=await blobToURL(bl)}catch(e){}}
-  const data={app:"APERATION",kind:"projekt",version:1,saved:new Date().toISOString(),project:P,state:{...st,sim:fresh().sim,sw:null},images};
+  return`${t}${P.date?"_"+P.date:""}_projektkulcs.aperation.json`}
+/* projektkulcs: egyetlen, teljesen offline fájl, benne minden (terv, shotlist, forgatókönyv-jelölések, az összes kép
+   teljes minőségben, take-napló, a csapat pozíciói). A közös szerver 30 napos képtörlése nem érinti. */
+async function exportProjectFile(btn){
+  flushSave();if(btn){btn.disabled=true}
+  // közös projektben előbb letöltjük, ami még csak a szerveren van
+  if(MP.on&&typeof mpFetchImgs==="function"){try{await mpFetchImgs()}catch(e){}}
+  const images={};let miss=0;
+  for(const b of [...P.blocks,...P.groups,...P.shots])for(const x of b.images||[])if(x.idb&&!images[x.idb]){try{const bl=await idb.get(x.idb);if(bl)images[x.idb]=await blobToURL(bl);else miss++}catch(e){miss++}}
+  const team=isMpAdmin()&&MP.roles&&MP.roles.length?MP.roles.map(r=>({name:r.name,perm:r.perm})):null;
+  const data={app:"APERATION",kind:"projekt",version:2,saved:new Date().toISOString(),project:P,state:{...st,sim:fresh().sim,sw:null},images,team};
+  if(btn){btn.disabled=false}
   await saveFile(projFileName(),new Blob([JSON.stringify(data)],{type:"application/json"}),"application/json");
+  toast(miss?`Projektkulcs kész, de ${miss} kép hiányzik belőle: ezen az eszközön nincs meg.`:`Projektkulcs kész: minden benne van${Object.keys(images).length?`, ${Object.keys(images).length} képpel`:""}. Net nélkül is visszatölthető.`,{tone:miss?"warn":"ok",ms:6000});
 }
 function readProjectFile(obj,name){
-  if(obj&&obj.app==="APERATION"&&obj.project){const p=normP(obj.project);p._state=obj.state||null;p._images=obj.images||{};p.src=name;p._full=true;p._warn=[];return p}
+  if(obj&&obj.app==="APERATION"&&obj.project){const p=normP(obj.project);p._state=obj.state||null;p._images=obj.images||{};p._team=Array.isArray(obj.team)?obj.team:null;p.src=name;p._full=true;p._warn=[];return p}
   const p=normP(obj);p._warn=[];p.src=name;return p;
 }
 async function applyProjectFileExtras(p){
   const imgs=p._images||{};
   for(const [k,u] of Object.entries(imgs)){try{const bl=await urlToBlob(u);await idb.put(k,bl);IMG[k]=URL.createObjectURL(bl)}catch(e){}}
+  // a csapat pozíciói: a következő „Közös projekt indítása” ezekkel jön létre
+  try{if(p._team&&p._team.length)localStorage.setItem("aperation-team-tpl",JSON.stringify(p._team));else localStorage.removeItem("aperation-team-tpl")}catch(e){}
+  // közös projektben a képek újra felkerülnek a szerverre (ha a 30 napos takarítás már törölte őket)
+  if(isMpAdmin()&&Object.keys(imgs).length){try{const K="aperation-mp-up2-"+MP.pid,d=JSON.parse(localStorage.getItem(K)||"{}");Object.keys(imgs).forEach(k=>delete d[k]);localStorage.setItem(K,JSON.stringify(d))}catch(e){}mpUploadImgs()}
   if(p._state){const snd=st.sound;st=Object.assign(fresh(),p._state);st.sound=snd;st.sim=fresh().sim;save()}
   applyProject();lastHero=null;renderAll();
 }
 function exportCard(){
-  return`<section class="card"><div class="card-head"><h2>Teljes mentés egy fájlba</h2><span class="chip neutral" id="savedind">${savedText()}</span></div>
-    <p class="muted small">Ha kész a terv, mentsd el egyetlen fájlba: benne van <b>minden</b> (időrend, emberek, fények, forgatókönyv a jelölésekkel, képek, a nap állása). Bármelyik üres APERATION-ben visszatölthető: Fájl → betöltés, vagy húzd rá.</p>
-    <div class="wgrid"><button class="btn solid" type="button" data-do="projexport" ${P.blocks.length||P.title?"":"disabled"}>${ic("down",16)}Projekt exportálása</button></div></section>
+  return`<section class="card" id="keycard"><div class="card-head"><h2>Projektkulcs</h2><span class="chip neutral" id="savedind">${savedText()}</span></div>
+    <p class="muted small">Egyetlen fájl, amiben <b>minden</b> benne van: projekt, shotlist, időrend, emberek, fények, forgatókönyv a jelölésekkel, <b>az összes kép teljes minőségben</b>, take-napló és a csapat pozíciói. Teljesen <b>offline</b>: tedd el a telefonodra, gépre, e-mailbe, pendrive-ra. A közös szerver 30 napos képtörlése nem érinti, így hónapokkal később is visszajöhetsz hozzá.</p>
+    <p class="muted small">Visszatöltés bármelyik APERATION-ben: <b>Kezdés → Projektkulcs megnyitása</b>, vagy Terv → Fájl → betöltés.</p>
+    <div class="wgrid"><button class="btn solid" type="button" data-do="projexport" ${P.blocks.length||P.title?"":"disabled"}>${ic("down",16)}Projektkulcs mentése</button></div></section>
     <section class="card"><h2>Automatikus mentések</h2><p class="muted small">Minden módosítás azonnal mentődik ezen az eszközön. Emellett az app percenként biztonsági pillanatképet készít (az utolsó ${BK_MAX} megmarad), ha valami mégis elveszne.</p>
     <div id="bklist"><p class="muted small">Betöltés…</p></div></section>`;
 }
@@ -2757,7 +2773,7 @@ const TOUR_F=()=>[
  {state:"move",view:"terv",sec:"szkript",sel:".scr-tools",title:"Forgatókönyv jelölése",html:"A <b>Forgatókönyv</b> részen bemásolod a szöveget, aztán fent kiválasztasz egy beállítást (pl. <b>1/2</b>), és <b>a sorokra koppintva</b> jelölöd, melyik részt veszi. A jelenet címére koppintva az egész jelenet ki-be kapcsol, Tartomány módban az első és az utolsó sorral jelölsz. Forgatás közben a <b>Most</b> nézetben így a teljes jelenet olvasható, a vett rész kiemelve."},
  {state:"move",view:"terv",sec:"idorend",sel:'[data-view="terv"] .esec',title:"A terv többi része",html:"<b>Shotlist:</b> a shotok a sztori sorrendjében (plán, optika, mozgás, leírás, storyboard); egy gombbal kerülnek az időrendbe. <b>Projekt:</b> cím, dátum, crew call, wrap-határ, fontos tudnivalók és a fénybeállítások kódjai. <b>Emberek:</b> szereplők és stáb, érkezéssel, telefonnal. <b>Forgatókönyv:</b> másold be a szöveget, az app szétszedi; utána kiválasztasz egy beállítást, és a sorokra koppintva jelölöd, melyik részt veszi. Forgatás közben így a Most nézetben a teljes jelenet olvasható, a vett rész kiemelve. Minden azonnal mentődik ezen az eszközön."},
  {state:"move",view:"terv",sec:"csapat",sel:"#teamcard",title:"Közös munka a stábbal",html:"A <b>Csapat</b> részen megoszthatod a napot: minden pozíció (rendező, 1st AD, 2nd AD, szkriptes, általános stáb) kap egy <b>belépőkódot</b>. Aki beírja (Kezdés → <b>Csatlakozás kóddal</b>), a saját telefonján élőben látja, mi megy most és mennyit csúsztunk. Pozíciónként te döntöd el, <b>ki mit lát</b> (pl. telefonszámok, forgatókönyv), és ki <b>vezérelheti</b> a napot. A <b>szkriptes</b> alapból <b>Take-napló</b> jogot kap: mérheti a take-eket, csillagozhat és jegyzetelhet, de a napot nem lépteti. Lent a <b>Szerepek kipróbálása</b> gombjaival egyedül is megnézheted, mit lát és mit tehet az egyes pozíció. A kitiltás és az új kód egy koppintás."},
- {state:"move",view:"terv",sec:"fajl",sel:'[data-do="projexport"]',title:"Mentés és biztonság",html:"Minden módosítás <b>azonnal mentődik</b> ezen az eszközön, és az app percenként biztonsági pillanatképet is készít, ami a Fájl részen visszaállítható. Ha kész a terv, a <b>Projekt exportálása</b> egyetlen fájlba ment mindent (képekkel, jelölésekkel, a nap állásával), ami bármelyik APERATION-ben visszatölthető. Excelbe is mentheted, gépen javítani."},
+ {state:"move",view:"terv",sec:"fajl",sel:'[data-do="projexport"]',title:"Mentés és biztonság",html:"Minden módosítás <b>azonnal mentődik</b> ezen az eszközön, és az app percenként biztonsági pillanatképet is készít, ami a Fájl részen visszaállítható. Ha kész a terv, a <b>Projektkulcs mentése</b> egyetlen, offline fájlba ment mindent (képekkel, jelölésekkel, take-naplóval, a csapat pozícióival). Hónapok múlva is visszatölthető bármelyik APERATION-ben: Kezdés → Projektkulcs megnyitása. Excelbe is mentheted, gépen javítani."},
  {state:"move",title:"Ennyi az egész",html:()=>tour&&tour.tmpP?"Kezdd a <b>Terv</b> fülön: tölts be egy Excel-táblázatot, nyisd meg a mintát, vagy írd be a napot. Ezt a bemutatót az Info fülön bármikor újranézheted.":"Forgatás előtt érdemes egyszer végigmenni a napon <b>próba módban</b>, gyorsított órával. Ezt a bemutatót az Info fülön bármikor újranézheted."}
 ];
 function tourState(kind){

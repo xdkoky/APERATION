@@ -52,28 +52,40 @@ document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest
 const blobToURL=bl=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(bl)});
 async function urlToBlob(u){return(await fetch(u)).blob()}
 function projFileName(){const t=(P.title||"projekt").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_|_$/g,"").slice(0,40)||"projekt";
-  return`${t}${P.date?"_"+P.date:""}.aperation.json`}
-async function exportProjectFile(){
-  flushSave();
-  const images={};
-  for(const b of [...P.blocks,...P.groups,...P.shots])for(const x of b.images||[])if(x.idb&&!images[x.idb]){try{const bl=await idb.get(x.idb);if(bl)images[x.idb]=await blobToURL(bl)}catch(e){}}
-  const data={app:"APERATION",kind:"projekt",version:1,saved:new Date().toISOString(),project:P,state:{...st,sim:fresh().sim,sw:null},images};
+  return`${t}${P.date?"_"+P.date:""}_projektkulcs.aperation.json`}
+/* projektkulcs: egyetlen, teljesen offline fájl, benne minden (terv, shotlist, forgatókönyv-jelölések, az összes kép
+   teljes minőségben, take-napló, a csapat pozíciói). A közös szerver 30 napos képtörlése nem érinti. */
+async function exportProjectFile(btn){
+  flushSave();if(btn){btn.disabled=true}
+  // közös projektben előbb letöltjük, ami még csak a szerveren van
+  if(MP.on&&typeof mpFetchImgs==="function"){try{await mpFetchImgs()}catch(e){}}
+  const images={};let miss=0;
+  for(const b of [...P.blocks,...P.groups,...P.shots])for(const x of b.images||[])if(x.idb&&!images[x.idb]){try{const bl=await idb.get(x.idb);if(bl)images[x.idb]=await blobToURL(bl);else miss++}catch(e){miss++}}
+  const team=isMpAdmin()&&MP.roles&&MP.roles.length?MP.roles.map(r=>({name:r.name,perm:r.perm})):null;
+  const data={app:"APERATION",kind:"projekt",version:2,saved:new Date().toISOString(),project:P,state:{...st,sim:fresh().sim,sw:null},images,team};
+  if(btn){btn.disabled=false}
   await saveFile(projFileName(),new Blob([JSON.stringify(data)],{type:"application/json"}),"application/json");
+  toast(miss?`Projektkulcs kész, de ${miss} kép hiányzik belőle: ezen az eszközön nincs meg.`:`Projektkulcs kész: minden benne van${Object.keys(images).length?`, ${Object.keys(images).length} képpel`:""}. Net nélkül is visszatölthető.`,{tone:miss?"warn":"ok",ms:6000});
 }
 function readProjectFile(obj,name){
-  if(obj&&obj.app==="APERATION"&&obj.project){const p=normP(obj.project);p._state=obj.state||null;p._images=obj.images||{};p.src=name;p._full=true;p._warn=[];return p}
+  if(obj&&obj.app==="APERATION"&&obj.project){const p=normP(obj.project);p._state=obj.state||null;p._images=obj.images||{};p._team=Array.isArray(obj.team)?obj.team:null;p.src=name;p._full=true;p._warn=[];return p}
   const p=normP(obj);p._warn=[];p.src=name;return p;
 }
 async function applyProjectFileExtras(p){
   const imgs=p._images||{};
   for(const [k,u] of Object.entries(imgs)){try{const bl=await urlToBlob(u);await idb.put(k,bl);IMG[k]=URL.createObjectURL(bl)}catch(e){}}
+  // a csapat pozíciói: a következő „Közös projekt indítása” ezekkel jön létre
+  try{if(p._team&&p._team.length)localStorage.setItem("aperation-team-tpl",JSON.stringify(p._team));else localStorage.removeItem("aperation-team-tpl")}catch(e){}
+  // közös projektben a képek újra felkerülnek a szerverre (ha a 30 napos takarítás már törölte őket)
+  if(isMpAdmin()&&Object.keys(imgs).length){try{const K="aperation-mp-up2-"+MP.pid,d=JSON.parse(localStorage.getItem(K)||"{}");Object.keys(imgs).forEach(k=>delete d[k]);localStorage.setItem(K,JSON.stringify(d))}catch(e){}mpUploadImgs()}
   if(p._state){const snd=st.sound;st=Object.assign(fresh(),p._state);st.sound=snd;st.sim=fresh().sim;save()}
   applyProject();lastHero=null;renderAll();
 }
 function exportCard(){
-  return`<section class="card"><div class="card-head"><h2>Teljes mentés egy fájlba</h2><span class="chip neutral" id="savedind">${savedText()}</span></div>
-    <p class="muted small">Ha kész a terv, mentsd el egyetlen fájlba: benne van <b>minden</b> (időrend, emberek, fények, forgatókönyv a jelölésekkel, képek, a nap állása). Bármelyik üres APERATION-ben visszatölthető: Fájl → betöltés, vagy húzd rá.</p>
-    <div class="wgrid"><button class="btn solid" type="button" data-do="projexport" ${P.blocks.length||P.title?"":"disabled"}>${ic("down",16)}Projekt exportálása</button></div></section>
+  return`<section class="card" id="keycard"><div class="card-head"><h2>Projektkulcs</h2><span class="chip neutral" id="savedind">${savedText()}</span></div>
+    <p class="muted small">Egyetlen fájl, amiben <b>minden</b> benne van: projekt, shotlist, időrend, emberek, fények, forgatókönyv a jelölésekkel, <b>az összes kép teljes minőségben</b>, take-napló és a csapat pozíciói. Teljesen <b>offline</b>: tedd el a telefonodra, gépre, e-mailbe, pendrive-ra. A közös szerver 30 napos képtörlése nem érinti, így hónapokkal később is visszajöhetsz hozzá.</p>
+    <p class="muted small">Visszatöltés bármelyik APERATION-ben: <b>Kezdés → Projektkulcs megnyitása</b>, vagy Terv → Fájl → betöltés.</p>
+    <div class="wgrid"><button class="btn solid" type="button" data-do="projexport" ${P.blocks.length||P.title?"":"disabled"}>${ic("down",16)}Projektkulcs mentése</button></div></section>
     <section class="card"><h2>Automatikus mentések</h2><p class="muted small">Minden módosítás azonnal mentődik ezen az eszközön. Emellett az app percenként biztonsági pillanatképet készít (az utolsó ${BK_MAX} megmarad), ha valami mégis elveszne.</p>
     <div id="bklist"><p class="muted small">Betöltés…</p></div></section>`;
 }
