@@ -439,54 +439,103 @@ details[open]>:not(summary){animation:openIn .32s var(--ease-out) both}
 .card .eb,.card .role,.card .stat{box-shadow:none}
 .wgrid>.btn:not(.solid):not(.danger),.vh-act>.btn:not(.solid){background-color:var(--panel-solid);background-image:linear-gradient(var(--surface-2),var(--surface-2))}
 
-/* ---------- indulóképernyő (csak hidegindításkor) ----------
-   Fekete-fehér, régi PC-s rendszerindítás: előbb a „BIOS” sorai gépelődnek, aztán a logó egy csíkos töltősávval. */
-.boot{position:fixed;inset:0;z-index:1000;background:#000;color:#e9e9e9;font-family:"Courier New",Courier,monospace;font-size:13.5px;line-height:1.45;
-  padding:calc(18px + env(safe-area-inset-top,0px)) 18px 18px;overflow:hidden;cursor:pointer;-webkit-user-select:none;user-select:none;transition:opacity .45s ease}
-.boot.out{opacity:0}
-.boot pre{margin:0;font:inherit;white-space:pre-wrap;word-break:break-word}
-.boot .cur{display:inline-block;width:.6em;height:1.05em;background:#e9e9e9;vertical-align:-2px;animation:bootblink .9s steps(2) infinite}
+/* ---------- indulóképernyő (csak hidegindításkor), hanggal szinkronban ----------
+   1) CRT-bekapcsolás: egy fehér vonal kinyílik képernyővé (a gép felzúgására)
+   2) „BIOS”: a sorok a merevlemez kattanásaira jelennek meg, memóriateszt számlálóval
+   3) a dallam három hangjára: a hatszög-jel, a felirat, majd a töltősáv
+   4) átmenet: a jel előrerepül, fehér villanás, és az app lágyan, élesedve beúszik */
+.boot{position:fixed;inset:0;z-index:1000;background:#000;color:#e6e6e6;font-family:"Courier New",Courier,monospace;font-size:13.5px;line-height:1.45;
+  overflow:hidden;cursor:pointer;-webkit-user-select:none;user-select:none}
+.boot .scr{position:absolute;inset:0;padding:calc(18px + env(safe-area-inset-top,0px)) 18px 18px;transform:scaleY(.004) scaleX(0);background:#000;
+  transform-origin:50% 50%;filter:brightness(3)}
+.boot.on .scr{animation:crtOn .55s cubic-bezier(.2,.9,.2,1) forwards}
+@keyframes crtOn{0%{transform:scaleY(.004) scaleX(0);filter:brightness(3)}35%{transform:scaleY(.004) scaleX(1);filter:brightness(3)}100%{transform:none;filter:none}}
+.boot .scr::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 1px,transparent 1px 3px);animation:flick 3.2s steps(1) infinite}
+@keyframes flick{0%,100%{opacity:1}47%{opacity:.75}48%{opacity:1}}
+.boot pre{margin:0;font:inherit;white-space:pre-wrap;word-break:break-word;text-shadow:0 0 6px rgba(255,255,255,.25)}
+.boot .cur{display:inline-block;width:.6em;height:1.05em;background:#e6e6e6;vertical-align:-2px;animation:bootblink .9s steps(2) infinite}
 @keyframes bootblink{50%{opacity:0}}
-.boot .bl{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:34px;opacity:0;transition:opacity .5s ease}
-.boot.logo .bl{opacity:1}.boot.logo pre{opacity:0;transition:opacity .2s}
-.boot .bl svg{height:118px;width:auto;max-width:72vw;filter:grayscale(1) brightness(1.15)}
-.boot .bar{width:min(240px,62vw);height:16px;border:2px solid #e9e9e9;padding:2px;overflow:hidden;position:relative}
-.boot .bar i{position:absolute;top:2px;bottom:2px;width:46px;left:-50px;
-  background:repeating-linear-gradient(90deg,#e9e9e9 0 10px,transparent 10px 14px);animation:bootbar 1.25s linear infinite}
+.boot .bl{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:30px;pointer-events:none}
+.boot .bl svg{height:126px;width:auto;max-width:74vw;overflow:visible}
+.boot:not(.m) .bl{visibility:hidden}
+.boot .bl .lg-m,.boot .bl .lg-t{opacity:0;fill:#eee}
+.boot.m .bl .lg-m{animation:markIn .6s cubic-bezier(.16,1,.3,1) forwards;transform-box:fill-box;transform-origin:50% 50%}
+@keyframes markIn{0%{opacity:0;transform:scale(1.6);filter:brightness(4) blur(2px)}25%{opacity:1}100%{opacity:1;transform:none;filter:none}}
+.boot.w .bl .lg-t{animation:wordIn .6s ease forwards}
+@keyframes wordIn{0%{opacity:0;clip-path:inset(0 100% 0 0)}100%{opacity:1;clip-path:inset(0 0 0 0)}}
+.boot .bar{width:min(240px,62vw);height:16px;border:2px solid #e6e6e6;padding:2px;overflow:hidden;position:relative;opacity:0}
+.boot.b .bar{opacity:1;transition:opacity .2s}
+.boot .bar i{position:absolute;top:2px;bottom:2px;width:46px;left:-50px;background:repeating-linear-gradient(90deg,#e6e6e6 0 10px,transparent 10px 14px);animation:bootbar .9s linear infinite}
 @keyframes bootbar{to{left:100%}}
-.boot .hint{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom,0px));text-align:center;font-size:11px;color:#777;letter-spacing:.06em}
+.boot .flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+.boot.warp{background:transparent;transition:background .5s ease .12s}
+.boot.warp .scr{opacity:0;transition:opacity .35s ease .05s}
+.boot.warp .bar{opacity:0;transition:opacity .15s}
+.boot.warp .bl .lg-t{opacity:0;transition:opacity .2s}
+.boot.warp .bl svg{transform-origin:23.6% 32.7%;animation:warpOut .62s cubic-bezier(.7,0,.84,0) forwards}
+@keyframes warpOut{to{transform:scale(26);opacity:0}}
+.boot.warp .flash{animation:flash .5s ease-out forwards}
+@keyframes flash{0%{opacity:0}18%{opacity:.85}100%{opacity:0}}
+.boot .tap{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:18px;text-align:center;background:#000;z-index:2}
+.boot .tap b{font-size:15px;letter-spacing:.14em;font-weight:700;animation:bootblink 1.1s steps(2) infinite}
+.boot .tap small{color:#777;font-size:11px;letter-spacing:.08em}
+.boot .hint{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom,0px));text-align:center;font-size:11px;color:#666;letter-spacing:.06em;z-index:1}
+/* az app beúszása a splash mögül */
+html.booting .app,html.booting .bottom{opacity:0;transform:scale(.94);filter:blur(10px)}
+html.boot-in .app,html.boot-in .bottom{transition:opacity .7s ease,transform .9s cubic-bezier(.16,1,.3,1),filter .8s ease;opacity:1;transform:none;filter:none}
 </style>
 
-<div class="boot" id="boot" role="presentation" aria-hidden="true"><pre id="bootpre"></pre><div class="bl"></div><div class="hint">KOPPINTS A KIHAGYÁSHOZ</div></div>
+<div class="boot" id="boot" role="presentation" aria-hidden="true"><div class="scr"><pre id="bootpre"></pre></div><div class="bl"></div><div class="flash"></div><div class="hint">KOPPINTS A KIHAGYÁSHOZ</div></div>
 <script>
-/* indulóképernyő: csak akkor fut, amikor az oldal ténylegesen betöltődik (hidegindítás).
-   Háttérből visszahozott appnál nincs újratöltés, így ott nem jelenik meg. Koppintásra átugorható. */
+/* indulóképernyő: csak valódi betöltéskor (hidegindítás). A jeleneteket a hang ideje vezérli, így pontosan szinkronban vannak.
+   Ha a böngésző nem enged hangot magától (iPhone), egy „koppints az indításhoz” képernyő jön; 5 mp után hang nélkül indul. */
 (function(){
   const box=document.getElementById("boot");if(!box)return;
+  const root=document.documentElement;
   const skipDev=/^(localhost|127\.)/.test(location.hostname)&&!/[?&]splash\b/.test(location.search);
-  const end=()=>{if(box.dataset.done)return;box.dataset.done="1";box.classList.add("out");setTimeout(()=>box.parentNode&&box.parentNode.removeChild(box),480)};
   if(skipDev||matchMedia("print").matches){box.parentNode.removeChild(box);return}
-  box.addEventListener("click",end);
+  root.classList.add("booting");
+  setTimeout(()=>{if(!done)finish()},16000);
+  const SND=/*__BOOTSND__*/null,logo=/*__LOGO__*/null;
+  let soundOn=true;try{soundOn=localStorage.getItem("aperation-boot-sound")!=="0"}catch(e){}
   const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const logo=/*__LOGO__*/null;
   box.querySelector(".bl").innerHTML=(logo||"")+'<div class="bar"><i></i></div>';
-  const on=navigator.onLine;
-  const d=new Date(),p2=n=>String(n).padStart(2,"0");
+  const pre=document.getElementById("bootpre"),d=new Date(),p2=n=>String(n).padStart(2,"0"),on=navigator.onLine;
   const L=(k,v)=>(k+" ").padEnd(20,".")+" "+v;
-  const lines=["APERATION BIOS v2.6","(C) 2026 Tóth Tamás János","",
-    L("Rendszeridő",d.getFullYear()+"."+p2(d.getMonth()+1)+"."+p2(d.getDate())+" "+p2(d.getHours())+":"+p2(d.getMinutes())),
-    L("Memória","640K OK"),"",
-    L("Napvezérlő","OK"),L("Időrend, shotlist","OK"),L("Forgatókönyv","OK"),L("Take-napló","OK"),
-    L("Hálózat",on?"OK":"HELYI MÓD"),"",
-    "Rendszer indítása"];
-  const pre=document.getElementById("bootpre");
-  if(reduce){box.classList.add("logo");setTimeout(end,900);return}
-  let i=0,t=0;
-  const step=()=>{if(box.dataset.done)return;
-    if(i<lines.length){pre.textContent=lines.slice(0,++i).join("\n");pre.insertAdjacentHTML("beforeend",'<span class="cur"></span>');
-      t=setTimeout(step,lines[i-1]===""?60:95);return}
-    t=setTimeout(()=>{box.classList.add("logo");setTimeout(end,1500)},380)};
-  setTimeout(step,180);
+  let out=[],mem=-1,dots=0,done=false,raf=0,audio=null,t0=0;
+  const draw=()=>{let x=out.join("\n");if(mem>=0)x+=(x?"\n":"")+"Memória teszt: "+mem+"K"+(mem>=640?" OK":"");if(dots)x+=".".repeat(dots);pre.textContent=x;pre.insertAdjacentHTML("beforeend",'<span class="cur"></span>')};
+  // időzítés a hangfájl szerint (mp): gépindulás 0–5,6; csend; dallam 6,04 / 6,82 / 7,76; vége ~8,6
+  const EV=[[.02,()=>box.classList.add("on")],[.25,()=>{out=["APERATION BIOS v2.6"];draw()}],[.35,()=>{out.push("(C) 2026 Tóth Tamás János","");draw()}],
+    [.5,()=>{mem=0}],[1.25,()=>{mem=640}],
+    [1.34,()=>{out.push("Memória teszt: 640K OK");mem=-1;out.push(L("Rendszeridő",d.getFullYear()+"."+p2(d.getMonth()+1)+"."+p2(d.getDate())+" "+p2(d.getHours())+":"+p2(d.getMinutes())),"");draw()}],
+    [2.10,()=>{out.push(L("Napvezérlő","OK"));draw()}],[2.32,()=>{out.push(L("Időrend, shotlist","OK"));draw()}],[2.72,()=>{out.push(L("Forgatókönyv","OK"));draw()}],
+    [3.04,()=>{out.push(L("Take-napló","OK"));draw()}],[3.34,()=>{out.push(L("Közös munka","OK"));draw()}],[3.84,()=>{out.push(L("Hálózat",on?"OK":"HELYI MÓD"));draw()}],
+    [4.20,()=>{out.push(L("Képtár","OK"),"");draw()}],[4.68,()=>{out.push("Rendszer indítása");draw()}],[4.82,()=>{dots=1;draw()}],[4.96,()=>{dots=2;draw()}],[5.14,()=>{dots=3;draw()}],
+    [5.62,()=>{out=[];dots=0;pre.textContent=""}],
+    [6.04,()=>box.classList.add("m")],[6.82,()=>box.classList.add("w")],[7.76,()=>box.classList.add("b")],[8.35,()=>warp()]];
+  let ei=0;
+  const loop=()=>{if(done)return;const t=audio&&!audio.paused?audio.currentTime:(performance.now()-t0)/1000;
+    if(mem>=0&&mem<640){mem=Math.min(640,Math.round((t-.5)/.75*640/16)*16);draw()}
+    while(ei<EV.length&&t>=EV[ei][0])EV[ei++][1]();
+    raf=requestAnimationFrame(loop)};
+  function warp(){if(box.classList.contains("warp"))return;box.classList.add("warp");
+    setTimeout(()=>{root.classList.add("boot-in");root.classList.remove("booting")},120);
+    setTimeout(finish,760)}
+  function finish(){if(done)return;done=true;cancelAnimationFrame(raf);root.classList.remove("booting");root.classList.add("boot-in");
+    if(audio){const a=audio,v0=a.volume,st=performance.now();const f=()=>{const k=(performance.now()-st)/400;if(k>=1||a.paused){a.pause();return}a.volume=Math.max(0,v0*(1-k));requestAnimationFrame(f)};f()}
+    if(box.parentNode)box.parentNode.removeChild(box);setTimeout(()=>root.classList.remove("boot-in"),1200)}
+  const start=withSound=>{const tp=box.querySelector(".tap");if(tp)tp.parentNode.removeChild(tp);
+    if(reduce){box.classList.add("on","m","w");setTimeout(warp,700);return}
+    t0=performance.now();loop();
+    if(withSound&&audio&&audio.paused){audio.currentTime=0;audio.play().then(()=>{t0=performance.now()-audio.currentTime*1000}).catch(()=>{})}};
+  let started=false;
+  box.addEventListener("click",()=>{if(!started){started=true;start(true);return}if(box.classList.contains("warp"))return;warp()});
+  if(!soundOn||!SND||reduce){started=true;start(false);return}
+  audio=new Audio(SND);audio.preload="auto";
+  audio.play().then(()=>{started=true;start(true)}).catch(()=>{
+    // nincs automatikus hang: „nyomj meg egy gombot”
+    const tp=document.createElement("div");tp.className="tap";tp.innerHTML="<b>KOPPINTS AZ INDÍTÁSHOZ</b><small>APERATION · HANG BE</small>";box.appendChild(tp);
+    setTimeout(()=>{if(!started){started=true;start(false)}},5000)});
 })();
 </script>
 
@@ -1013,6 +1062,7 @@ function renderCrew(){
 
 /* ---------- INFO ---------- */
 let confirmReset=false;
+document.addEventListener("change",e=>{if(e.target&&e.target.id==="bootsnd"){try{localStorage.setItem("aperation-boot-sound",e.target.checked?"1":"0")}catch(x){}toast(e.target.checked?"Indulóhang bekapcsolva.":"Indulóhang kikapcsolva.")}});
 function renderInfo(){
   const v=$('[data-view="info"]'),notes=[];
   v.innerHTML=`<div class="vh">Info</div><div class="grid"><div class="stack">
@@ -1023,6 +1073,7 @@ function renderInfo(){
       <div class="field"><label class="field">Kezdés <input type="text" inputmode="numeric" id="simt" value="${hm(st.sim.on?st.sim.start:D.plan.call-5)}" placeholder="8:25" style="width:84px" aria-label="Kezdés időpontja (óra:perc)"></label><label class="field">Sebesség <select id="simsp">${[1,5,10,30,60].map(x=>`<option value="${x}" ${st.sim.speed===x?"selected":""}>${x}×</option>`).join("")}</select></label></div>
       <div class="field"><button class="btn ${st.sim.on?"":"solid"}" type="button" id="simon">${st.sim.on?"Újraindítás ezzel":"Próba indítása"}</button>${st.sim.on?`<button class="btn danger" type="button" id="simoff">Próba befejezése és nullázás</button>`:""}</div></section>`:""}
     <section class="card"><h2>Jelzések</h2><div class="rows">
+      <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div><b>Indulóhang</b><small>A gépindulás hangja az indulóképernyőn (csak amikor az app teljesen bezárt állapotból nyílik)</small></div><input type="checkbox" class="sw" id="bootsnd" ${(()=>{try{return localStorage.getItem("aperation-boot-sound")!=="0"}catch(e){return true}})()?"checked":""} aria-label="Indulóhang"></div>
       <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div><b>Hang és rezgés</b><small>5 perccel a keret vége előtt és lejáratkor</small></div><input type="checkbox" class="sw" id="snd" ${st.sound?"checked":""} aria-label="Hangjelzés"></div>
       <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div><b>Ma forgatunk</b><small>${HASDATE?`Kapcsold be, ha nem a tervben szereplő napon (${SHOOT_DATE.toLocaleDateString("hu-HU",{month:"long",day:"numeric"})}) forgattok`:"Nincs dátum a tervben: a forgatás napján kapcsold be"}</small></div><input type="checkbox" class="sw" id="force" ${st.force?"checked":""} aria-label="Ma forgatunk"></div></div>
       <div class="field"><button class="btn sm" type="button" id="sndtest">Hang kipróbálása</button></div>
