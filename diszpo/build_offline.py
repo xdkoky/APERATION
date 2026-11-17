@@ -8,7 +8,7 @@ import hashlib, json, os, re, shutil, sys, zipfile
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.normpath(os.path.join(HERE, "..", "docs"))   # a GitHub Pages innen szolgálja ki (branch + /docs)
+OUT = os.path.normpath(os.path.join(HERE, "..", "docs", "kapaszkodni"))   # a GitHub Pages: …/kapaszkodni/ (a gyökér az APERATION-re visz)
 os.makedirs(OUT, exist_ok=True)
 
 src = open(os.path.join(HERE, "ad_app.html"), encoding="utf-8").read()
@@ -165,7 +165,7 @@ self.addEventListener("fetch",e=>{{
 open(os.path.join(OUT, "sw.js"), "w").write(sw)
 files = files + ["index.html"]
 
-open(os.path.join(OUT, ".nojekyll"), "w").close()   # a Pages ne futtasson Jekyllt
+open(os.path.join(OUT, "..", ".nojekyll"), "w").close()   # a Pages ne futtasson Jekyllt
 
 # 7) zip (csak kérésre)
 size = sum(os.path.getsize(os.path.join(r, f)) for r, _, fs in os.walk(OUT) for f in fs)
