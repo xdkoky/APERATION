@@ -131,7 +131,7 @@ files = []
 for root, _, fs in os.walk(OUT):
     for f in fs:
         rel = os.path.relpath(os.path.join(root, f), OUT).replace(os.sep, "/")
-        if rel not in ("sw.js", "index.html") and not f.startswith("."):
+        if rel not in ("sw.js", "index.html") and not f.startswith(".") and not rel.startswith("base/"):
             files.append(rel)
 files = sorted(files)
 media = [f for f in files if f.startswith(("storyboard/", "vilko/"))]
@@ -173,6 +173,8 @@ if "--zip" in sys.argv:
     zp = os.path.join(HERE, "Kapaszkodni_AD_offline.zip")
     with zipfile.ZipFile(zp, "w", zipfile.ZIP_DEFLATED) as z:
         for root, _, fs in os.walk(OUT):
+            if os.path.relpath(root, OUT).split(os.sep)[0] == "base":
+                continue
             for f in fs:
                 full = os.path.join(root, f)
                 z.write(full, os.path.join("kapaszkodni-ad", os.path.relpath(full, OUT)))
