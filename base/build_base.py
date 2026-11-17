@@ -33,9 +33,16 @@ def lgmap(W=256, e=0.16):
     return "data:image/png;base64," + base64.b64encode(b.getvalue()).decode()
 tpl = tpl.replace("__LGMAP__", lgmap())
 LOGO_SVG = open(os.path.join(HERE, "brand", "aperation-logo.svg"), encoding="utf-8").read().strip()
+# az első útvonal a hatszög-jel, a többi a felirat: osztályt kapnak, hogy a téma átszínezhesse
+_n = [0]
+def _cls(m):
+    _n[0] += 1
+    return '<path class="%s" ' % ("lg-m" if _n[0] == 1 else "lg-t")
+LOGO_SVG = re.sub(r"<path ", _cls, LOGO_SVG)
 tpl = tpl.replace("/*__LOGO__*/null", json.dumps(LOGO_SVG, ensure_ascii=False))
 tpl = tpl.replace("/*__GLASS_CSS__*/", open(os.path.join(HERE, "glass.css"), encoding="utf-8").read())
 tpl = tpl.replace("/*__DESKTOP_CSS__*/", open(os.path.join(HERE, "desktop.css"), encoding="utf-8").read())
+tpl = tpl.replace("/*__LAB_CSS__*/", open(os.path.join(HERE, "lab.css"), encoding="utf-8").read())
 tpl = tpl.replace("/*__MULTI_CSS__*/", open(os.path.join(HERE, "multi.css"), encoding="utf-8").read())
 tpl = tpl.replace("/*__GATE_JS__*/", open(os.path.join(HERE, "gate.js"), encoding="utf-8").read())
 PRINT_CSS = open(os.path.join(HERE, "print.css"), encoding="utf-8").read()
