@@ -1,4 +1,4 @@
-const CACHE="diszpo-base-cd4c1c6ca8";
+const CACHE="diszpo-base-7a463637d2";
 const CORE=["./", "Forgatasi_sablon.xlsx", "fonts/courierprime-v11-u-450q2lgwslOqpF-6gQ8kELaw9pWt-.woff2", "fonts/courierprime-v11-u-450q2lgwslOqpF-6gQ8kELawFpWg.woff2", "fonts/courierprime-v11-u-4k0q2lgwslOqpF-6gQ8kELY7pMT-7fq8Ho.woff2", "fonts/courierprime-v11-u-4k0q2lgwslOqpF-6gQ8kELY7pMT-Dfqw.woff2", "fonts/courierprime-v11-u-4n0q2lgwslOqpF-6gQ8kELawRZVsf6lvg.woff2", "fonts/courierprime-v11-u-4n0q2lgwslOqpF-6gQ8kELawRZWMf6.woff2", "fonts/inter-v20-UcC73FwrK3iLTeHuS-nVMrMxCp50SjIa1ZL7.woff2", "fonts/inter-v20-UcC73FwrK3iLTeHuS-nVMrMxCp50SjIa25L7SUc.woff2", "icon-180.png", "icon-192.png", "icon-512.png", "manifest.json", "vendor/xlsx.full.min.js"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k.startsWith("diszpo-base-")&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});

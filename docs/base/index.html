@@ -166,8 +166,8 @@ main{padding-top:14px}
 .banner .tx{display:flex;gap:10px;align-items:flex-start;min-width:0;flex:1 1 240px} .banner .tx svg{color:var(--c);margin-top:1px}
 .banner b{color:var(--c)}
 ul.list{margin:0;padding:0;list-style:none;display:grid;gap:8px}
-ul.list li{display:grid;grid-template-columns:18px minmax(0,1fr);gap:8px;align-items:start}
-ul.list li::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--fg-3);margin:8px 0 0 5px}
+ul.list li{position:relative;padding-left:26px}
+ul.list li::before{content:"";position:absolute;left:5px;top:.6em;width:6px;height:6px;border-radius:50%;background:var(--fg-3)}
 ul.list li.warn{color:var(--late);font-weight:650} ul.list li.warn::before{background:var(--late)}
 
 /* MOST: a jelenlegi blokk */
@@ -319,7 +319,7 @@ input.sw:checked{background:var(--ok)} input.sw:checked::after{transform:transla
 .step.past{opacity:.5}.step.soon{border-color:color-mix(in srgb,var(--warn) 55%,transparent);color:var(--warn)}.step.soon b{color:var(--warn)}
 .phone{font-weight:700;font-variant-numeric:tabular-nums;user-select:all;-webkit-user-select:all}
 .field{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-input[type=time],select{height:40px;border-radius:12px;border:1px solid var(--hair-2);background:var(--surface-2);color:var(--fg);padding:0 10px;font:inherit;font-weight:600}
+input[type=time],select,#simt{height:40px;border-radius:12px;border:1px solid var(--hair-2);background:var(--surface-2);color:var(--fg);padding:0 10px;font:inherit;font-weight:600}
 .progress{height:6px;border-radius:3px;background:var(--surface-3);overflow:hidden}.progress i{display:block;height:100%;background:var(--ok);border-radius:3px}
 .vh{font-size:22px;font-weight:750;letter-spacing:-.02em;margin:4px 0 14px}
 
@@ -996,21 +996,21 @@ function renderInfo(){
   const v=$('[data-view="info"]'),notes=[];
   v.innerHTML=`<div class="vh">Info</div><div class="grid"><div class="stack">
     <section class="card"><div class="card-head"><h2>Így működik</h2><button class="btn sm solid" type="button" id="tourgo">${ic("play",14)}Bemutató · 2 perc</button></div>
-      <ul class="list"><li><b>Kész</b>: lezárja a mostani blokkot, és indítja a következőt.</li><li><b>‹</b> visszalép az előző blokkra. <b>+5′</b> öt percet ad a mostanihoz.</li><li>Zöld: terv szerint. Narancs: késés, de belefér a tartalékba. Piros: a wrap ${hm(TARGET)} utánra csúszik, vagy a blokk kerete lejárt.</li><li>A gyűrűre koppintva teljes képernyős óra a stábnak.</li><li>Az Időrendben egy sorra koppintva odaugorhatsz vagy kihagyhatod.</li></ul></section>
-    <section class="card"><h2>Próba mód</h2><p class="muted small">Gyorsított órával végigpróbálhatod a napot. A próba befejezése mindent nulláz, hogy a forgatás tiszta lappal induljon.</p>
-      <div class="field"><label class="field">Kezdés <input type="time" id="simt" value="${hm(st.sim.start).padStart(5,"0")}"></label><label class="field">Sebesség <select id="simsp">${[1,5,10,30,60].map(x=>`<option value="${x}" ${st.sim.speed===x?"selected":""}>${x}×</option>`).join("")}</select></label></div>
-      <div class="field"><button class="btn ${st.sim.on?"":"solid"}" type="button" id="simon">${st.sim.on?"Újraindítás ezzel":"Próba indítása"}</button>${st.sim.on?`<button class="btn danger" type="button" id="simoff">Próba befejezése és nullázás</button>`:""}</div></section>
+      ${B.length?`<ul class="list"><li><b>Kész</b>: lezárja a mostani blokkot, és indítja a következőt.</li><li><b>‹</b> visszalép az előző blokkra. <b>+5′</b> öt percet ad a mostanihoz.</li><li>Zöld: terv szerint. Narancs: késés, de belefér a tartalékba. Piros: a wrap ${hm(TARGET)} utánra csúszik, vagy a blokk kerete lejárt.</li><li>A gyűrűre koppintva teljes képernyős óra a stábnak.</li><li>Az Időrendben egy sorra koppintva odaugorhatsz vagy kihagyhatod.</li></ul>`:`<ul class="list"><li>Először tölts be egy <b>Excel-táblázatot</b> a <a href="#most">Kezdés</a> oldalon, vagy írd be a napot a <a href="#terv">Terv</a> fülön.</li><li>Ha még csak ismerkedsz, nyisd meg a <b>mintát</b>, vagy nézd meg a bemutatót.</li></ul>`}</section>
+    ${B.length?`<section class="card"><h2>Próba mód</h2><p class="muted small">Gyorsított órával végigpróbálhatod a napot. A próba befejezése mindent nulláz, hogy a forgatás tiszta lappal induljon.</p>
+      <div class="field"><label class="field">Kezdés <input type="text" inputmode="numeric" id="simt" value="${hm(st.sim.on?st.sim.start:D.plan.call-5)}" placeholder="8:25" style="width:84px" aria-label="Kezdés időpontja (óra:perc)"></label><label class="field">Sebesség <select id="simsp">${[1,5,10,30,60].map(x=>`<option value="${x}" ${st.sim.speed===x?"selected":""}>${x}×</option>`).join("")}</select></label></div>
+      <div class="field"><button class="btn ${st.sim.on?"":"solid"}" type="button" id="simon">${st.sim.on?"Újraindítás ezzel":"Próba indítása"}</button>${st.sim.on?`<button class="btn danger" type="button" id="simoff">Próba befejezése és nullázás</button>`:""}</div></section>`:""}
     <section class="card"><h2>Jelzések</h2><div class="rows">
       <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div><b>Hang és rezgés</b><small>5 perccel a keret vége előtt és lejáratkor</small></div><input type="checkbox" class="sw" id="snd" ${st.sound?"checked":""} aria-label="Hangjelzés"></div>
-      <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div><b>Ma forgatunk</b><small>${HASDATE?`Kapcsold be, ha a forgatás nem ${SHOOT_DATE.toLocaleDateString("hu-HU",{month:"long",day:"numeric"})}-én van`:"Nincs dátum a tervben: a forgatás napján kapcsold be"}</small></div><input type="checkbox" class="sw" id="force" ${st.force?"checked":""} aria-label="Ma forgatunk"></div></div>
+      <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div><b>Ma forgatunk</b><small>${HASDATE?`Kapcsold be, ha nem a tervben szereplő napon (${SHOOT_DATE.toLocaleDateString("hu-HU",{month:"long",day:"numeric"})}) forgattok`:"Nincs dátum a tervben: a forgatás napján kapcsold be"}</small></div><input type="checkbox" class="sw" id="force" ${st.force?"checked":""} aria-label="Ma forgatunk"></div></div>
       <div class="field"><button class="btn sm" type="button" id="sndtest">Hang kipróbálása</button></div>
       <p class="muted small">A képernyőt az app ébren tartja, amíg nyitva van. Ha mégis elsötétül, koppints egyet.</p></section>
-    <section class="card"><h2>Nap nullázása</h2><p class="muted small" id="savest">A terv és a nap állása ezen az eszközön mentődik. Forrás: ${esc(D.src)}</p>
-      ${confirmReset?`<p style="color:var(--late);font-weight:650">Biztosan nullázod? A lezárt blokkok, take-ek és érkezések törlődnek.</p><div class="field"><button class="btn danger" type="button" id="rsyes">Igen, nullázom</button><button class="btn" type="button" id="rsno">Mégse</button></div>`:`<div class="field"><button class="btn danger" type="button" id="rs">Nap nullázása</button></div>`}</section>
+    ${B.length?`<section class="card"><h2>Nap nullázása</h2><p class="muted small" id="savest">A terv és a nap állása ezen az eszközön mentődik. Forrás: ${esc(D.src)}</p>
+      ${confirmReset?`<p style="color:var(--late);font-weight:650">Biztosan nullázod? A lezárt blokkok, take-ek és érkezések törlődnek.</p><div class="field"><button class="btn danger" type="button" id="rsyes">Igen, nullázom</button><button class="btn" type="button" id="rsno">Mégse</button></div>`:`<div class="field"><button class="btn danger" type="button" id="rs">Nap nullázása</button></div>`}</section>`:""}
     </div><div class="stack">
-    <section class="card"><div class="card-head"><h2>${esc(D.title||"Forgatási nap")}</h2><a class="btn sm" href="#terv">${ic("edit",14)}Szerkesztés</a></div><div class="rows">
+    ${B.length?`<section class="card"><div class="card-head"><h2>${esc(D.title||"Forgatási nap")}</h2><a class="btn sm" href="#terv">${ic("edit",14)}Szerkesztés</a></div><div class="rows">
       ${[["Dátum",HASDATE?SHOOT_DATE.toLocaleDateString("hu-HU",{year:"numeric",month:"long",day:"numeric",weekday:"long"}):""],["Crew call",hm(D.plan.call)],["Tervezett wrap",hm(PLAN_WRAP)],["Wrap-határ",hm(TARGET)],["Helyszín",D.location],["Parkolás",D.parking]].filter(x=>x[1]).map(([k,x])=>`<div class="row" style="grid-template-columns:110px minmax(0,1fr)"><small>${k}</small><b>${esc(x)}</b></div>`).join("")}</div></section>
-    ${D.notes.length?`<section class="card"><h2>Fontos</h2>${propList(D.notes)}</section>`:""}
+    `:""}${D.notes.length?`<section class="card"><h2>Fontos</h2>${propList(D.notes)}</section>`:""}
     ${D.boards&&D.boards.length?`<section class="card"><div class="card-head"><h2>Storyboard</h2><span class="chip neutral num">${D.boards.length} rajz</span></div><div class="vkgrid sb" data-gallery>${D.boards.map(x=>`<button type="button" data-full="${x.f}" data-thumb="${x.t}" data-cap="Storyboard · ${esc(x.id)}"><img src="${x.t}" alt="Storyboard ${esc(x.id)}" loading="lazy"><span>${esc(x.id)}</span></button>`).join("")}</div><p class="muted small">A storyboard-képek forgatási sorrendben.</p></section>`:""}
     ${D.vilko&&D.vilko.length?`<section class="card"><div class="card-head"><h2>Világítási tervek</h2><span class="chip neutral num">${D.vilko.length} db</span></div><div class="vkgrid" data-gallery>${D.vilko.map(x=>`<button type="button" data-full="${x.f}" data-thumb="${x.t}" data-cap="Vilkó · ${esc(x.id)}"><img src="${x.t}" alt="Vilkó ${esc(x.id)}" loading="lazy"><span>${esc(x.id)}</span></button>`).join("")}</div><p class="muted small">Koppints egyre: teljes minőségben nyílik meg, csíptetéssel nagyítható.</p></section>`:""}
     ${Object.keys(D.groups).length?`<section class="card"><h2>Fénybeállítások</h2><div class="rows">${Object.entries(D.groups).map(([k,g])=>`<div class="row" style="grid-template-columns:52px minmax(0,1fr);align-items:start"><b style="font-size:18px">${esc(k)}</b><div><b>${esc(g[0])}</b><small>${esc(g[1])}</small></div></div>`).join("")}</div></section>`:""}
@@ -1020,7 +1020,8 @@ function renderInfo(){
     ${creditLine()}`;
   const g=id=>v.querySelector(id);
   g("#tourgo").onclick=()=>tourStart();
-  g("#simon").onclick=()=>{const[h,m]=g("#simt").value.split(":").map(Number);const keep=fresh();keep.sound=st.sound;keep.force=st.force;keep.sim={on:true,start:h*60+m,speed:+g("#simsp").value,base:Date.now()};st=keep;save();location.hash="#most";renderAll();toast(`Próba mód: ${g("#simt").value} · ${st.sim.speed}×`)};
+  g("#simon")&&(g("#simon").onclick=()=>{const s0=tmin(g("#simt").value);if(s0==null){toast("Az időpontot így írd: 8:25");g("#simt").focus();return}
+    const keep=fresh();keep.sound=st.sound;keep.force=st.force;keep.sim={on:true,start:s0,speed:+g("#simsp").value,base:Date.now()};st=keep;save();location.hash="#most";renderAll();toast(`Próba mód: ${hm(s0)}-tól · ${st.sim.speed}×`)});
   g("#simoff")&&(g("#simoff").onclick=()=>{const keep=fresh();keep.sound=st.sound;keep.force=st.force;st=keep;save();renderAll();toast("Próba befejezve, a nap nullázva",{tone:"ok"})});
   g("#snd").onchange=e=>{st.sound=e.target.checked;save()};
   g("#force").onchange=e=>{st.force=e.target.checked;save();renderAll()};
