@@ -58,6 +58,16 @@ service cloud.firestore {
         allow write: if isAdmin(p);
       }
 
+      // Feltöltött képek (storyboard, vilkó): az láthatja, aki a „Képek” jogot kapta; csak a szerkesztők töltenek fel.
+      match /imgmeta/{k} {
+        allow read: if isAdmin(p) || (isMem(p) && role(p).perm.get('images', false) == true);
+        allow write: if isAdmin(p);
+      }
+      match /imgdata/{k} {
+        allow get: if isAdmin(p) || (isMem(p) && role(p).perm.get('images', false) == true);
+        allow list, write: if isAdmin(p);
+      }
+
       // A nap állása (melyik blokk megy, kész blokkok, érkezések) és a take-napló (live/takes).
       // A take-naplót a „Take-napló” jogú pozíció (pl. szkriptes) is írhatja, a nap állását csak a vezérlő.
       match /live/{d} {

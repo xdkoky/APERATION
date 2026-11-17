@@ -1318,14 +1318,50 @@ function mpErr(e){console.warn("közös munka:",e);const c=e&&e.code||"";
   if(Date.now()-mpErrShown<15000)return;mpErrShown=Date.now();
   toast(c==="permission-denied"?"Ehhez nincs jogod a közös projektben.":"A közös szerver most nem érhető el. Ami itt történik, mentődik, és később szinkronizál.",{tone:"warn"})}
 
+/* képek megosztása: a telefonról feltöltött képek (storyboard, vilkó) a közös projektben a Firestore-ba kerülnek,
+   kisebbítve, darabolva (imgmeta/{kulcs}: {n, mime}, imgdata/{kulcs}__{i}: {d}), és a többiek letöltik a saját készülékükre. */
+const IMGCH=700000;
+const imgKeys=p=>{const s=new Set();for(const b of [...(p.blocks||[]),...(p.groups||[]),...(p.shots||[])])for(const x of b.images||[])if(x.idb)s.add(x.idb);return[...s]};
+const blobB64=bl=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(",")[1]||"");r.onerror=rej;r.readAsDataURL(bl)});
+const b64Blob=(d,mime)=>{const s=atob(d),a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return new Blob([a],{type:mime||"image/jpeg"})};
+async function shrinkShare(bl){
+  try{const bm=await createImageBitmap(bl),k=Math.min(1,1600/Math.max(bm.width,bm.height));if(k>=1&&bl.size<450000)return bl;
+    const c=document.createElement("canvas");c.width=Math.round(bm.width*k);c.height=Math.round(bm.height*k);const g=c.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,c.width,c.height);g.drawImage(bm,0,0,c.width,c.height);
+    return await new Promise(r=>c.toBlob(b=>r(b||bl),"image/jpeg",.8))}catch(e){return bl}}
+let upBusy=false,upAgain=false;const imgFetching=new Set();
+async function mpUploadImgs(){
+  if(!fdb||!isMpAdmin()||!MP.ready||PV)return;if(upBusy){upAgain=true;return}upBusy=true;
+  const KEY="aperation-mp-up-"+MP.pid;let done;try{done=new Set(JSON.parse(localStorage.getItem(KEY)||"[]"))}catch(e){done=new Set()}
+  try{for(const k of imgKeys(P)){if(done.has(k))continue;
+      const meta=pref().collection("imgmeta").doc(k);
+      const ex=await meta.get().catch(()=>null);
+      if(!(ex&&ex.exists)){const bl=await idb.get(k);if(!bl)continue;
+        const sm=await shrinkShare(bl),d=await blobB64(sm),n=Math.ceil(d.length/IMGCH);
+        for(let i=0;i<n;i++)await pref().collection("imgdata").doc(k+"__"+i).set({d:d.slice(i*IMGCH,(i+1)*IMGCH)});
+        await meta.set({n,mime:sm.type||"image/jpeg",ts:Date.now(),by:UID})}
+      done.add(k);try{localStorage.setItem(KEY,J([...done]))}catch(e){}}
+  }catch(e){if(e&&e.code==="permission-denied")mpErr(e);else console.warn("képfeltöltés:",e)}
+  upBusy=false;if(upAgain){upAgain=false;mpUploadImgs()}
+}
+async function mpFetchImgs(){
+  if(!fdb||!MP.on||!MP.pid||PV)return;let n=0;
+  for(const k of imgKeys(P)){if(IMG[k]||imgFetching.has(k))continue;imgFetching.add(k);
+    try{let bl=await idb.get(k);
+      if(!bl){const m=await pref().collection("imgmeta").doc(k).get();
+        if(m.exists){const {n:cnt,mime}=m.data();let d="";for(let i=0;i<cnt;i++){const c=await pref().collection("imgdata").doc(k+"__"+i).get();d+=c.exists?c.data().d:""}
+          bl=b64Blob(d,mime);await idb.put(k,bl)}}
+      if(bl){IMG[k]=URL.createObjectURL(bl);n++}}catch(e){if(e&&e.code!=="permission-denied")console.warn("képletöltés:",e)}
+    imgFetching.delete(k)}
+  if(n){applyProject();if(view==="terv"&&document.activeElement&&document.activeElement.closest('[data-view="terv"]')&&document.activeElement.matches("input,textarea,select"))needRender=true;else renderAll()}
+}
 /* szűrt terv egy pozíciónak */
 function filterP(p,perm){
   const q=JSON.parse(JSON.stringify(p));
-  q.blocks.forEach(b=>{b.images=perm.images?(b.images||[]).filter(x=>x.url):[];if(!perm.props)b.props="";if(!perm.notes)b.note="";if(!perm.szkript)b.story=""});
+  q.blocks.forEach(b=>{b.images=perm.images?(b.images||[]).filter(x=>x.url||x.idb):[];if(!perm.props)b.props="";if(!perm.notes)b.note="";if(!perm.szkript)b.story=""});
   if(!perm.notes)q.notes=[];if(!perm.lights)q.groups=q.groups.map(g=>({...g,desc:""}));
-  q.groups=q.groups.map(g=>({...g,images:perm.images&&perm.lights?(g.images||[]).filter(x=>x.url):[]}));
+  q.groups=q.groups.map(g=>({...g,images:perm.images&&perm.lights?(g.images||[]).filter(x=>x.url||x.idb):[]}));
   if(!perm.szkript)q.script=[];if(!perm.stab)q.crew=[];
-  q.shots=(q.shots||[]).map(s=>({...s,images:perm.images?(s.images||[]).filter(x=>x.url):[],props:perm.props?s.props:"",story:perm.szkript?s.story:"",note:perm.notes?s.note:""}));
+  q.shots=(q.shots||[]).map(s=>({...s,images:perm.images?(s.images||[]).filter(x=>x.url||x.idb):[],props:perm.props?s.props:"",story:perm.szkript?s.story:"",note:perm.notes?s.note:""}));
   if(!perm.phones){q.cast.forEach(c=>c.phone="");q.crew.forEach(c=>c.phone="")}
   return q;
 }
@@ -1387,6 +1423,7 @@ async function mpPublish(){
     }else if(!jeq(P,sent))pubAgain=true;
   }catch(e){if(e&&e.code==="permission-denied")mpErr(e);else setTimeout(mpPublishSoon,4000)}
   pubBusy=false;if(pubAgain){pubAgain=false;mpPublishSoon()}
+  mpUploadImgs();
 }
 // a terv cseréje úgy, hogy gépelés közben ne ugorjon el a kurzor (a mező elhagyásakor frissül)
 function mpApplyPlan(p){
@@ -1449,11 +1486,11 @@ function mpOnView(s){
     // ha nálunk van még el nem küldött változás, összefésüljük, és visszaküldjük
     const local=MP.base&&!jeq(P,MP.base)?normP(merge3(MP.base,P,remote)):remote;
     setBase(remote);if(!jeq(local,P))mpApplyPlan(local);if(!jeq(local,remote))mpPublishSoon();
-    return;
+    mpFetchImgs();return;
   }
   if(isMember()){MP.perm=d.perm;MP.roleName=d.roleName}
   MP.title=p.title;mpSaveLocal();
-  mpApplying=true;P=normP(p);saveP();applyProject();mpApplying=false;
+  mpApplying=true;P=normP(p);saveP();applyProject();mpApplying=false;mpFetchImgs();
   tabKey="";if(view==="terv"&&document.activeElement&&document.activeElement.closest('[data-view="terv"]'))tick(true);else renderAll();
 }
 function mpFlush(){const v=MP.pendView,l=MP.pendLive,tk=MP.pendTakes;MP.pendView=MP.pendLive=MP.pendTakes=null;if(v)mpOnView(v);if(l)mpOnLive(l);if(tk)mpOnTakes(tk)}
@@ -1463,6 +1500,8 @@ function mpListen(){
   mpStop();const r0=pref(),vid=isMpAdmin()?"__admin":MP.roleId;
   unsubs.push(r0.collection("views").doc(vid).onSnapshot(mpOnView,e=>e.code==="permission-denied"&&isMember()?mpLost():mpErr(e)));
   unsubs.push(r0.collection("live").doc("state").onSnapshot(mpOnLive,e=>e.code==="permission-denied"&&isMember()?mpLost():mpErr(e)));
+  // képek: ha valaki feltölt egyet, a kis „imgmeta” dokumentum jelzi, és letöltjük
+  unsubs.push(r0.collection("imgmeta").onSnapshot(()=>mpFetchImgs(),e=>{if(e.code!=="permission-denied")mpErr(e)}));
   unsubs.push(r0.collection("live").doc("takes").onSnapshot(mpOnTakes,e=>e.code==="permission-denied"&&isMember()?mpLost():mpErr(e)));
   // ha a szerkesztő kitilt, a saját tagsági dokumentum eltűnik
   if(MP.roleId!=="__owner")unsubs.push(r0.collection("members").doc(UID).onSnapshot(s=>{if(!s.exists&&!s.metadata.hasPendingWrites&&!s.metadata.fromCache)mpLost()},e=>{if(e.code==="permission-denied")mpLost()}));
@@ -1527,7 +1566,7 @@ async function mpLeave(silent){
 }
 async function mpDeleteProject(){
   try{const r0=pref();
-    for(const sub of ["views","roles","members","live"]){const q=await r0.collection(sub).get();for(const d of q.docs){if(sub==="roles"&&d.data().code){try{await fdb.collection("codes").doc(d.data().code).delete()}catch(e){}}await d.ref.delete()}}
+    for(const sub of ["views","roles","members","live","imgmeta","imgdata"]){const q=await r0.collection(sub).get();for(const d of q.docs){if(sub==="roles"&&d.data().code){try{await fdb.collection("codes").doc(d.data().code).delete()}catch(e){}}await d.ref.delete()}}
     await r0.delete();
   }catch(e){mpErr(e);return}
   MP.roleId="__owner";await mpLeave(true);toast("A közös projekt törölve. A terv megmaradt ezen az eszközön.",{tone:"ok"});
@@ -1615,7 +1654,7 @@ document.addEventListener("click",async e=>{
 });
 document.addEventListener("change",e=>{const el=e.target;if(!el.matches||!el.matches("[data-rname]"))return;const r=MP.roles.find(x=>x.id===el.closest("[data-rid]").dataset.rid);if(r){r.name=el.value.trim()||"Pozíció";mpRoleSave(r)}});
 document.addEventListener("input",e=>{const el=e.target;if(el.id==="jcode"){const c=normCode(el.value).slice(0,8);const v=c.length>4?c.slice(0,4)+"-"+c.slice(4):c;if(el.value!==v)el.value=v}});
-function mpBoot(){if(MP.on&&MP_AVAIL)fbInit().then(()=>{mpListen();renderAll()}).catch(mpErr)}
+function mpBoot(){if(MP.on&&MP_AVAIL)fbInit().then(()=>{mpListen();renderAll();setTimeout(mpUploadImgs,3000)}).catch(mpErr)}
 
 /* ---------- szerepek kipróbálása (egyedül, egy eszközön) ----------
    A szerkesztő megnézheti, mit lát és mit tehet egy pozíció. A terv a szerepre szűrve jelenik meg,
