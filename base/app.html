@@ -2134,7 +2134,8 @@ const GATE=/*__GATE__*/false;
 const UA=navigator.userAgent;
 const IS_IOS=/iPhone|iPad|iPod/.test(UA)||(/Macintosh/.test(UA)&&navigator.maxTouchPoints>1);
 const IS_ANDROID=/Android/i.test(UA);
-const STANDALONE=matchMedia("(display-mode: standalone)").matches||matchMedia("(display-mode: fullscreen)").matches||matchMedia("(display-mode: minimal-ui)").matches||navigator.standalone===true;
+// iPhone/iPad: csak a navigator.standalone megbízható (csak főképernyőről indítva igaz); Androidon a display-mode.
+const STANDALONE=IS_IOS?navigator.standalone===true:(matchMedia("(display-mode: standalone)").matches||matchMedia("(display-mode: fullscreen)").matches||matchMedia("(display-mode: minimal-ui)").matches);
 const DEV_BYPASS=/^(localhost|127\.)/.test(location.hostname)&&/[?&]nogate\b/.test(location.search);
 const GATED=GATE&&(IS_IOS||IS_ANDROID)&&!STANDALONE&&!DEV_BYPASS;
 let installEvt=null;
