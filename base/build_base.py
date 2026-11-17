@@ -95,7 +95,7 @@ lines = [
     ("Szereplők, Stáb", Font(bold=True, size=12)),
     ("Időpontok óra:perc formában (8:30). A Stáb lapon a részleg minden sorba írható; a telefonszám az appban hívható.", None),
     ("Fények", Font(bold=True, size=12)),
-    ("Kód (rövid, pl. A, K1, E), név és leírás: lámpák, szűrők, mi változik.", None),
+    ("Kód (rövid, pl. A, K1, E), név és leírás: lámpák, szűrők, mi változik. Kép (URL): a fényterv / vilkó nyilvános linkje; telefonról az appban is feltölthető (Terv → Projekt → Fénybeállítások).", None),
     ("Szkript", Font(bold=True, size=12)),
     ("Soronként: Típus (Jelenet, Akció, Szereplő, Instrukció, Dialógus, Vége), Szöveg, és Shotok: melyik shot veszi ezt a sort (pl. 1/1, 1/3).", None),
     ("A szkriptet az appba szövegként is bemásolhatod (Terv → Szkript), ott magától szétszedi.", None),
@@ -173,7 +173,7 @@ ws = table("Stáb", [("Részleg", 20), ("Pozíció", 20), ("Név", 24), ("Érkez
            [(c["dept"], c["pos"], c["name"], hmt(c["arr"]), c["phone"]) for c in MINTA["crew"]], 60)
 for r in ws.iter_rows(min_row=2, min_col=4, max_col=4):
     for c in r: c.number_format = "h:mm"
-table("Fények", [("Kód", 8), ("Név", 26), ("Leírás", 70)], [(g["code"], g["name"], g["desc"]) for g in MINTA["groups"]], 20)
+table("Fények", [("Kód", 8), ("Név", 26), ("Leírás", 70), ("Kép (URL)", 30)], [(g["code"], g["name"], g["desc"], "") for g in MINTA["groups"]], 20)
 table("Szkript", [("Típus", 13), ("Szöveg", 80), ("Shotok", 16)], [(ST[l["t"]], l["x"], ", ".join(l["ids"])) for l in MINTA["script"]], 300,
       valid=("A", ",".join(ST.values())))
 wb.properties.creator = "Tóth Tamás János"; wb.properties.title = "Forgatási sablon · APERATION"

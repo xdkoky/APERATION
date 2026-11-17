@@ -14,7 +14,7 @@ function normP(p){
   if(!Array.isArray(p.notes))p.notes=splitLines(p.notes);
   p.blocks=p.blocks.map(b=>Object.assign({type:"shoot",d:10,label:"",setup:"",note:"",group:"",talent:"",props:"",story:"",skippable:false,images:[]},b,
     {_id:b._id||uid(),d:Math.max(0,Math.round(+b.d||0)),type:TYPES.includes(b.type)?b.type:"shoot",images:(b.images||[]).filter(x=>x&&(x.url||x.idb))}));
-  p.groups=p.groups.map(g=>Object.assign({code:"",name:"",desc:""},g));
+  p.groups=p.groups.map(g=>Object.assign({code:"",name:"",desc:""},g,{images:(g.images||[]).filter(x=>x&&(x.url||x.idb))}));
   p.cast=p.cast.map(c=>Object.assign({role:"",name:"",arr:"",ruha:"",smink:"",haj:"",onset:"",phone:""},c));
   p.crew=p.crew.map(c=>Object.assign({dept:"",pos:"",name:"",arr:"",phone:""},c));
   p.script=p.script.map(l=>({t:STYPES.some(s=>s[0]===l.t)?l.t:"ac",x:l.x||"",ids:Array.isArray(l.ids)?l.ids:splitList(l.ids)}));
@@ -23,7 +23,7 @@ function normP(p){
 function applyProject(){
   const p=P;let t=p.call;
   const blocks=p.blocks.map(b=>{const o={s:t,d:b.d,type:b.type,label:(b.label||"").trim()||TNAME[b.type],setup:b.setup||"",note:b.note||"",group:(b.group||"").trim(),skippable:!!b.skippable};t+=b.d;return o});
-  const groups={};p.groups.forEach(g=>{if(String(g.code).trim())groups[String(g.code).trim()]=[g.name||"",g.desc||""]});
+  const groups={};p.groups.forEach(g=>{if(String(g.code).trim())groups[String(g.code).trim()]=[g.name||"",g.desc||"",(g.images||[]).map(x=>{const u=x.url||IMG[x.idb];return u?{id:String(g.code).trim(),t:u,f:u}:null}).filter(Boolean)]});
   const cast=p.cast.filter(c=>c.name||c.role).map((c,k)=>({...c,k}));
   const crew=p.crew.filter(c=>c.name||c.pos).map(c=>({...c,dept:c.dept||"Stáb"}));
   const shots={},boards=[],vilko=[];
@@ -99,7 +99,7 @@ function withRemap(fn){
 const idb=(()=>{let o;const open=()=>o=o||new Promise((res,rej)=>{const r=indexedDB.open("diszpo-app",1);r.onupgradeneeded=()=>r.result.createObjectStore("img");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
   const tx=(m,f)=>open().then(db=>new Promise((res,rej)=>{const t=db.transaction("img",m),q=f(t.objectStore("img"));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)}));
   return{put:(k,v)=>tx("readwrite",s=>s.put(v,k)),get:k=>tx("readonly",s=>s.get(k)),del:k=>tx("readwrite",s=>s.delete(k))}})();
-async function loadImgs(){let n=0;for(const b of P.blocks)for(const x of b.images||[])if(x.idb&&!IMG[x.idb]){try{const bl=await idb.get(x.idb);if(bl){IMG[x.idb]=URL.createObjectURL(bl);n++}}catch(e){}}
+async function loadImgs(){let n=0;for(const b of [...P.blocks,...P.groups])for(const x of b.images||[])if(x.idb&&!IMG[x.idb]){try{const bl=await idb.get(x.idb);if(bl){IMG[x.idb]=URL.createObjectURL(bl);n++}}catch(e){}}
   if(n){applyProject();if(view!=="terv")renderAll();else renderEdit()}}
 async function shrink(file){
   try{const bm=await createImageBitmap(file),k=Math.min(1,2400/Math.max(bm.width,bm.height));if(k>=1&&file.size<1.5e6)return file;
@@ -151,7 +151,7 @@ const COLDEF={
   ["group",h=>/^(feny|light)/.test(h)],["talent",h=>/^(szereplo|talent|szinesz|cast)/.test(h)],["props",h=>/^(kellek|props|kontinuitas)/.test(h)],["story",h=>/^(sztori|story|tortenet)/.test(h)],["skip",h=>/^(kihagyhato|skip|opcionalis)/.test(h)]],
  crew:[["dept",h=>/^(reszleg|dept|osztaly|csapat)/.test(h)],["pos",h=>/^(pozicio|beosztas|munkakor|position)/.test(h)],["name",h=>/^(nev|name)/.test(h)],["arr",h=>/^(erkezes|call|arr)/.test(h)],["phone",h=>/^(telefon|tel|phone|mobil)/.test(h)]],
  cast:[["role",h=>/^(szerep|karakter|role|character)/.test(h)],["name",h=>/^(szinesz|nev|name|actor)/.test(h)],["arr",h=>/^(erkezes|arr|call)/.test(h)],["ruha",h=>/^(ruha|jelmez)/.test(h)],["smink",h=>/^smink/.test(h)],["haj",h=>/^haj/.test(h)],["onset",h=>/^(setre|onset|forgatasra|keszen)/.test(h)],["phone",h=>/^(telefon|tel|phone|mobil)/.test(h)]],
- groups:[["code",h=>/^(kod|code|jel$)/.test(h)],["name",h=>/^(nev|feny|name|megnevezes)/.test(h)],["desc",h=>/^(leiras|desc|reszletek|eszkozok)/.test(h)]],
+ groups:[["img",h=>/kep|url|link|vilko/.test(h)],["code",h=>/^(kod|code|jel$)/.test(h)],["name",h=>/^(nev|feny|name|megnevezes)/.test(h)],["desc",h=>/^(leiras|desc|reszletek|eszkozok)/.test(h)]],
  script:[["t",h=>/^(tipus|type)/.test(h)],["x",h=>/^(szoveg|text|sor)/.test(h)],["ids",h=>/^(shot|ids|felsnitt)/.test(h)]]
 };
 function mapCols(row,kind){const m={};row.forEach((v,c)=>{const h=nk(v);if(!h)return;for(const [k,f] of COLDEF[kind])if(m[k]==null&&f(h)){m[k]=c;break}});return m}
@@ -197,7 +197,7 @@ function importBook(wb,fname){
             const t=k=>{const v=g(k);const x=tmin(v);return x!=null?hhmm(x):cellS(v)};
             out.push({role:capWords(role),name:capWords(name),arr:t("arr"),ruha:t("ruha"),smink:t("smink"),haj:t("haj"),onset:t("onset"),phone:cellS(g("phone"))});
           }else if(kind==="groups"){
-            const code=cellS(g("code"));if(!code)continue;out.push({code,name:cellS(g("name")),desc:cellS(g("desc"))});
+            const code=cellS(g("code"));if(!code)continue;out.push({code,name:cellS(g("name")),desc:cellS(g("desc")),images:splitList(g("img")).filter(u=>/^https?:|^data:/.test(u)).map(u=>({kind:"vk",url:u}))});
           }else if(kind==="script"){
             const x=cellS(g("x"));if(!x)continue;const k=nk(g("t"));
             const t=/^(jel|hely|sh|scene|int|ext|belso|kulso)/.test(k)?"sh":/^(szerep|karakter|ch|nev)/.test(k)?"ch":/^(instr|zarojel|pa|paren)/.test(k)?"pa":/^(dial|szov|dl|beszed)/.test(k)?"dl":/^(veg|end)/.test(k)?"end":"ac";
@@ -261,7 +261,7 @@ function exportBook(p){
       return[hm(s),hm(t),b.d,TNAME[b.type],b.label,b.setup,b.note,b.group,b.talent,b.props,b.story,yn(b.skippable),u("sb"),u("vk")]})],[7,7,6,12,16,26,34,7,16,28,30,10,24,24]);
   add("Szereplők",[["Szerep","Színész","Érkezés","Ruha","Smink","Haj","Setre","Telefon"],...p.cast.map(c=>[c.role,c.name,c.arr,c.ruha,c.smink,c.haj,c.onset,c.phone])],[14,20,8,8,8,8,8,16]);
   add("Stáb",[["Részleg","Pozíció","Név","Érkezés","Telefon"],...p.crew.map(c=>[c.dept,c.pos,c.name,c.arr,c.phone])],[20,18,22,8,16]);
-  add("Fények",[["Kód","Név","Leírás"],...p.groups.map(g=>[g.code,g.name,g.desc])],[8,24,60]);
+  add("Fények",[["Kód","Név","Leírás","Kép (URL)"],...p.groups.map(g=>[g.code,g.name,g.desc,(g.images||[]).filter(x=>x.url).map(x=>x.url).join("\n")])],[8,24,60,30]);
   add("Szkript",[["Típus","Szöveg","Shotok"],...p.script.map(l=>[(STYPES.find(s=>s[0]===l.t)||[])[1]||"Akció",l.x,(l.ids||[]).join(", ")])],[12,80,16]);
   return new Blob([XLSX.write(wb,{bookType:"xlsx",type:"array"})],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
 }
@@ -269,7 +269,7 @@ async function exportNow(){
   try{await needXLSX()}catch(e){toast("Az Excel-író nem töltődött be. Van internet?",{tone:"late"});return}
   const name=(P.title||"terv").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_|_$/g,"").slice(0,40)||"terv";
   await saveFile(`${name}${P.date?"_"+P.date:""}.xlsx`,exportBook(P));
-  if(P.blocks.some(b=>(b.images||[]).some(x=>x.idb)))toast("A készülékről feltöltött képek nem kerülnek az Excelbe, csak a linkek.");
+  if([...P.blocks,...P.groups].some(b=>(b.images||[]).some(x=>x.idb)))toast("A készülékről feltöltött képek nem kerülnek az Excelbe, csak a linkek.");
 }
 
 /* ---------- szövegből szkript ---------- */
@@ -320,7 +320,6 @@ const wrapLine=()=>B.length?`Crew call ${hm(P.call)} · ${B.length} blokk · ${B
 const dupMove=k=>P.blocks[k]&&P.blocks[k].type==="move"&&((P.blocks[k-1]||{}).type==="move"||(P.blocks[k+1]||{}).type==="move");
 const dupMoveCount=()=>P.blocks.reduce((n,b,k)=>n+(b.type==="move"&&(P.blocks[k-1]||{}).type==="move"?1:0),0);
 function blockCard(b,k){
-  const imgs=(b.images||[]).map((x,n)=>{const u=x.url||IMG[x.idb];return`<span class="ethumb">${u?`<img src="${esc(u)}" alt="">`:`<i>${ic("img",18)}</i>`}<em>${x.kind==="sb"?"Storyboard":"Vilkó"}</em><button type="button" data-imgdel="${n}" aria-label="Kép törlése">${ic("x",14)}</button></span>`}).join("");
   const open=openEB===b._id;
   return`<div class="eb" data-k="${k}" data-list="blocks" data-type="${b.type}">
     <div class="eb-top"><button type="button" class="eb-drag" aria-label="Húzd az átrendezéshez (vagy nyilakkal léptesd): ${esc(b.label||TNAME[b.type])}"><svg width="14" height="20" viewBox="0 0 14 20" fill="currentColor" aria-hidden="true"><circle cx="4" cy="4" r="1.6"/><circle cx="10" cy="4" r="1.6"/><circle cx="4" cy="10" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="4" cy="16" r="1.6"/><circle cx="10" cy="16" r="1.6"/></svg></button><span class="eb-t num" data-bs="${k}">${B[k]?hm(B[k].s):""}</span>
@@ -334,15 +333,19 @@ function blockCard(b,k){
       ${fld("note",b.note,{label:"Megjegyzés",area:1})}
       ${b.type==="shoot"?`<div class="eg">${fld("talent",b.talent,{label:"Szereplők (vesszővel)",ph:"Anna, Bence"})}<label class="fi chkf"><input type="checkbox" data-f="skippable" ${b.skippable?"checked":""}><span>Csúszásnál kihagyható</span></label></div>
       ${fld("props",b.props,{label:"Kellékek, kontinuitás (soronként)",area:1,rows:3})}${fld("story",b.story,{label:"Sztori",area:1})}
-      <div class="fi"><span class="flab">Képek</span><div class="ethumbs">${imgs}</div>
-        <div class="eimg"><label class="btn sm">${ic("plus",14)}Storyboard<input type="file" accept="image/*" data-addimg="sb" multiple hidden></label><label class="btn sm">${ic("plus",14)}Vilkó<input type="file" accept="image/*" data-addimg="vk" multiple hidden></label>
-        <input type="url" placeholder="vagy kép-link (https://…)" data-imgurl aria-label="Kép linkje"><select data-imgkind aria-label="Kép fajtája"><option value="sb">Storyboard</option><option value="vk">Vilkó</option></select><button type="button" class="btn sm" data-act="imgurl">Hozzáad</button></div></div>`
+      ${imgEditor(b,[["sb","Storyboard"],["vk","Vilkó"]])}`
       :`<label class="fi chkf"><input type="checkbox" data-f="skippable" ${b.skippable?"checked":""}><span>Csúszásnál kihagyható</span></label>`}
       <div class="eb-act"><button type="button" class="btn sm" data-act="up">${ic("up",15)}Fel</button><button type="button" class="btn sm" data-act="dn">${ic("dn",15)}Le</button><button type="button" class="btn sm" data-act="dup">${ic("dup",15)}Másolat</button><button type="button" class="btn sm" data-act="ins">${ic("plus",15)}Új utána</button><button type="button" class="btn sm danger" data-act="del">${ic("x",15)}Törlés</button></div>
     </div></div>`;
 }
-function rowsTable(list,cols,addLabel){
-  return`<div class="etab">${P[list].map((r,k)=>`<div class="er" data-list="${list}" data-k="${k}">${cols.map(([f,l,o])=>fld(f,r[f]||"",Object.assign({label:l},o||{}))).join("")}<button type="button" class="ib del" data-act="rowdel" aria-label="Sor törlése">${ic("x",16)}</button></div>`).join("")}</div>
+function imgEditor(r,kinds){
+  const imgs=(r.images||[]).map((x,n)=>{const u=x.url||IMG[x.idb];return`<span class="ethumb">${u?`<img src="${esc(u)}" alt="">`:`<i>${ic("img",18)}</i>`}<em>${x.kind==="sb"?"Storyboard":"Vilkó"}</em><button type="button" data-imgdel="${n}" aria-label="Kép törlése">${ic("x",14)}</button></span>`}).join("");
+  return`<div class="fi span2"><span class="flab">Képek</span><div class="ethumbs">${imgs}</div>
+    <div class="eimg">${kinds.map(([k,l])=>`<label class="btn sm">${ic("plus",14)}${l}<input type="file" accept="image/*" data-addimg="${k}" multiple hidden></label>`).join("")}
+    <input type="url" placeholder="vagy kép-link (https://…)" data-imgurl aria-label="Kép linkje">${kinds.length>1?`<select data-imgkind aria-label="Kép fajtája">${kinds.map(([k,l])=>`<option value="${k}">${l}</option>`).join("")}</select>`:`<input type="hidden" data-imgkind value="${kinds[0][0]}">`}<button type="button" class="btn sm" data-act="imgurl">Hozzáad</button></div></div>`;
+}
+function rowsTable(list,cols,addLabel,extra){
+  return`<div class="etab">${P[list].map((r,k)=>`<div class="er" data-list="${list}" data-k="${k}">${cols.map(([f,l,o])=>fld(f,r[f]||"",Object.assign({label:l},o||{}))).join("")}${extra?extra(r,k):""}<button type="button" class="ib del" data-act="rowdel" aria-label="Sor törlése">${ic("x",16)}</button></div>`).join("")}</div>
     <button type="button" class="btn sm" data-act="rowadd" data-list="${list}">${ic("plus",14)}${addLabel}</button>`;
 }
 function importPreview(){
@@ -379,7 +382,7 @@ function renderEdit(){
       ${fld("notes",P.notes.join("\n"),{label:"Fontos (soronként; a BIZTONSÁG kezdetű sor pirosan látszik)",area:1,rows:4})}
       <p class="muted small">A megadott napon az app magától élesben indul. Dátum nélkül az Info fülön kapcsold be: „Ma forgatunk”.</p></section>
     <section class="card"><h2>Fénybeállítások</h2><p class="muted small">A kódot írd az Időrendben a blokk Fény mezőjébe; az app így jelzi, mikor változik a fény.</p>
-      ${rowsTable("groups",[["code","Kód",{cls:"w1"}],["name","Név"],["desc","Leírás",{cls:"span2"}]],"Új fény")}</section>`;
+      ${rowsTable("groups",[["code","Kód",{cls:"w1"}],["name","Név"],["desc","Leírás",{cls:"span2"}]],"Új fény",r=>imgEditor(r,[["vk","Vilkó / fényterv"]]))}</section>`;
   else if(editSec==="emberek")body=`<section class="card"><h2>Szereplők</h2><p class="muted small">A Szerep (pl. Anna) ugyanaz legyen, amit az Időrendben a Szereplők mezőbe írsz.</p>
       ${rowsTable("cast",[["role","Szerep"],["name","Színész"],["arr","Érkezés",{ph:"8:00",cls:"w1",im:"numeric"}],["ruha","Ruha",{cls:"w1"}],["smink","Smink",{cls:"w1"}],["haj","Haj",{cls:"w1"}],["onset","Setre",{cls:"w1"}],["phone","Telefon",{type:"tel"}]],"Új szereplő")}</section>
     <section class="card"><h2>Stáb</h2>${rowsTable("crew",[["dept","Részleg"],["pos","Pozíció"],["name","Név"],["arr","Érkezés",{ph:"8:00",cls:"w1"}],["phone","Telefon",{type:"tel"}]],"Új stábtag")}</section>`;
@@ -464,7 +467,7 @@ document.addEventListener("change",e=>{const el=e.target;
   if(el.dataset&&el.dataset.addimg){addImages(el,[...el.files]);return}
   if(el.dataset&&el.dataset.f&&el.closest('[data-view="terv"]')){if(el.tagName==="SELECT"||el.type==="checkbox"||el.type==="date"||el.type==="time")fieldSet(el);else{clearTimeout(cTimer);commit()}}});
 async function addImages(el,files){
-  const k=+el.closest("[data-k]").dataset.k,b=P.blocks[k],kind=el.dataset.addimg;
+  const host=el.closest("[data-list]"),k=+host.dataset.k,b=P[host.dataset.list][k],kind=el.dataset.addimg;b.images=b.images||[];
   for(const f of files){const key="img-"+uid();try{const bl=await shrink(f);await idb.put(key,bl);IMG[key]=URL.createObjectURL(bl);b.images.push({kind,idb:key,name:f.name})}catch(e){toast("A képet nem sikerült elmenteni ezen az eszközön.",{tone:"late"})}}
   commit();renderEdit();
 }
@@ -489,13 +492,13 @@ document.addEventListener("click",async e=>{
   }
   if(d.addb){withRemap(()=>{const b=normP({blocks:[{type:d.addb,d:d.addb==="shoot"?20:d.addb==="lunch"?45:10,label:d.addb==="shoot"?"":TNAME[d.addb]}]}).blocks[0];P.blocks.push(b);openEB=b._id});renderEdit();
     const last=$$(".eb");last.length&&last[last.length-1].scrollIntoView({block:"center"});return}
-  if(!d.act)return;
+  if(!d.act&&d.imgdel==null)return;
   const host=t.closest("[data-k]"),k=host?+host.dataset.k:-1;
   if(d.act==="tog"){const b=P.blocks[k];openEB=openEB===b._id?null:b._id;renderEdit();return}
   if(d.act==="rowadd"){const L=d.list;P[L].push(L==="script"?{t:"ac",x:"",ids:[]}:L==="groups"?{code:"",name:"",desc:""}:L==="cast"?normP({cast:[{}]}).cast[0]:normP({crew:[{}]}).crew[0]);commit();renderEdit();const r=$$(`[data-list="${L}"].er`);r.length&&r[r.length-1].querySelector("input,textarea,select").focus();return}
   if(d.act==="rowdel"){const L=host.dataset.list,old=P[L][k];P[L].splice(k,1);commit();renderEdit();toast("Sor törölve.",{action:"Visszavonás",fn:()=>{P[L].splice(k,0,old);commit();renderEdit()}});return}
-  if(d.act==="imgurl"){const u=host.querySelector("[data-imgurl]").value.trim();if(!/^https?:\/\//.test(u)){toast("Teljes linket adj meg (https://…).");return}P.blocks[k].images.push({kind:host.querySelector("[data-imgkind]").value,url:u});commit();renderEdit();return}
-  if(d.imgdel!=null){const b=P.blocks[k],x=b.images.splice(+d.imgdel,1)[0];if(x&&x.idb)idb.del(x.idb).catch(()=>{});commit();renderEdit();return}
+  if(d.act==="imgurl"){const u=host.querySelector("[data-imgurl]").value.trim();if(!/^https?:\/\//.test(u)){toast("Teljes linket adj meg (https://…).");return}const it=P[host.dataset.list][k];(it.images=it.images||[]).push({kind:host.querySelector("[data-imgkind]").value,url:u});commit();renderEdit();return}
+  if(d.imgdel!=null){const b=P[host.dataset.list][k],x=b.images.splice(+d.imgdel,1)[0];if(x&&x.idb)idb.del(x.idb).catch(()=>{});commit();renderEdit();return}
   if(["up","dn","dup","del","ins"].includes(d.act)){
     let undo=null;
     withRemap(()=>{const b=P.blocks[k];

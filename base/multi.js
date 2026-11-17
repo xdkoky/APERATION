@@ -57,6 +57,7 @@ function filterP(p,perm){
   const q=JSON.parse(JSON.stringify(p));
   q.blocks.forEach(b=>{b.images=perm.images?(b.images||[]).filter(x=>x.url):[];if(!perm.props)b.props="";if(!perm.notes)b.note="";if(!perm.szkript)b.story=""});
   if(!perm.notes)q.notes=[];if(!perm.lights)q.groups=q.groups.map(g=>({...g,desc:""}));
+  q.groups=q.groups.map(g=>({...g,images:perm.images&&perm.lights?(g.images||[]).filter(x=>x.url):[]}));
   if(!perm.szkript)q.script=[];if(!perm.stab)q.crew=[];
   if(!perm.phones){q.cast.forEach(c=>c.phone="");q.crew.forEach(c=>c.phone="")}
   return q;
@@ -184,18 +185,18 @@ function copyText(t){try{navigator.clipboard.writeText(t).then(()=>toast("Kimás
 
 /* felület: Terv → Csapat */
 function teamHTML(){
-  if(FB_SRC&&!FBC)return`<section class="card"><h2>Közös munka</h2><p class="muted">A közös szerver még nincs bekötve ebbe a változatba. Amint a Firebase-projekt beállításai bekerülnek, itt indíthatod a közös projektet.</p></section>`;
-  if(!MP_AVAIL)return`<section class="card"><h2>Közös munka</h2><p class="muted">A stábbal közös használat a <b>telepíthető változatban</b> működik (bármelyik telefonon, fiók nélkül, belépőkóddal). Ebben a nézetben nem érhető el.</p>
+  if(FB_SRC&&!FBC)return`<section class="card" id="teamcard"><h2>Közös munka</h2><p class="muted">A közös szerver még nincs bekötve ebbe a változatba. Amint a Firebase-projekt beállításai bekerülnek, itt indíthatod a közös projektet.</p></section>`;
+  if(!MP_AVAIL)return`<section class="card" id="teamcard"><h2>Közös munka</h2><p class="muted">A stábbal közös használat a <b>telepíthető változatban</b> működik (bármelyik telefonon, fiók nélkül, belépőkóddal). Ebben a nézetben nem érhető el.</p>
     <a class="btn solid" href="${PAGES_URL}" target="_blank" rel="noopener">${ic("arrow",16)}Telepíthető változat megnyitása</a>
     <p class="muted small">Ott a terved Excelként átvihető: itt Fájl → Terv mentése Excelbe, ott Excel betöltése.</p></section>`;
-  if(!MP.on)return`<section class="card"><h2>Közös munka a stábbal</h2>
+  if(!MP.on)return`<section class="card" id="teamcard"><h2>Közös munka a stábbal</h2>
     <p class="muted">Ha megosztod a tervet, minden pozíció (2nd AD, operatőr, szkriptes, kellékes, színész…) kap egy <b>belépőkódot</b>. Aki beírja, a saját telefonján élőben látja a napot: mi megy most, mennyit csúsztunk, mi jön. Te döntöd el pozíciónként, <b>ki mit lát</b>, és ki <b>vezérelheti</b> a napot (Kész, +5′, take, érkezések).</p>
     <ul class="list"><li>A rejtett adatot (pl. telefonszám, szkript) a szerver el sem küldi annak, akinek nem szabad látnia.</li><li>Térerő nélkül is megy tovább; amikor visszajön a net, szinkronizál.</li><li>A terv szerkesztése nálad marad. A változtatások pár másodperc múlva mindenkinél megjelennek.</li></ul>
     <button class="btn solid" type="button" data-do="mpcreate" ${P.blocks.length?"":"disabled"}>${ic("users",16)}Közös projekt indítása</button>
     ${P.blocks.length?"":`<p class="muted small">Előbb legyen egy terv a Fájl vagy az Időrend részen.</p>`}</section>`;
   const cnt=id=>MP.members.filter(m=>m.roleId===id).length;
   return`<div class="team">
-    <section class="card"><div class="card-head"><h2>Közös projekt</h2><span class="chip" style="--c:var(--ok)">${ic("check",14)}Élő</span></div>
+    <section class="card" id="teamcard"><div class="card-head"><h2>Közös projekt</h2><span class="chip" style="--c:var(--ok)">${ic("check",14)}Élő</span></div>
       <p class="muted small">A kódot küldd el annak, aki az adott pozícióban dolgozik. A telepíthető változatban: <b>Kezdés → Csatlakozás kóddal</b> (vagy Info fül).</p>
       ${MP.roleId==="__owner"||MP.adminCode?`<div class="code-row"><div><b>Szerkesztői kód</b><small>társ-AD-nak: mindent lát és szerkeszt</small></div><button type="button" class="codebtn num" data-copy="${MP.adminCode||""}">${fmtCode(MP.adminCode||"")}</button><button type="button" class="btn sm" data-do="admincode">Új kód</button></div>`:""}
     </section>
