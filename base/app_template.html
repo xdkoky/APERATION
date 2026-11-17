@@ -377,6 +377,12 @@ html.gated,html.gated body{overflow:hidden}
 .gdone[hidden]{display:none}
 .brand-logo{margin:4px 0 4px;line-height:0}
 .brand-logo svg{display:block;height:108px;width:auto;max-width:100%}
+@media (max-width:600px){.welcome .brand-logo svg{height:72px}}
+/* terv nélkül a fejléc csíkja és alsó sora üres: ne foglaljon helyet */
+body.noplan .strip,body.noplan .hdr-meta{display:none}
+/* iPhone főképernyős app: az iOS néha a státuszsor magasságával kisebbnek méri a képernyőt, ezért az alsó sáv feljebb csúszik */
+html{min-height:calc(100% + env(safe-area-inset-top,0px))}
+.bottom{bottom:calc(-1 * var(--vb,0px))}
 /*__MULTI_CSS__*/
 .credit-line{margin:22px 0 6px;text-align:center;font-size:11.5px;letter-spacing:.02em;color:var(--fg-3)}
 .credit p+p{margin-top:2px}
@@ -1004,7 +1010,7 @@ let view="most";
 function route(scroll){
   renderTabs();
   const h=location.hash.slice(1),vs=tabList();view=vs.some(v=>v[0]===h)?h:vs[0][0];
-  document.body.classList.toggle("ro",RO()&&!tour);document.body.classList.toggle("cantake",canTake()&&!tour);if(h&&h!==view)history.replaceState(null,"","#"+view);
+  document.body.classList.toggle("noplan",!B.length);document.body.classList.toggle("ro",RO()&&!tour);document.body.classList.toggle("cantake",canTake()&&!tour);if(h&&h!==view)history.replaceState(null,"","#"+view);
   $$("[data-view]").forEach(s=>s.hidden=s.dataset.view!==view);
   $$(".tabs a").forEach(a=>{if(a.getAttribute("href")==="#"+view)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
   placeInd();

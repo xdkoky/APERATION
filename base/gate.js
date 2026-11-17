@@ -10,6 +10,10 @@ const STANDALONE=IS_IOS?navigator.standalone===true:(matchMedia("(display-mode: 
 const DEV_BYPASS=/^(localhost|127\.)/.test(location.hostname)&&/[?&]nogate\b/.test(location.search);
 const GATED=GATE&&(IS_IOS||IS_ANDROID)&&!STANDALONE&&!DEV_BYPASS;
 let installEvt=null;
+// iPhone főképernyős app: ha a látható terület kisebb a képernyőnél (iOS-hiba), az alsó sávot lejjebb toljuk
+function vpFix(){if(!(IS_IOS&&STANDALONE))return;const full=matchMedia("(orientation: portrait)").matches?screen.height:screen.width,gap=Math.round(full-innerHeight);
+  document.documentElement.style.setProperty("--vb",gap>0&&gap<90?gap+"px":"0px")}
+vpFix();addEventListener("resize",vpFix);addEventListener("orientationchange",()=>setTimeout(vpFix,300));
 // meghívó link (?join=KÓD): a kódot telepítés előtt is megmutatjuk, mert iPhone-on a főképernyős app nem kapja meg a linket
 const GJOIN=(()=>{const m=location.search.match(/[?&]join=([A-Za-z0-9-]{8,9})/);let c=m?m[1]:"";if(!c)try{c=localStorage.getItem("aperation-join")||""}catch(e){}
   c=c.toUpperCase().replace(/[^A-Z0-9]/g,"");return c.length===8?c.slice(0,4)+"-"+c.slice(4):""})();
