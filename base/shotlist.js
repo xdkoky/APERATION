@@ -45,7 +45,7 @@ function shotlistHTML(){
       <p class="muted small">A shotok a <b>sztori sorrendjében</b>. A szám eleje a jelenet (pl. <b>2/3</b> = 2. jelenet 3. shotja). Ha kész, tedd őket az <b>Időrendbe</b>, és ott rakd forgatási sorrendbe. Amit itt beírsz (plán, optika, mozgás, szereplők, kellékek, storyboard), az az időrendben és forgatás közben is megjelenik.</p>
       ${uns.length>1?`<div class="wgrid"><button class="btn solid" type="button" data-act="slallplan">${ic("plus",16)}${uns.length===n?"Mind az időrendbe":`A hiányzó ${uns.length} shot az időrendbe`}</button></div>`:uns.length?"":n?`<p class="muted small" style="color:var(--ok)">${ic("check",14)} Minden shot benne van az időrendben.</p>`:""}</section>
     <div class="eblist" data-dlist="shots">${list||`<p class="muted">Még nincs shot. Kezdd az első jelenettel:</p>`}</div>
-    <div class="wgrid add"><button class="btn sm" type="button" data-act="sladd">${ic("plus",14)}Új shot</button><button class="btn sm" type="button" data-act="slscene">${ic("plus",14)}Új jelenet</button></div>`;
+    <div class="wgrid add">${n?`<button class="btn sm" type="button" data-act="sladd">${ic("plus",14)}Új shot</button><button class="btn sm" type="button" data-act="slscene">${ic("plus",14)}Új jelenet</button>`:`<button class="btn solid" type="button" data-act="slscene">${ic("plus",16)}Első jelenet (1/1)</button>`}</div>`;
 }
 function slToPlan(list){
   if(!list.length)return;
