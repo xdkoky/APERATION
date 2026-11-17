@@ -7,7 +7,7 @@ Ingyenes (Spark) csomag elég. Bankkártya nem kell.
    Ugyanitt *Settings* fül → *Authorized domains* → *Domain hozzáadása*: `xdkoky.github.io`
 3. **Adatbázis:** *Build → Firestore Database* → *Adatbázis létrehozása* → hely: `eur3 (europe-west)` → *Production mode* → Létrehozás.
 4. **Szabályok:** a Firestore oldalon *Rules* fül → töröld ki, ami ott van, és másold be a teljes [`firestore.rules`](firestore.rules) fájl tartalmát → *Közzététel* (Publish).
-5. **Webes app:** bal felül fogaskerék → *Projektbeállítások* → lent *Saját alkalmazások* → `</>` ikon (Web) → név: `Diszpó App` → *Regisztrálás* (a Hosting nem kell).
+5. **Webes app:** bal felül fogaskerék → *Projektbeállítások* → lent *Saját alkalmazások* → `</>` ikon (Web) → név: `APERATION` → *Regisztrálás* (a Hosting nem kell).
    Megjelenik egy `firebaseConfig = { apiKey: ..., authDomain: ..., projectId: ..., ... }` blokk. **Ezt másold ki és küldd el** (ezek nem titkos adatok, a webes appokban mindig nyilvánosak; a védelmet a 4. pont szabályai adják).
 
 Ezután a konfiguráció a `base/firebase/config.json` fájlba kerül, és a `python3 base/build_base.py` újraépíti a telepíthető változatot (`docs/base/`).

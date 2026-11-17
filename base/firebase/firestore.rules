@@ -1,5 +1,5 @@
 rules_version = '2';
-// Diszpó App – közös munka (multiplayer) szabályai.
+// APERATION – közös munka (multiplayer) szabályai.
 // Elv: minden belépés titkos kóddal történik. A kód (codes/{kód}) megmondja, melyik projekt melyik pozíciója.
 // Aki a kóddal csatlakozott, annak a pozíciójához tartozó nézetet (views/{pozíció}) olvashatja, másét nem.
 // A projekt adminja (a létrehozó és a szerkesztői kóddal belépők) mindent lát és szerkeszt.

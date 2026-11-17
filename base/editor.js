@@ -48,7 +48,7 @@ function applyProject(){
   const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(p.date||"");HASDATE=!!m;SHOOT_DATE=m?new Date(+m[1],m[2]-1,+m[3]):new Date(2000,0,1);
   TOUR_SHOT=B.find(b=>b.type==="shoot"&&B[b.i+1]&&B[b.i+1].type==="move"&&b.i>2)||B.find(b=>b.type==="shoot"&&B[b.i+1]&&B[b.i+1].type==="move")||B.find(b=>b.type==="shoot")||null;
   if(st.cur&&st.cur.i>=B.length)st.cur=B.length?{...st.cur,i:B.length-1}:null;
-  document.title=(p.title?p.title+" · ":"")+"Diszpó App";
+  document.title=(p.title?p.title+" · ":"")+"APERATION";
 }
 function saveP(){if(tour)return;if(isMpAdmin()&&!mpApplying)mpPublishSoon();try{localStorage.setItem(PKEY,JSON.stringify(P))}catch(e){toast("Nem sikerült menteni ezen az eszközön (betelt a tárhely?).",{tone:"late"})}}
 function commit(){saveP();applyProject();tick(true);$$("[data-bs]").forEach(x=>{const b=B[+x.dataset.bs];if(b)x.textContent=hm(b.s)});const w=$("#edwrap");w&&(w.innerHTML=wrapLine())}
@@ -221,7 +221,7 @@ async function importFile(file){
 
 /* ---------- terv → Excel ---------- */
 function exportBook(p){
-  const wb=XLSX.utils.book_new();wb.Props={Title:p.title||"Forgatási terv",Author:AUTHOR,Company:"Diszpó App"};const add=(name,rows,w)=>{const ws=XLSX.utils.aoa_to_sheet(rows);ws["!cols"]=w.map(x=>({wch:x}));XLSX.utils.book_append_sheet(wb,ws,name)};
+  const wb=XLSX.utils.book_new();wb.Props={Title:p.title||"Forgatási terv",Author:AUTHOR,Company:"APERATION"};const add=(name,rows,w)=>{const ws=XLSX.utils.aoa_to_sheet(rows);ws["!cols"]=w.map(x=>({wch:x}));XLSX.utils.book_append_sheet(wb,ws,name)};
   const yn=b=>b?"igen":"";let t=p.call;
   add("Projekt",[["Mező","Érték"],["Cím",p.title],["Dátum",p.date],["Crew call",hhmm(p.call)],["Tervezett wrap",p.wrapTarget?hhmm(p.wrapTarget):""],["Helyszín",p.location],["Parkolás",p.parking],...(p.notes.length?p.notes:[""]).map(n=>["Fontos",n])],[18,60]);
   add("Időrend",[["Kezdés","Vége","Perc","Típus","Blokk / shot","Beállítás","Megjegyzés","Fény","Szereplők","Kellékek","Sztori","Kihagyható","Storyboard kép (URL)","Vilkó kép (URL)"],
