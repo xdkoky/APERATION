@@ -53,7 +53,37 @@ function applyProject(){
 function saveP(){if(tour)return;if(isMpAdmin()&&!mpApplying)mpPublishSoon();try{localStorage.setItem(PKEY,JSON.stringify(P))}catch(e){toast("Nem sikerült menteni ezen az eszközön (betelt a tárhely?).",{tone:"late"})}}
 function commit(){saveP();applyProject();tick(true);$$("[data-bs]").forEach(x=>{const b=B[+x.dataset.bs];if(b)x.textContent=hm(b.s)});const w=$("#edwrap");w&&(w.innerHTML=wrapLine())}
 let cTimer=null;const commitSoon=()=>{clearTimeout(cTimer);cTimer=setTimeout(commit,350)};
-function setProject(p,o={}){P=normP(p);if(o.reset){const s=st.sound;st=fresh();st.sound=s;save()}saveP();applyProject();loadImgs();lastHero=null;renderAll()}
+/* korábbi projektek: új projektnél / betöltésnél az előző ide kerül, innen visszanyitható */
+const PLKEY="diszpo-app-projects-v1";
+const plLoad=()=>{try{return JSON.parse(localStorage.getItem(PLKEY)||"[]")}catch(e){return[]}};
+const plSave=l=>{try{localStorage.setItem(PLKEY,JSON.stringify(l));return true}catch(e){toast("Nincs elég hely a korábbi projekt mentéséhez ezen az eszközön.",{tone:"late"});return false}};
+const hasContent=()=>P&&(P.blocks.length||P.title);
+function archiveCurrent(){if(!hasContent()||tour)return false;const l=plLoad();l.unshift({id:uid(),saved:Date.now(),P,st:{...st,sim:fresh().sim,sw:null}});return plSave(l.slice(0,40))}
+async function newProject(btn){
+  if(isMember())return;
+  if(MP.on){if(!sure(btn,"Közös projekt fut: koppints újra, leválasztom"))return;await mpLeave(true)}
+  const had=archiveCurrent();
+  setProject({title:"",call:480,blocks:[]},{reset:true});
+  editSec="projekt";openEB=null;location.hash="#terv";renderEdit();
+  setTimeout(()=>{const t=document.querySelector('[data-view="terv"] [data-f="title"]');t&&t.focus()},60);
+  toast(had?"Új projekt. Az előzőt elmentettem a Projektek közé (Terv → Fájl).":"Új projekt. Add meg a címét és a crew callt.");
+}
+function openProject(id){
+  if(isMember()||MP.on){toast("Közös projekt közben nem válthatsz. Előbb válaszd le (Terv → Csapat).");return}
+  const l=plLoad(),k=l.findIndex(x=>x.id===id);if(k<0)return;const it=l.splice(k,1)[0];
+  if(hasContent())l.unshift({id:uid(),saved:Date.now(),P,st:{...st,sim:fresh().sim,sw:null}});
+  if(!plSave(l))return;
+  P=normP(it.P);saveP();const s=st.sound;st=Object.assign(fresh(),it.st||{});st.sound=s;save();applyProject();loadImgs();lastHero=null;tabKey="";
+  location.hash="#most";renderAll();toast("Megnyitva: "+(P.title||"Névtelen projekt"),{tone:"ok"});
+}
+function delProject(id){const l=plLoad().filter(x=>x.id!==id);plSave(l);renderAll()}
+function projectsHTML(){
+  const l=plLoad();if(!l.length)return`<p class="muted small">Még nincs korábbi projekt. Ha új projektet kezdesz vagy másikat töltesz be, az előző ide kerül.</p>`;
+  return`<div class="rows">${l.map(x=>{const n=(x.P.blocks||[]).length,dt=x.P.date?x.P.date.replace(/-/g,".")+".":"";
+    return`<div class="row" style="grid-template-columns:minmax(0,1fr) auto auto"><div><b>${esc(x.P.title||"Névtelen projekt")}</b><small>${[dt,n+" blokk","mentve "+new Date(x.saved).toLocaleDateString("hu-HU",{month:"short",day:"numeric"})].filter(Boolean).join(" · ")}</small></div>
+      <button type="button" class="btn sm" data-popen="${x.id}">Megnyitás</button><button type="button" class="ib del" data-pdel="${x.id}" aria-label="Törlés">${ic("x",16)}</button></div>`}).join("")}</div>`;
+}
+function setProject(p,o={}){if(o.archive)archiveCurrent();P=normP(p);if(o.reset){const s=st.sound;st=fresh();st.sound=s;save()}saveP();applyProject();loadImgs();lastHero=null;renderAll()}
 function withRemap(fn){
   const old=P.blocks.map(b=>b._id);fn();const n={};P.blocks.forEach((b,i)=>n[b._id]=i);
   const mo=o=>{const r={};for(const k in o){const id=old[k];if(id!=null&&n[id]!=null)r[n[id]]=o[k]}return r};
@@ -267,12 +297,13 @@ function renderWelcome(v){
     <label class="drop" id="drop">${ic("upload",28)}<b>Excel-táblázat betöltése</b><span class="muted small">Koppints, vagy húzd ide a fájlt (.xlsx, .xls, .ods, .csv)</span><input type="file" accept=".xlsx,.xls,.xlsm,.ods,.csv,.json" data-import hidden></label>
     <div class="wgrid">
       <button class="btn" type="button" data-do="minta">${ic("play",16)}Minta megnyitása</button>
-      <button class="btn" type="button" data-do="ures">${ic("edit",16)}Üres terv, beírom</button>
+      <button class="btn" type="button" data-do="newproj">${ic("plus",16)}Új projekt</button>
       <button class="btn" type="button" data-do="sablon">${ic("down",16)}Sablon letöltése</button>
       <button class="btn" type="button" data-do="tour">${ic("play",16)}Bemutató · 2 perc</button>
     </div>
     ${MP_AVAIL?`<section class="card joincard"><div class="card-head"><h2>Kódot kaptál a stábtól?</h2><button class="btn sm solid" type="button" data-do="joinform">${ic("users",14)}Csatlakozás kóddal</button></div><div id="joinbox" hidden>${joinHTML()}</div></section>`:""}
     <p class="muted small">A sablonnal működik a legbiztosabban, de a saját táblázatodat is megpróbálja felismerni: kell egy fejlécsor <b>Perc</b> (vagy Kezdés), <b>Típus</b> és <b>Blokk / shot</b> oszlopokkal. A terv csak ezen az eszközön tárolódik.</p>
+    ${plLoad().length?`<section class="card"><h2>Korábbi projektek</h2>${projectsHTML()}</section>`:""}
     ${creditLine()}
   </div>`;
 }
@@ -314,7 +345,7 @@ function importPreview(){
     <div class="rows">${[["Cím",p.title||"–"],["Dátum",p.date||"nincs megadva"],["Crew call",hm(p.call)],["Időrend",`${p.blocks.length} blokk, ebből ${sh} forgatás · ${Math.floor(tot/60)} óra ${tot%60} perc · vége ${hm(p.call+tot)}`],
       ["Szereplők",p.cast.length+" fő"],["Stáb",p.crew.length+" fő"],["Fények",p.groups.length+" beállítás"],["Szkript",p.script.length+" sor"]].map(([a,b])=>`<div class="row" style="grid-template-columns:96px minmax(0,1fr)"><small>${a}</small><b>${esc(b)}</b></div>`).join("")}</div>
     ${(p._warn||[]).length?`<ul class="list">${p._warn.map(w=>`<li class="warn">${esc(w)}</li>`).join("")}</ul>`:""}
-    <p class="muted small">A betöltés lecseréli a mostani tervet, és a nap állását (kész blokkok, take-ek) is nullázza.</p>
+    <p class="muted small">A betöltés után ${MP.on?"a közös projektben mindenkinél ez lesz a terv":"a mostani terv a Projektek közé kerül"}, a nap állása (kész blokkok, take-ek) nullázódik. A nap állását (kész blokkok, take-ek) is nullázza.</p>
     <div class="wgrid"><button class="btn solid" type="button" data-do="load" ${p.blocks.length?"":"disabled"}>Betöltés</button><button class="btn" type="button" data-do="cancel">Mégse</button></div></section>`;
 }
 function renderEdit(){
@@ -329,9 +360,8 @@ function renderEdit(){
       <button class="btn" type="button" data-do="export" ${P.blocks.length?"":"disabled"}>${ic("down",16)}Terv mentése Excelbe</button>
       <button class="btn" type="button" data-do="sablon">${ic("down",16)}Üres sablon letöltése</button></div>
       <p class="muted small">Az elmentett Excel ugyanebben a formában van, mint a sablon: átküldheted, javíthatod gépen, és visszatöltheted.</p></section>
-    <section class="card"><h2>Új terv</h2><div class="wgrid">
-      <button class="btn" type="button" data-do="minta">${ic("play",16)}Minta betöltése</button>
-      <button class="btn danger" type="button" data-do="ures">${ic("x",16)}Üres terv</button></div></section>`;
+    <section class="card"><div class="card-head"><h2>Projektek</h2><button class="btn sm solid" type="button" data-do="newproj">${ic("plus",14)}Új projekt</button></div>
+      ${projectsHTML()}<div class="wgrid"><button class="btn" type="button" data-do="minta">${ic("play",16)}Minta megnyitása</button></div></section>`;
   else if(editSec==="idorend")body=`<p class="muted small" id="edwrap">${wrapLine()}</p>
     <datalist id="glist">${P.groups.filter(g=>g.code).map(g=>`<option value="${esc(g.code)}">${esc(g.name)}</option>`).join("")}</datalist>
     ${P.blocks.length?"":`<section class="card empty"><h2>Üres a terv</h2><p class="muted">Add hozzá az első blokkot az alábbi gombokkal, sorban, ahogy a nap megy: érkezés, előkészület, forgatás, átállás, ebéd… A crew callt és a dátumot a <b>Projekt</b> részen állítod. Ha Excelben már megvan a nap, töltsd be a <b>Fájl</b> részen.</p></section>`}
@@ -356,7 +386,7 @@ function renderEdit(){
         ${fld("x",l.x,{label:"Szöveg",area:1,cls:"span2"})}${fld("ids",(l.ids||[]).join(", "),{label:"Shotok",ph:"1/1, 1/2",cls:"w2"})}<button type="button" class="ib del" data-act="rowdel" aria-label="Sor törlése">${ic("x",16)}</button></div>`).join("")}</div>
       <button type="button" class="btn sm" data-act="rowadd" data-list="script">${ic("plus",14)}Új sor</button></section>`;
   renderTabs();$$(".tabs a").forEach(a=>{if(a.getAttribute("href")==="#terv")a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});placeInd();
-  v.innerHTML=`<div class="vh">Terv</div><div class="seg esec" role="group" aria-label="Szakasz">${secs.map(([k,l])=>`<button type="button" data-sec="${k}" aria-pressed="${editSec===k}">${l}</button>`).join("")}</div><div class="stack">${body}</div>`;
+  v.innerHTML=`<div class="vh-row"><div class="vh">Terv</div><button class="btn sm" type="button" data-do="newproj">${ic("plus",14)}Új projekt</button></div><div class="seg esec" role="group" aria-label="Szakasz">${secs.map(([k,l])=>`<button type="button" data-sec="${k}" aria-pressed="${editSec===k}">${l}</button>`).join("")}</div><div class="stack">${body}</div>`;
 }
 /* események (egyszer, delegálva) */
 function sure(btn,msg){if(btn.dataset.armed)return true;const h=btn.innerHTML;btn.dataset.armed="1";btn.classList.add("armed");btn.textContent=msg;
@@ -388,14 +418,17 @@ async function addImages(el,files){
 document.addEventListener("click",async e=>{
   const t=e.target.closest("button,[data-do]");if(!t||!t.closest('[data-view]'))return;const d=t.dataset;
   if(d.sec){editSec=d.sec;renderEdit();return}
+  if(d.popen){openProject(d.popen);return}
+  if(d.pdel){if(sure(t,"Törlöd?"))delProject(d.pdel);return}
   if(d.do){
-    if(d.do==="minta"){if(P.blocks.length&&!sure(t,"Biztos? A mostani terv törlődik"))return;setProject(JSON.parse(JSON.stringify(MINTA)),{reset:true});location.hash="#most";toast("Minta betöltve. A Terv fülön átírhatod.")}
+    if(d.do==="minta"){if(MP.on){toast("Közös projekt közben nem tölthetsz be mást. Előbb válaszd le (Terv → Csapat).");return}setProject(JSON.parse(JSON.stringify(MINTA)),{reset:true,archive:true});location.hash="#most";toast("Minta betöltve. A Terv fülön átírhatod.")}
     else if(d.do==="ures"){if(P.blocks.length&&!sure(t,"Biztos? A mostani terv törlődik"))return;
       setProject({title:"",call:480,blocks:[{type:"prep",d:30,label:"Érkezés, setup"},{type:"shoot",d:30,label:"1/1"}]},{reset:true});editSec="idorend";openEB=P.blocks[1]._id;location.hash="#terv";renderEdit()}
+    else if(d.do==="newproj")newProject(t);
     else if(d.do==="sablon")downloadSablon();
     else if(d.do==="tour")tourStart();
     else if(d.do==="export")exportNow();
-    else if(d.do==="load"&&pending){const p=pending;pending=null;delete p._warn;setProject(p,{reset:true});editSec="idorend";location.hash="#most";toast("Terv betöltve: "+p.blocks.length+" blokk.",{tone:"ok"})}
+    else if(d.do==="load"&&pending){const p=pending;pending=null;delete p._warn;setProject(p,{reset:true,archive:!MP.on});editSec="idorend";location.hash="#most";toast("Terv betöltve: "+p.blocks.length+" blokk.",{tone:"ok"})}
     else if(d.do==="cancel"){pending=null;renderEdit()}
     else if(d.do==="scradd"||d.do==="scrrep"){const x=parseScript($("#scrpaste").value);if(!x.length)return;P.script=d.do==="scradd"?P.script.concat(x):x;commit();renderEdit();toast(x.length+" sor beolvasva. A Shotok mezőben jelöld, melyik shot veszi.")}
     return;
