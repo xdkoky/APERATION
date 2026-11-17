@@ -438,7 +438,57 @@ details[open]>:not(summary){animation:openIn .32s var(--ease-out) both}
 .drop:hover,body.dragging .drop{background-image:linear-gradient(color-mix(in srgb,var(--shoot) 8%,transparent),color-mix(in srgb,var(--shoot) 8%,transparent))}
 .card .eb,.card .role,.card .stat{box-shadow:none}
 .wgrid>.btn:not(.solid):not(.danger),.vh-act>.btn:not(.solid){background-color:var(--panel-solid);background-image:linear-gradient(var(--surface-2),var(--surface-2))}
+
+/* ---------- indulóképernyő (csak hidegindításkor) ----------
+   Fekete-fehér, régi PC-s rendszerindítás: előbb a „BIOS” sorai gépelődnek, aztán a logó egy csíkos töltősávval. */
+.boot{position:fixed;inset:0;z-index:1000;background:#000;color:#e9e9e9;font-family:"Courier New",Courier,monospace;font-size:13.5px;line-height:1.45;
+  padding:calc(18px + env(safe-area-inset-top,0px)) 18px 18px;overflow:hidden;cursor:pointer;-webkit-user-select:none;user-select:none;transition:opacity .45s ease}
+.boot.out{opacity:0}
+.boot pre{margin:0;font:inherit;white-space:pre-wrap;word-break:break-word}
+.boot .cur{display:inline-block;width:.6em;height:1.05em;background:#e9e9e9;vertical-align:-2px;animation:bootblink .9s steps(2) infinite}
+@keyframes bootblink{50%{opacity:0}}
+.boot .bl{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:34px;opacity:0;transition:opacity .5s ease}
+.boot.logo .bl{opacity:1}.boot.logo pre{opacity:0;transition:opacity .2s}
+.boot .bl svg{height:118px;width:auto;max-width:72vw;filter:grayscale(1) brightness(1.15)}
+.boot .bar{width:min(240px,62vw);height:16px;border:2px solid #e9e9e9;padding:2px;overflow:hidden;position:relative}
+.boot .bar i{position:absolute;top:2px;bottom:2px;width:46px;left:-50px;
+  background:repeating-linear-gradient(90deg,#e9e9e9 0 10px,transparent 10px 14px);animation:bootbar 1.25s linear infinite}
+@keyframes bootbar{to{left:100%}}
+.boot .hint{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom,0px));text-align:center;font-size:11px;color:#777;letter-spacing:.06em}
 </style>
+
+<div class="boot" id="boot" role="presentation" aria-hidden="true"><pre id="bootpre"></pre><div class="bl"></div><div class="hint">KOPPINTS A KIHAGYÁSHOZ</div></div>
+<script>
+/* indulóképernyő: csak akkor fut, amikor az oldal ténylegesen betöltődik (hidegindítás).
+   Háttérből visszahozott appnál nincs újratöltés, így ott nem jelenik meg. Koppintásra átugorható. */
+(function(){
+  const box=document.getElementById("boot");if(!box)return;
+  const skipDev=/^(localhost|127\.)/.test(location.hostname)&&!/[?&]splash\b/.test(location.search);
+  const end=()=>{if(box.dataset.done)return;box.dataset.done="1";box.classList.add("out");setTimeout(()=>box.parentNode&&box.parentNode.removeChild(box),480)};
+  if(skipDev||matchMedia("print").matches){box.parentNode.removeChild(box);return}
+  box.addEventListener("click",end);
+  const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const logo=/*__LOGO__*/null;
+  box.querySelector(".bl").innerHTML=(logo||"")+'<div class="bar"><i></i></div>';
+  const on=navigator.onLine;
+  const d=new Date(),p2=n=>String(n).padStart(2,"0");
+  const L=(k,v)=>(k+" ").padEnd(20,".")+" "+v;
+  const lines=["APERATION BIOS v2.6","(C) 2026 Tóth Tamás János","",
+    L("Rendszeridő",d.getFullYear()+"."+p2(d.getMonth()+1)+"."+p2(d.getDate())+" "+p2(d.getHours())+":"+p2(d.getMinutes())),
+    L("Memória","640K OK"),"",
+    L("Napvezérlő","OK"),L("Időrend, shotlist","OK"),L("Forgatókönyv","OK"),L("Take-napló","OK"),
+    L("Hálózat",on?"OK":"HELYI MÓD"),"",
+    "Rendszer indítása"];
+  const pre=document.getElementById("bootpre");
+  if(reduce){box.classList.add("logo");setTimeout(end,900);return}
+  let i=0,t=0;
+  const step=()=>{if(box.dataset.done)return;
+    if(i<lines.length){pre.textContent=lines.slice(0,++i).join("\n");pre.insertAdjacentHTML("beforeend",'<span class="cur"></span>');
+      t=setTimeout(step,lines[i-1]===""?60:95);return}
+    t=setTimeout(()=>{box.classList.add("logo");setTimeout(end,1500)},380)};
+  setTimeout(step,180);
+})();
+</script>
 
 <div class="aura" aria-hidden="true"><i></i><i></i></div>
 <div class="vig" aria-hidden="true"></div>
