@@ -6,7 +6,7 @@
    jelenete olvasható, a vett sorok kiemelve. */
 let scrMode="mark",markShot=null,markRange=false,markAnchor=null;
 const natCmp=(a,b)=>String(a).localeCompare(String(b),"hu",{numeric:true});
-function planShotIds(){const s=new Set();P.blocks.forEach(b=>{if(b.type==="shoot")shotIds(b.label).forEach(i=>s.add(i))});return[...s].sort(natCmp)}
+function planShotIds(){const s=new Set();P.shots.forEach(x=>{const c=String(x.code||"").replace(/\s/g,"");if(c)s.add(c)});P.blocks.forEach(b=>{if(b.type==="shoot")shotIds(b.label).forEach(i=>s.add(i))});return[...s].sort(natCmp)}
 function scrPasteCard(open){
   return`<section class="card"><h2>${P.script.length?"Szöveg hozzáadása vagy cseréje":"Forgatókönyv beillesztése"}</h2>
     <p class="muted small">Másold be a forgatókönyvet (pl. Wordből vagy PDF-ből). Az app magától szétszedi: <b>BELSŐ. / KÜLSŐ.</b> = jelenet, <b>NAGYBETŰS név</b> = szereplő, utána a dialógus, <b>(zárójel)</b> = instrukció.</p>
@@ -35,7 +35,7 @@ function scriptEditHTML(){
       ${ids.length?`<div class="schips">${ids.map(id=>`<button type="button" class="schip ${id===markShot?"on":""} ${cnt(id)?"":"empty"}" data-mshot="${esc(id)}" aria-pressed="${id===markShot}">${esc(id)}<small>${cnt(id)||"–"}</small></button>`).join("")}</div>
       <div class="scr-row"><label class="fi chkf"><input type="checkbox" data-mrange ${markRange?"checked":""}><span>Tartomány</span></label>
         <span class="muted small">${markAnchor!=null?"<b>Most koppints az utolsó sorra.</b>":markRange?"Koppints az első, majd az utolsó sorra.":`Jelölés: <b>${esc(markShot)}</b>`}</span></div>`
-      :`<p class="muted">A jelöléshez előbb legyenek forgatási blokkok az <b>Időrend</b>ben (pl. 1/1, 1/2).</p>`}
+      :`<p class="muted">A jelöléshez előbb legyenek shotok a <b>Shotlist</b>ben vagy forgatási blokkok az <b>Időrend</b>ben (pl. 1/1, 1/2).</p>`}
     </section>
     <section class="card fs scr-mark" style="padding:14px 8px;gap:0">${lines}</section>${scrPasteCard(false)}`;
 }

@@ -56,7 +56,7 @@ function projFileName(){const t=(P.title||"projekt").normalize("NFD").replace(/[
 async function exportProjectFile(){
   flushSave();
   const images={};
-  for(const b of [...P.blocks,...P.groups])for(const x of b.images||[])if(x.idb&&!images[x.idb]){try{const bl=await idb.get(x.idb);if(bl)images[x.idb]=await blobToURL(bl)}catch(e){}}
+  for(const b of [...P.blocks,...P.groups,...P.shots])for(const x of b.images||[])if(x.idb&&!images[x.idb]){try{const bl=await idb.get(x.idb);if(bl)images[x.idb]=await blobToURL(bl)}catch(e){}}
   const data={app:"APERATION",kind:"projekt",version:1,saved:new Date().toISOString(),project:P,state:{...st,sim:fresh().sim,sw:null},images};
   await saveFile(projFileName(),new Blob([JSON.stringify(data)],{type:"application/json"}),"application/json");
 }

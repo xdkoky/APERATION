@@ -59,6 +59,7 @@ function filterP(p,perm){
   if(!perm.notes)q.notes=[];if(!perm.lights)q.groups=q.groups.map(g=>({...g,desc:""}));
   q.groups=q.groups.map(g=>({...g,images:perm.images&&perm.lights?(g.images||[]).filter(x=>x.url):[]}));
   if(!perm.szkript)q.script=[];if(!perm.stab)q.crew=[];
+  q.shots=(q.shots||[]).map(s=>({...s,images:perm.images?(s.images||[]).filter(x=>x.url):[],props:perm.props?s.props:"",story:perm.szkript?s.story:"",note:perm.notes?s.note:""}));
   if(!perm.phones){q.cast.forEach(c=>c.phone="");q.crew.forEach(c=>c.phone="")}
   return q;
 }

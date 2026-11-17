@@ -41,7 +41,7 @@ tpl = tpl.replace("/*__GATE_JS__*/", open(os.path.join(HERE, "gate.js"), encodin
 PRINT_CSS = open(os.path.join(HERE, "print.css"), encoding="utf-8").read()
 tpl = tpl.replace("/*__PRINT_CSS_STYLE__*/", PRINT_CSS)
 tpl = tpl.replace("/*__SCRIPT_CSS__*/", open(os.path.join(HERE, "script.css"), encoding="utf-8").read())
-tpl = tpl.replace("/*__EDITOR_JS__*/", "\n".join(open(os.path.join(HERE, f), encoding="utf-8").read() for f in ("multi.js", "editor.js", "script.js", "backup.js", "print.js")))
+tpl = tpl.replace("/*__EDITOR_JS__*/", "\n".join(open(os.path.join(HERE, f), encoding="utf-8").read() for f in ("multi.js", "editor.js", "shotlist.js", "script.js", "backup.js", "print.js")))
 tpl = tpl.replace('const PRINT_CSS=/*__PRINT_CSS__*/"";', "const PRINT_CSS=" + json.dumps(PRINT_CSS, ensure_ascii=False) + ";")
 tpl = tpl.replace("const MINTA=/*__MINTA__*/null;", "const MINTA=" + json.dumps(MINTA, ensure_ascii=False) + ";")
 assert "/*__" not in tpl.replace("/*__XLSX__*/", "").replace("/*__FBCFG__*/", "").replace("/*__FBSRC__*/", "").replace("/*__GATE__*/", "")
@@ -100,6 +100,8 @@ lines = [
     ("Szereplők: vesszővel (pl. Anna, Bence), ugyanúgy írva, mint a Szereplők lap Szerep oszlopában. Kellékek: cellán belül soronként (Alt+Enter).", None),
     ("Kihagyható: „igen”, ha csúszásnál ezt lehet elhagyni; az app késésnél felajánlja.", None),
     ("Storyboard kép / Vilkó kép: nyilvános kép-link (https://…). Képet a telefonról az appban is hozzáadhatsz (Terv → Időrend → blokk → Képek).", None),
+    ("Shotlist", Font(bold=True, size=12)),
+    ("A shotok a sztori sorrendjében: Shot (pl. 1/1 = 1. jelenet 1. shot), Plánméret (lista), Optika, Mozgás, Leírás, Szereplők, Kellékek, Sztori, Storyboard kép (link). Az Időrend lap Blokk / shot oszlopában ugyanezzel a számmal hivatkozol rájuk; amit itt beírsz, az appban az időrendhez is megjelenik.", None),
     ("Szereplők, Stáb", Font(bold=True, size=12)),
     ("Időpontok óra:perc formában (8:30). A Stáb lapon a részleg minden sorba írható; a telefonszám az appban hívható.", None),
     ("Fények", Font(bold=True, size=12)),
@@ -192,6 +194,9 @@ def table(name, cols, data, n=40, valid=None):
         col, lst = valid
         dv = DataValidation(type="list", formula1=f'"{lst}"', allow_blank=True); ws.add_data_validation(dv); dv.add(f"{col}2:{col}{max(n, len(data)) + 1}")
     return ws
+table("Shotlist", [("Shot", 8), ("Plánméret", 13), ("Optika", 9), ("Mozgás", 11), ("Leírás", 44), ("Szereplők", 16), ("Kellékek", 26), ("Sztori", 30), ("Storyboard kép (URL)", 24), ("Megjegyzés", 24)],
+      [(s["code"], s.get("size", ""), s.get("lens", ""), s.get("move", ""), s.get("desc", ""), s.get("talent", ""), s.get("props", ""), s.get("story", ""), "", s.get("note", "")) for s in MINTA.get("shots", [])], 120,
+      valid=("B", "Totál,Kistotál,Szekond,Amerikai,Félközeli,Közeli,Nagyközeli,Részlet / inzert,POV,Egyéb"))
 ws = table("Szereplők", [("Szerep", 14), ("Színész", 22), ("Érkezés", 9), ("Ruha", 9), ("Smink", 9), ("Haj", 9), ("Setre", 9), ("Telefon", 16)],
            [(c["role"], c["name"], hmt(c["arr"]), hmt(c["ruha"]), hmt(c["smink"]), hmt(c["haj"]), hmt(c["onset"]), c["phone"]) for c in MINTA["cast"]], 20)
 for r in ws.iter_rows(min_row=2, min_col=3, max_col=7):

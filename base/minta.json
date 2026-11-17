@@ -11,55 +11,392 @@
   "A 2/3-hoz esőgép kell, előtte 10 perccel szólni a gripnek."
  ],
  "blocks": [
-  {"type":"prep","d":15,"label":"Érkezés","note":"Kávé, eligazítás"},
-  {"type":"prep","d":60,"label":"Setup","setup":"Buszmegálló (A fény)","note":"Világítás, kamera, berendezés. 8:30 színészek: smink, jelmez"},
-  {"type":"pres","d":15,"label":"Próba","note":"Az 1/1 mozgásának próbája"},
-  {"type":"shoot","d":30,"label":"1/1","setup":"Wide, 24 mm, sticks","note":"Teljes jelenet totálból","group":"A","talent":"Anna, Bence","props":"Esernyő\nBuszmenetrend a falon\nAnna táskája","story":"Anna egyedül vár, megérkezik Bence.","images":[]},
-  {"type":"move","d":10,"label":"Átállás","setup":"50 mm, Anna közeli","note":"Fény marad"},
-  {"type":"shoot","d":20,"label":"1/2","setup":"CU, 50 mm, sticks","note":"Anna oldaláról a teljes jelenet","group":"A","talent":"Anna","props":"Esernyő","story":"Anna reakciói, amikor Bence beszél."},
-  {"type":"move","d":15,"label":"Átállás","setup":"Ellenirány, 50 mm","note":"Fény átfordítása"},
-  {"type":"shoot","d":20,"label":"1/3","setup":"CU, 50 mm, sticks","note":"Bence oldaláról","group":"B","talent":"Bence","props":"Bence kabátja","story":"Bence elmondja, hogy elköltözik."},
-  {"type":"lunch","d":45,"label":"Ebéd"},
-  {"type":"move","d":20,"label":"Átállás estére","setup":"Esti fény, esőgép","note":"Nagy lámpák ki, esőgép be","group":"C"},
-  {"type":"shoot","d":25,"label":"2/1","setup":"Medium, 35 mm, dolly","note":"Dolly mellé, a busz érkezése","group":"C","talent":"Anna, Bence","props":"Esernyő\nBusz fényei (LED-panel)","story":"Megjön az utolsó busz."},
-  {"type":"move","d":10,"label":"Optikacsere","setup":"85 mm"},
-  {"type":"shoot","d":15,"label":"2/2","setup":"ECU, 85 mm, kézi","note":"Anna szeme","group":"C","talent":"Anna","story":"Anna nem száll fel."},
-  {"type":"move","d":10,"label":"Átállás","setup":"Wide, 24 mm, esőgép"},
-  {"type":"shoot","d":20,"label":"2/3","setup":"Wide, 24 mm, sticks","note":"Csúszásnál ez hagyható ki","group":"C","talent":"Anna","props":"Esernyő (becsukva)","story":"A busz elmegy, Anna egyedül marad az esőben.","skippable":true},
-  {"type":"res","d":15,"label":"Tartalék"}
+  {
+   "type": "prep",
+   "d": 15,
+   "label": "Érkezés",
+   "note": "Kávé, eligazítás"
+  },
+  {
+   "type": "prep",
+   "d": 60,
+   "label": "Setup",
+   "setup": "Buszmegálló (A fény)",
+   "note": "Világítás, kamera, berendezés. 8:30 színészek: smink, jelmez"
+  },
+  {
+   "type": "pres",
+   "d": 15,
+   "label": "Próba",
+   "note": "Az 1/1 mozgásának próbája"
+  },
+  {
+   "type": "shoot",
+   "d": 30,
+   "label": "1/1",
+   "setup": "Wide, 24 mm, sticks",
+   "note": "Teljes jelenet totálból",
+   "group": "A",
+   "talent": "Anna, Bence",
+   "props": "Esernyő\nBuszmenetrend a falon\nAnna táskája",
+   "story": "Anna egyedül vár, megérkezik Bence.",
+   "images": []
+  },
+  {
+   "type": "move",
+   "d": 10,
+   "label": "Átállás",
+   "setup": "50 mm, Anna közeli",
+   "note": "Fény marad"
+  },
+  {
+   "type": "shoot",
+   "d": 20,
+   "label": "1/2",
+   "setup": "CU, 50 mm, sticks",
+   "note": "Anna oldaláról a teljes jelenet",
+   "group": "A",
+   "talent": "Anna",
+   "props": "Esernyő",
+   "story": "Anna reakciói, amikor Bence beszél."
+  },
+  {
+   "type": "move",
+   "d": 15,
+   "label": "Átállás",
+   "setup": "Ellenirány, 50 mm",
+   "note": "Fény átfordítása"
+  },
+  {
+   "type": "shoot",
+   "d": 20,
+   "label": "1/3",
+   "setup": "CU, 50 mm, sticks",
+   "note": "Bence oldaláról",
+   "group": "B",
+   "talent": "Bence",
+   "props": "Bence kabátja",
+   "story": "Bence elmondja, hogy elköltözik."
+  },
+  {
+   "type": "lunch",
+   "d": 45,
+   "label": "Ebéd"
+  },
+  {
+   "type": "move",
+   "d": 20,
+   "label": "Átállás estére",
+   "setup": "Esti fény, esőgép",
+   "note": "Nagy lámpák ki, esőgép be",
+   "group": "C"
+  },
+  {
+   "type": "shoot",
+   "d": 25,
+   "label": "2/1",
+   "setup": "Medium, 35 mm, dolly",
+   "note": "Dolly mellé, a busz érkezése",
+   "group": "C",
+   "talent": "Anna, Bence",
+   "props": "Esernyő\nBusz fényei (LED-panel)",
+   "story": "Megjön az utolsó busz."
+  },
+  {
+   "type": "move",
+   "d": 10,
+   "label": "Optikacsere",
+   "setup": "85 mm"
+  },
+  {
+   "type": "shoot",
+   "d": 15,
+   "label": "2/2",
+   "setup": "ECU, 85 mm, kézi",
+   "note": "Anna szeme",
+   "group": "C",
+   "talent": "Anna",
+   "story": "Anna nem száll fel."
+  },
+  {
+   "type": "move",
+   "d": 10,
+   "label": "Átállás",
+   "setup": "Wide, 24 mm, esőgép"
+  },
+  {
+   "type": "shoot",
+   "d": 20,
+   "label": "2/3",
+   "setup": "Wide, 24 mm, sticks",
+   "note": "Csúszásnál ez hagyható ki",
+   "group": "C",
+   "talent": "Anna",
+   "props": "Esernyő (becsukva)",
+   "story": "A busz elmegy, Anna egyedül marad az esőben.",
+   "skippable": true
+  },
+  {
+   "type": "res",
+   "d": 15,
+   "label": "Tartalék"
+  }
  ],
  "groups": [
-  {"code":"A","name":"Nappal, megálló","desc":"Ablakfény jobbról (HMI), fehér derítő balról"},
-  {"code":"B","name":"Nappal, ellenirány","desc":"HMI átfordítva, negatív a falon"},
-  {"code":"C","name":"Este, eső","desc":"Utcai lámpa (prakti), kék háttérfény, esőgép"}
+  {
+   "code": "A",
+   "name": "Nappal, megálló",
+   "desc": "Ablakfény jobbról (HMI), fehér derítő balról"
+  },
+  {
+   "code": "B",
+   "name": "Nappal, ellenirány",
+   "desc": "HMI átfordítva, negatív a falon"
+  },
+  {
+   "code": "C",
+   "name": "Este, eső",
+   "desc": "Utcai lámpa (prakti), kék háttérfény, esőgép"
+  }
  ],
  "cast": [
-  {"role":"Anna","name":"Minta Anna","arr":"08:00","ruha":"08:30","smink":"08:45","haj":"","onset":"09:30","phone":""},
-  {"role":"Bence","name":"Minta Bence","arr":"08:30","ruha":"09:00","smink":"09:15","haj":"","onset":"09:50","phone":""}
+  {
+   "role": "Anna",
+   "name": "Minta Anna",
+   "arr": "08:00",
+   "ruha": "08:30",
+   "smink": "08:45",
+   "haj": "",
+   "onset": "09:30",
+   "phone": ""
+  },
+  {
+   "role": "Bence",
+   "name": "Minta Bence",
+   "arr": "08:30",
+   "ruha": "09:00",
+   "smink": "09:15",
+   "haj": "",
+   "onset": "09:50",
+   "phone": ""
+  }
  ],
  "crew": [
-  {"dept":"Rendezés","pos":"Rendező","name":"Minta Rendező","arr":"08:00","phone":""},
-  {"dept":"Rendezés","pos":"1st AD","name":"Minta Asszisztens","arr":"07:45","phone":""},
-  {"dept":"Rendezés","pos":"Szkriptes","name":"Minta Szkriptes","arr":"08:00","phone":""},
-  {"dept":"Kamera","pos":"Operatőr","name":"Minta Operatőr","arr":"08:00","phone":""},
-  {"dept":"Világítás","pos":"Fővilágosító","name":"Minta Fővilágosító","arr":"08:00","phone":""},
-  {"dept":"Hang","pos":"Hangmérnök","name":"Minta Hangmérnök","arr":"08:30","phone":""}
+  {
+   "dept": "Rendezés",
+   "pos": "Rendező",
+   "name": "Minta Rendező",
+   "arr": "08:00",
+   "phone": ""
+  },
+  {
+   "dept": "Rendezés",
+   "pos": "1st AD",
+   "name": "Minta Asszisztens",
+   "arr": "07:45",
+   "phone": ""
+  },
+  {
+   "dept": "Rendezés",
+   "pos": "Szkriptes",
+   "name": "Minta Szkriptes",
+   "arr": "08:00",
+   "phone": ""
+  },
+  {
+   "dept": "Kamera",
+   "pos": "Operatőr",
+   "name": "Minta Operatőr",
+   "arr": "08:00",
+   "phone": ""
+  },
+  {
+   "dept": "Világítás",
+   "pos": "Fővilágosító",
+   "name": "Minta Fővilágosító",
+   "arr": "08:00",
+   "phone": ""
+  },
+  {
+   "dept": "Hang",
+   "pos": "Hangmérnök",
+   "name": "Minta Hangmérnök",
+   "arr": "08:30",
+   "phone": ""
+  }
  ],
  "script": [
-  {"t":"sh","x":"KÜLSŐ. BUSZMEGÁLLÓ – NAPPAL","ids":[]},
-  {"t":"ac","x":"Anna egyedül áll a megállóban, az esernyőjét forgatja.","ids":["1/1","1/2"]},
-  {"t":"ac","x":"Bence érkezik, megáll mellette.","ids":["1/1","1/3"]},
-  {"t":"ch","x":"BENCE","ids":["1/1","1/3"]},
-  {"t":"dl","x":"Ugye ez az utolsó?","ids":["1/1","1/3"]},
-  {"t":"ch","x":"ANNA","ids":["1/1","1/2"]},
-  {"t":"pa","x":"(nem néz rá)","ids":["1/1","1/2"]},
-  {"t":"dl","x":"Mindig ez az utolsó.","ids":["1/1","1/2"]},
-  {"t":"ch","x":"BENCE","ids":["1/1","1/3"]},
-  {"t":"dl","x":"Holnap elköltözöm.","ids":["1/1","1/3"]},
-  {"t":"sh","x":"KÜLSŐ. BUSZMEGÁLLÓ – ESTE","ids":[]},
-  {"t":"ac","x":"Esik. Megjön a busz, kinyílik az ajtó.","ids":["2/1"]},
-  {"t":"ac","x":"Anna nem mozdul.","ids":["2/1","2/2"]},
-  {"t":"ac","x":"A busz elmegy. Anna egyedül marad az esőben.","ids":["2/3"]},
-  {"t":"end","x":"VÉGE","ids":[]}
+  {
+   "t": "sh",
+   "x": "KÜLSŐ. BUSZMEGÁLLÓ – NAPPAL",
+   "ids": []
+  },
+  {
+   "t": "ac",
+   "x": "Anna egyedül áll a megállóban, az esernyőjét forgatja.",
+   "ids": [
+    "1/1",
+    "1/2"
+   ]
+  },
+  {
+   "t": "ac",
+   "x": "Bence érkezik, megáll mellette.",
+   "ids": [
+    "1/1",
+    "1/3"
+   ]
+  },
+  {
+   "t": "ch",
+   "x": "BENCE",
+   "ids": [
+    "1/1",
+    "1/3"
+   ]
+  },
+  {
+   "t": "dl",
+   "x": "Ugye ez az utolsó?",
+   "ids": [
+    "1/1",
+    "1/3"
+   ]
+  },
+  {
+   "t": "ch",
+   "x": "ANNA",
+   "ids": [
+    "1/1",
+    "1/2"
+   ]
+  },
+  {
+   "t": "pa",
+   "x": "(nem néz rá)",
+   "ids": [
+    "1/1",
+    "1/2"
+   ]
+  },
+  {
+   "t": "dl",
+   "x": "Mindig ez az utolsó.",
+   "ids": [
+    "1/1",
+    "1/2"
+   ]
+  },
+  {
+   "t": "ch",
+   "x": "BENCE",
+   "ids": [
+    "1/1",
+    "1/3"
+   ]
+  },
+  {
+   "t": "dl",
+   "x": "Holnap elköltözöm.",
+   "ids": [
+    "1/1",
+    "1/3"
+   ]
+  },
+  {
+   "t": "sh",
+   "x": "KÜLSŐ. BUSZMEGÁLLÓ – ESTE",
+   "ids": []
+  },
+  {
+   "t": "ac",
+   "x": "Esik. Megjön a busz, kinyílik az ajtó.",
+   "ids": [
+    "2/1"
+   ]
+  },
+  {
+   "t": "ac",
+   "x": "Anna nem mozdul.",
+   "ids": [
+    "2/1",
+    "2/2"
+   ]
+  },
+  {
+   "t": "ac",
+   "x": "A busz elmegy. Anna egyedül marad az esőben.",
+   "ids": [
+    "2/3"
+   ]
+  },
+  {
+   "t": "end",
+   "x": "VÉGE",
+   "ids": []
+  }
+ ],
+ "shots": [
+  {
+   "code": "1/1",
+   "size": "Totál",
+   "lens": "24 mm",
+   "move": "Sticks",
+   "desc": "A megálló egészben, Anna vár, Bence beér a képbe.",
+   "talent": "Anna, Bence",
+   "props": "Esernyő\nBuszmenetrend a falon",
+   "story": "Anna egyedül vár, megérkezik Bence."
+  },
+  {
+   "code": "1/2",
+   "size": "Közeli",
+   "lens": "50 mm",
+   "move": "Sticks",
+   "desc": "Anna arca, Bence válla felett.",
+   "talent": "Anna",
+   "props": "Esernyő"
+  },
+  {
+   "code": "1/3",
+   "size": "Közeli",
+   "lens": "50 mm",
+   "move": "Sticks",
+   "desc": "Bence, ellenirány.",
+   "talent": "Bence",
+   "props": "Bence kabátja"
+  },
+  {
+   "code": "2/1",
+   "size": "Félközeli",
+   "lens": "35 mm",
+   "move": "Dolly",
+   "desc": "Dolly mellé, ahogy megérkezik a busz.",
+   "talent": "Anna, Bence"
+  },
+  {
+   "code": "2/2",
+   "size": "Nagyközeli",
+   "lens": "85 mm",
+   "move": "Kézi",
+   "desc": "Anna szeme, nem száll fel.",
+   "talent": "Anna"
+  },
+  {
+   "code": "2/3",
+   "size": "Totál",
+   "lens": "24 mm",
+   "move": "Sticks",
+   "desc": "A busz elmegy, Anna egyedül marad az esőben.",
+   "talent": "Anna",
+   "props": "Esernyő (becsukva)"
+  },
+  {
+   "code": "2/4",
+   "size": "Részlet",
+   "lens": "85 mm",
+   "move": "Sticks",
+   "desc": "Inzert: esőcseppek a megálló üvegén.",
+   "note": "Ha marad idő."
+  }
  ]
 }

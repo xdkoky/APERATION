@@ -9,12 +9,13 @@ const splitLines=s=>String(s||"").split(/\n|;/).map(x=>x.trim()).filter(Boolean)
 const shotIds=l=>{const m=String(l||"").match(/\d+\s*\/\s*\d+[A-Za-z]*/g);return m?[...new Set(m.map(x=>x.replace(/\s/g,"")))]:(String(l||"").trim()?[String(l).trim()]:[])};
 const hhmm=m=>Number.isFinite(m)?`${String(Math.floor(m/60)%24).padStart(2,"0")}:${String(Math.round(m%60)).padStart(2,"0")}`:"";
 function normP(p){
-  p=Object.assign({title:"",date:"",call:480,wrapTarget:0,location:"",parking:"",notes:[],blocks:[],groups:[],cast:[],crew:[],script:[],src:""},p||{});
+  p=Object.assign({title:"",date:"",call:480,wrapTarget:0,location:"",parking:"",notes:[],blocks:[],shots:[],groups:[],cast:[],crew:[],script:[],src:""},p||{});
   p.call=Number.isFinite(+p.call)?+p.call:480;p.wrapTarget=+p.wrapTarget||0;
   if(!Array.isArray(p.notes))p.notes=splitLines(p.notes);
   p.blocks=p.blocks.map(b=>Object.assign({type:"shoot",d:10,label:"",setup:"",note:"",group:"",talent:"",props:"",story:"",skippable:false,images:[]},b,
     {_id:b._id||uid(),d:Math.max(0,Math.round(+b.d||0)),type:TYPES.includes(b.type)?b.type:"shoot",images:(b.images||[]).filter(x=>x&&(x.url||x.idb))}));
   p.groups=p.groups.map(g=>Object.assign({code:"",name:"",desc:""},g,{images:(g.images||[]).filter(x=>x&&(x.url||x.idb))}));
+  p.shots=(p.shots||[]).map(s=>Object.assign({code:"",size:"",lens:"",move:"",desc:"",talent:"",props:"",story:"",note:"",images:[]},s,{_id:s._id||uid(),images:(s.images||[]).filter(x=>x&&(x.url||x.idb))}));
   p.cast=p.cast.map(c=>Object.assign({role:"",name:"",arr:"",ruha:"",smink:"",haj:"",onset:"",phone:""},c));
   p.crew=p.crew.map(c=>Object.assign({dept:"",pos:"",name:"",arr:"",phone:""},c));
   p.script=p.script.map(l=>({t:STYPES.some(s=>s[0]===l.t)?l.t:"ac",x:l.x||"",ids:Array.isArray(l.ids)?l.ids:splitList(l.ids)}));
@@ -22,7 +23,10 @@ function normP(p){
 }
 function applyProject(){
   const p=P;let t=p.call;
-  const blocks=p.blocks.map(b=>{const o={s:t,d:b.d,type:b.type,label:(b.label||"").trim()||TNAME[b.type],setup:b.setup||"",note:b.note||"",group:(b.group||"").trim(),skippable:!!b.skippable};t+=b.d;return o});
+  const SL={};p.shots.forEach(s=>{const c=String(s.code||"").replace(/\s/g,"");if(c&&!SL[c])SL[c]=s});
+  const slOf=b=>b.type==="shoot"?shotIds((b.label||"").trim()).map(i=>SL[i]).filter(Boolean):[];
+  const uniq=a=>[...new Set(a.filter(Boolean))];
+  const blocks=p.blocks.map(b=>{const ss=slOf(b),o={s:t,d:b.d,type:b.type,label:(b.label||"").trim()||TNAME[b.type],setup:b.setup||ss.map(s=>[s.size,s.lens,s.move].filter(Boolean).join(", ")).filter(Boolean).join(" + "),note:b.note||"",group:(b.group||"").trim(),skippable:!!b.skippable};t+=b.d;return o});
   const groups={};p.groups.forEach(g=>{if(String(g.code).trim())groups[String(g.code).trim()]=[g.name||"",g.desc||"",(g.images||[]).map(x=>{const u=x.url||IMG[x.idb];return u?{id:String(g.code).trim(),t:u,f:u}:null}).filter(Boolean)]});
   const cast=p.cast.filter(c=>c.name||c.role).map((c,k)=>({...c,k}));
   const crew=p.crew.filter(c=>c.name||c.pos).map(c=>({...c,dept:c.dept||"Stáb"}));
@@ -30,12 +34,14 @@ function applyProject(){
   p.blocks.forEach((b,i)=>{
     if(b.type!=="shoot")return;const lab=blocks[i].label;if(shots[lab])return;
     const ids=shotIds(lab);
-    const img=k=>(b.images||[]).filter(x=>x.kind===k).map(x=>{const u=x.url||IMG[x.idb];return u?{id:lab,t:u,f:u}:null}).filter(Boolean);
+    const ss=slOf(b),simgs=ss.flatMap(s=>(s.images||[]).map(x=>({...x,kind:x.kind||"sb"})));
+    const img=k=>[...(b.images||[]),...simgs].filter(x=>x.kind===k).map(x=>{const u=x.url||IMG[x.idb];return u?{id:lab,t:u,f:u}:null}).filter(Boolean);
     const sb=img("sb"),vk=img("vk");boards.push(...sb);vilko.push(...vk);
     const segs=[];let cur=null,head="";
     p.script.forEach(l=>{if(l.t==="sh"&&!(l.ids||[]).length){head=l.x;cur=null;return}
       if((l.ids||[]).some(x=>ids.includes(x))){if(!cur){cur={lab:head,lines:[]};segs.push(cur)}cur.lines.push(l)}else cur=null});
-    shots[lab]={ids,talent:splitList(b.talent),offcam:[],props:splitLines(b.props),story:b.story||"",sb,vk,segs};
+    shots[lab]={ids,talent:splitList(b.talent).length?splitList(b.talent):uniq(ss.flatMap(s=>splitList(s.talent))),offcam:[],props:uniq([...splitLines(b.props),...ss.flatMap(s=>splitLines(s.props))]),
+      story:b.story||ss.map(s=>s.story||s.desc).filter(Boolean).join(" "),desc:ss.map(s=>s.desc).filter(Boolean).join(" "),sb,vk,segs};
   });
   D={title:p.title,src:p.src||"saját terv",plan:{call:p.call,targetWrap:p.wrapTarget},blocks,shots,groups,cast,crew,boards,vilko,
     script:p.script.filter(l=>l.x).map(l=>({t:l.t,x:l.x,cov:(l.ids||[]).length?[{ids:l.ids}]:[]})),
@@ -100,7 +106,7 @@ function withRemap(fn){
 const idb=(()=>{let o;const open=()=>o=o||new Promise((res,rej)=>{const r=indexedDB.open("diszpo-app",1);r.onupgradeneeded=()=>r.result.createObjectStore("img");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
   const tx=(m,f)=>open().then(db=>new Promise((res,rej)=>{const t=db.transaction("img",m),q=f(t.objectStore("img"));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)}));
   return{put:(k,v)=>tx("readwrite",s=>s.put(v,k)),get:k=>tx("readonly",s=>s.get(k)),del:k=>tx("readwrite",s=>s.delete(k))}})();
-async function loadImgs(){let n=0;for(const b of [...P.blocks,...P.groups])for(const x of b.images||[])if(x.idb&&!IMG[x.idb]){try{const bl=await idb.get(x.idb);if(bl){IMG[x.idb]=URL.createObjectURL(bl);n++}}catch(e){}}
+async function loadImgs(){let n=0;for(const b of [...P.blocks,...P.groups,...P.shots])for(const x of b.images||[])if(x.idb&&!IMG[x.idb]){try{const bl=await idb.get(x.idb);if(bl){IMG[x.idb]=URL.createObjectURL(bl);n++}}catch(e){}}
   if(n){applyProject();if(view!=="terv")renderAll();else renderEdit()}}
 async function shrink(file){
   try{const bm=await createImageBitmap(file),k=Math.min(1,2400/Math.max(bm.width,bm.height));if(k>=1&&file.size<1.5e6)return file;
@@ -171,6 +177,8 @@ const COLDEF={
  crew:[["dept",h=>/^(reszleg|dept|osztaly|csapat)/.test(h)],["pos",h=>/^(pozicio|beosztas|munkakor|position)/.test(h)],["name",h=>/^(nev|name)/.test(h)],["arr",h=>/^(erkezes|call|arr)/.test(h)],["phone",h=>/^(telefon|tel|phone|mobil)/.test(h)]],
  cast:[["role",h=>/^(szerep|karakter|role|character)/.test(h)],["name",h=>/^(szinesz|nev|name|actor)/.test(h)],["arr",h=>/^(erkezes|arr|call)/.test(h)],["ruha",h=>/^(ruha|jelmez)/.test(h)],["smink",h=>/^smink/.test(h)],["haj",h=>/^haj/.test(h)],["onset",h=>/^(setre|onset|forgatasra|keszen)/.test(h)],["phone",h=>/^(telefon|tel|phone|mobil)/.test(h)]],
  groups:[["img",h=>/kep|url|link|vilko/.test(h)],["code",h=>/^(kod|code|jel$)/.test(h)],["name",h=>/^(nev|feny|name|megnevezes)/.test(h)],["desc",h=>/^(leiras|desc|reszletek|eszkozok)/.test(h)]],
+ shotlist:[["sb",h=>/storyboard|rajz|kep/.test(h)],["code",h=>/^(shot|kod|jel|szam)/.test(h)],["size",h=>/^(plan|meret|kepmeret|planmeret)/.test(h)],["lens",h=>/^(optika|obj|lens)/.test(h)],["move",h=>/^(mozgas|move|kameramozgas)/.test(h)],
+  ["desc",h=>/^(leiras|tartalom|desc|mitlatunk)/.test(h)],["talent",h=>/^(szereplo|talent|szinesz)/.test(h)],["props",h=>/^(kellek|props|kontinuitas)/.test(h)],["story",h=>/^(sztori|story)/.test(h)],["note",h=>/^(megjegyzes|note)/.test(h)]],
  script:[["t",h=>/^(tipus|type)/.test(h)],["x",h=>/^(szoveg|text|sor)/.test(h)],["ids",h=>/^(shot|ids|felsnitt)/.test(h)]]
 };
 function mapCols(row,kind){const m={};row.forEach((v,c)=>{const h=nk(v);if(!h)return;for(const [k,f] of COLDEF[kind])if(m[k]==null&&f(h)){m[k]=c;break}});return m}
@@ -179,6 +187,7 @@ function headerKind(row){
   let m=mapCols(row,"crew");if(m.pos!=null&&m.name!=null)return["crew",m];
   m=mapCols(row,"cast");if(row.some(v=>/^(szinesz|actor)/.test(nk(v)))||(m.role!=null&&m.name!=null&&(m.ruha!=null||m.smink!=null||m.onset!=null||m.arr!=null)))return["cast",m];
   m=mapCols(row,"script");if(m.x!=null&&m.t!=null)return["script",m];
+  m=mapCols(row,"shotlist");if(m.code!=null&&(m.size!=null||m.lens!=null||m.move!=null))return["shotlist",m];
   m=mapCols(row,"groups");if(m.code!=null&&(m.name!=null||m.desc!=null))return["groups",m];
   m=mapCols(row,"timeline");if(m.label!=null&&(m.d!=null||m.start!=null)&&(m.type!=null||m.setup!=null||m.note!=null))return["timeline",m];
   return null;
@@ -188,7 +197,7 @@ function parseDate(v){
   const m=String(v||"").match(/(20\d\d)\s*[.\-\/]\s*(\d{1,2})\s*[.\-\/]\s*(\d{1,2})/);return m?`${m[1]}-${m[2].padStart(2,"0")}-${m[3].padStart(2,"0")}`:"";
 }
 function importBook(wb,fname){
-  const R={blocks:[],cast:[],crew:[],groups:[],script:[],notes:[],warn:[]},kv={};let firstText="",dateGuess="";const contacts=[];
+  const R={blocks:[],shotlist:[],cast:[],crew:[],groups:[],script:[],notes:[],warn:[]},kv={};let firstText="",dateGuess="";const contacts=[];
   const phoneRe=/^\+?[\d][\d\s\-\/()]{6,}$/;
   for(const sn of wb.SheetNames){
     const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:true,defval:""});
@@ -217,6 +226,10 @@ function importBook(wb,fname){
             out.push({role:capWords(role),name:capWords(name),arr:t("arr"),ruha:t("ruha"),smink:t("smink"),haj:t("haj"),onset:t("onset"),phone:cellS(g("phone"))});
           }else if(kind==="groups"){
             const code=cellS(g("code"));if(!code)continue;out.push({code,name:cellS(g("name")),desc:cellS(g("desc")),images:splitList(g("img")).filter(u=>/^https?:|^data:/.test(u)).map(u=>({kind:"vk",url:u}))});
+          }else if(kind==="shotlist"){
+            const code=cellS(g("code")),desc=cellS(g("desc"));if(!code&&!desc)continue;
+            out.push({code,size:cellS(g("size")),lens:cellS(g("lens")),move:cellS(g("move")),desc,talent:cellS(g("talent")),props:cellS(g("props")),story:cellS(g("story")),note:cellS(g("note")),
+              images:splitList(g("sb")).filter(u=>/^https?:|^data:/.test(u)).map(u=>({kind:"sb",url:u}))});
           }else if(kind==="script"){
             const x=cellS(g("x"));if(!x)continue;const k=nk(g("t"));
             const t=/^(jel|hely|sh|scene|int|ext|belso|kulso)/.test(k)?"sh":/^(szerep|karakter|ch|nev)/.test(k)?"ch":/^(instr|zarojel|pa|paren)/.test(k)?"pa":/^(dial|szov|dl|beszed)/.test(k)?"dl":/^(veg|end)/.test(k)?"end":"ac";
@@ -258,7 +271,7 @@ function importBook(wb,fname){
   if(!R.blocks.length)R.warn.push("Nem találtam időrend-táblázatot. Kell egy fejlécsor, benne legalább: Perc (vagy Kezdés), Típus és Blokk / shot.");
   const zero=R.blocks.filter(b=>!b.d).length;if(zero)R.warn.push(`${zero} blokknál nincs megadva idő (0 perc). A Terv fülön pótolhatod.`);
   return normP({title:cellS(kv.title)||firstText||String(fname||"").replace(/\.[^.]+$/,""),date:parseDate(kv.date)||dateGuess,call,wrapTarget:tmin(kv.wrap)||0,
-    location:cellS(kv.loc),parking:cellS(kv.park),notes:R.notes,blocks:R.blocks,groups:R.groups,cast:R.cast,crew:R.crew,script:R.script,src:fname||"Excel",_warn:R.warn});
+    location:cellS(kv.loc),parking:cellS(kv.park),notes:R.notes,blocks:R.blocks,shots:R.shotlist,groups:R.groups,cast:R.cast,crew:R.crew,script:R.script,src:fname||"Excel",_warn:R.warn});
 }
 let pending=null;
 async function importFile(file){
@@ -299,6 +312,8 @@ function exportBook(p){
     ir["B"+r]=b?{t:"n",v:(acc+b.d)/1440,z:"h:mm",f:fB(r)}:{t:"s",v:"",f:fB(r)};
     if(b)acc+=b.d}
   ir["!ref"]=`A1:N${RL}`;
+  add("Shotlist",[["Shot","Plánméret","Optika","Mozgás","Leírás","Szereplők","Kellékek","Sztori","Storyboard kép (URL)","Megjegyzés"],
+    ...p.shots.map(s=>[s.code,s.size,s.lens,s.move,s.desc,s.talent,s.props,s.story,(s.images||[]).filter(x=>x.url).map(x=>x.url).join("\n"),s.note])],[8,12,9,10,40,16,26,30,24,24]);
   add("Szereplők",[["Szerep","Színész","Érkezés","Ruha","Smink","Haj","Setre","Telefon"],...p.cast.map(c=>[c.role,c.name,c.arr,c.ruha,c.smink,c.haj,c.onset,c.phone])],[14,20,8,8,8,8,8,16]);
   add("Stáb",[["Részleg","Pozíció","Név","Érkezés","Telefon"],...p.crew.map(c=>[c.dept,c.pos,c.name,c.arr,c.phone])],[20,18,22,8,16]);
   add("Fények",[["Kód","Név","Leírás","Kép (URL)"],...p.groups.map(g=>[g.code,g.name,g.desc,(g.images||[]).filter(x=>x.url).map(x=>x.url).join("\n")])],[8,24,60,30]);
@@ -393,14 +408,14 @@ function importPreview(){
   const p=pending,sh=p.blocks.filter(b=>b.type==="shoot").length,tot=p.blocks.reduce((a,b)=>a+b.d,0);
   return`<section class="card prev"><div class="card-head"><h2>Beolvasva: ${esc(p.src)}</h2></div>
     <div class="rows">${[["Cím",p.title||"–"],["Dátum",p.date||"nincs megadva"],["Crew call",hm(p.call)],["Időrend",`${p.blocks.length} blokk, ebből ${sh} forgatás · ${Math.floor(tot/60)} óra ${tot%60} perc · vége ${hm(p.call+tot)}`],
-      ["Szereplők",p.cast.length+" fő"],["Stáb",p.crew.length+" fő"],["Fények",p.groups.length+" beállítás"],["Forgatókönyv",p.script.length+" sor"]].map(([a,b])=>`<div class="row" style="grid-template-columns:96px minmax(0,1fr)"><small>${a}</small><b>${esc(b)}</b></div>`).join("")}</div>
+      ["Szereplők",p.cast.length+" fő"],["Stáb",p.crew.length+" fő"],["Shotlist",p.shots.length+" shot"],["Fények",p.groups.length+" beállítás"],["Forgatókönyv",p.script.length+" sor"]].map(([a,b])=>`<div class="row" style="grid-template-columns:96px minmax(0,1fr)"><small>${a}</small><b>${esc(b)}</b></div>`).join("")}</div>
     ${(p._warn||[]).length?`<ul class="list">${p._warn.map(w=>`<li class="warn">${esc(w)}</li>`).join("")}</ul>`:""}
     <p class="muted small">${p._full?`<b>Teljes APERATION-projektfájl</b>${Object.keys(p._images||{}).length?`, ${Object.keys(p._images).length} képpel`:""}${p._state&&p._state.cur?", a nap állásával együtt":""}. `:""}A betöltés után ${MP.on?"a közös projektben mindenkinél ez lesz a terv":"a mostani terv a Projektek közé kerül"}${p._full?".":", a nap állása (kész blokkok, take-ek) nullázódik."}</p>
     <div class="wgrid"><button class="btn solid" type="button" data-do="load" ${p.blocks.length?"":"disabled"}>Betöltés</button><button class="btn" type="button" data-do="cancel">Mégse</button></div></section>`;
 }
 function renderEdit(){
   const v=$('[data-view="terv"]');
-  const secs=[["fajl","Fájl"],["idorend","Időrend"],["projekt","Projekt"],["emberek","Emberek"],["szkript","Forgatókönyv"],["csapat","Csapat"]];
+  const secs=[["fajl","Fájl"],["shotlist","Shotlist"],["idorend","Időrend"],["projekt","Projekt"],["emberek","Emberek"],["szkript","Forgatókönyv"],["csapat","Csapat"]];
   let body="";
   if(editSec==="fajl")body=`${pending?importPreview():""}
     <section class="card"><h2>Excel-táblázat betöltése</h2>
@@ -430,6 +445,7 @@ function renderEdit(){
       ${rowsTable("cast",[["role","Szerep"],["name","Színész"],["arr","Érkezés",{ph:"8:00",cls:"w1",im:"numeric"}],["ruha","Ruha",{cls:"w1"}],["smink","Smink",{cls:"w1"}],["haj","Haj",{cls:"w1"}],["onset","Setre",{cls:"w1"}],["phone","Telefon",{type:"tel"}]],"Új szereplő")}</section>
     <section class="card"><h2>Stáb</h2>${rowsTable("crew",[["dept","Részleg"],["pos","Pozíció"],["name","Név"],["arr","Érkezés",{ph:"8:00",cls:"w1"}],["phone","Telefon",{type:"tel"}]],"Új stábtag")}</section>`;
   else if(editSec==="csapat")body=teamHTML();
+  else if(editSec==="shotlist")body=shotlistHTML();
   else body=scriptEditHTML();
   document.documentElement.style.setProperty("--hdr-h",($(".hdr")?$(".hdr").offsetHeight:96)+"px");
   renderTabs();$$(".tabs a").forEach(a=>{if(a.getAttribute("href")==="#terv")a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});placeInd();
@@ -447,6 +463,7 @@ function drMove(){
   if(t!==DR.t){DR.t=t;try{navigator.vibrate&&navigator.vibrate(5)}catch(e){}
     const sh=DR.h[DR.k]+DR.gap;
     DR.cards.forEach((el,i)=>{if(i===DR.k)return;const v=DR.t>DR.k&&i>DR.k&&i<=DR.t?-sh:DR.t<DR.k&&i>=DR.t&&i<DR.k?sh:0;el.style.transform=v?`translateY(${v}px)`:""});
+    if(DR.list!=="blocks")return;
     const order=DR.cards.map((_,i)=>i).filter(i=>i!==DR.k);order.splice(DR.t,0,DR.k);let tm=P.call;
     order.forEach(i=>{const x=DR.cards[i].querySelector("[data-bs]");x&&(x.textContent=hm(tm));tm+=P.blocks[i].d});
   }
@@ -458,6 +475,8 @@ function drEnd(cancel){
   if(!DR)return;const d=DR;DR=null;cancelAnimationFrame(d.raf);document.body.classList.remove("eb-dragging");
   d.cards.forEach(el=>{el.style.transform="";el.classList.remove("dragging","shift")});
   if(cancel||d.t===d.k){renderEdit();return}
+  if(d.list!=="blocks"){const L=P[d.list],it=L.splice(d.k,1)[0];L.splice(d.t,0,it);commit();renderEdit();
+    toast("Áthelyezve.",{action:"Visszavonás",fn:()=>{const x=L.splice(d.t,1)[0];L.splice(d.k,0,x);commit();renderEdit()}});return}
   const from=d.k,to=d.t,b=P.blocks[from];
   withRemap(()=>{P.blocks.splice(from,1);P.blocks.splice(to,0,b)});renderEdit();
   const c=$(`.eb[data-k="${to}"]`);c&&c.classList.add("dropped");
@@ -468,7 +487,7 @@ document.addEventListener("pointerdown",e=>{
   const list=h.closest(".eblist"),cards=[...list.querySelectorAll(".eb")],el=h.closest(".eb"),k=cards.indexOf(el);
   const top=cards.map(c=>c.getBoundingClientRect().top+scrollY),hh=cards.map(c=>c.offsetHeight);
   const gap=cards.length>1?top[1]-top[0]-hh[0]:8;
-  DR={el,cards,k,t:k,top,h:hh,gap,startY:e.clientY+scrollY,cy:e.clientY,id:e.pointerId};
+  DR={el,cards,k,t:k,top,h:hh,gap,startY:e.clientY+scrollY,cy:e.clientY,id:e.pointerId,list:list.dataset.dlist||"blocks"};
   try{h.setPointerCapture(e.pointerId)}catch(_){}
   el.classList.add("dragging");cards.forEach(c=>c!==el&&c.classList.add("shift"));document.body.classList.add("eb-dragging");
   drMove();DR.raf=requestAnimationFrame(drLoop);
@@ -478,9 +497,10 @@ document.addEventListener("pointerup",e=>{if(DR&&e.pointerId===DR.id)drEnd(false
 document.addEventListener("pointercancel",e=>{if(DR&&e.pointerId===DR.id)drEnd(true)});
 document.addEventListener("keydown",e=>{
   const h=e.target.closest&&e.target.closest(".eb-drag");if(!h||!/^Arrow(Up|Down)$/.test(e.key))return;e.preventDefault();
-  const k=+h.closest("[data-k]").dataset.k,to=k+(e.key==="ArrowUp"?-1:1);if(to<0||to>=P.blocks.length)return;
-  withRemap(()=>{const b=P.blocks.splice(k,1)[0];P.blocks.splice(to,0,b)});renderEdit();
-  const n=$(`.eb[data-k="${to}"] .eb-drag`);n&&n.focus();
+  const L=h.closest("[data-list]").dataset.list,k=+h.closest("[data-k]").dataset.k,to=k+(e.key==="ArrowUp"?-1:1);if(to<0||to>=P[L].length)return;
+  if(L==="blocks")withRemap(()=>{const b=P.blocks.splice(k,1)[0];P.blocks.splice(to,0,b)});else{const it=P[L].splice(k,1)[0];P[L].splice(to,0,it);commit()}
+  renderEdit();
+  const n=$(`.eb[data-list="${L}"][data-k="${to}"] .eb-drag`);n&&n.focus();
 });
 
 /* események (egyszer, delegálva) */

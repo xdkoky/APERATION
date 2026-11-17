@@ -483,6 +483,21 @@ body.eb-dragging{-webkit-user-select:none;user-select:none;cursor:grabbing}
 .eb-warn .ic{flex:none;margin-top:1px}
 .eb-warn.sum{margin:-6px 0 12px}
 .eb:has(.eb-warn){border-left-color:var(--warn)}
+/* shotlist */
+.sl-scene{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--shoot);margin:10px 4px 0}
+.eb.sl .eb-top{grid-template-columns:24px 78px 128px minmax(0,1fr) 36px}
+.eb.sl .eb-top select{min-width:0}
+.sl-status{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-2px 0 0 30px}
+.slst{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;font-weight:600;color:var(--fg-3)}
+.slst.ok{color:var(--ok)}
+.eb-warn.sm{padding:3px 8px;font-size:12px}
+.eb.sl .eb-sum{display:block;margin:-4px 0 0 30px;font-size:13px;color:var(--fg-3)}
+.eb.sl .eb-sum:empty{display:none}
+@media (max-width:560px){
+  .eb.sl .eb-top{grid-template-columns:24px 70px minmax(0,1fr) 36px}
+  .eb.sl .eb-top .grow{grid-column:1/-1;order:5}
+}
+@media (min-width:1100px){.eb.sl .eb-top{grid-template-columns:24px 90px 150px minmax(0,1fr) 36px}.eb.sl .eb-more{padding-left:30px}}
 
 /* nyomtatható változatok (diszpó, forgatókönyv, shotlist, szkriptlap): fehér papírra, A4 */
 .pr{font-family:"Inter",Arial,sans-serif;color:#111;background:#fff;font-size:10pt;line-height:1.35}
@@ -759,7 +774,7 @@ html.refract .tabs,html.refract .dk:not(.primary),html.refract .toast,html.refra
 </div>
 
 <script>
-const MINTA={"title": "MINTA · Az utolsó busz", "date": "", "call": 480, "wrapTarget": 840, "location": "Stúdió, 1. műterem", "parking": "Udvar, a sorompó mögött", "notes": ["MINTA: ez egy kitalált nap, csak kipróbálásra. Írd felül a saját tervetekkel.", "BIZTONSÁG: a buszmegálló-díszlet üvegfalát ne támasszátok meg.", "A 2/3-hoz esőgép kell, előtte 10 perccel szólni a gripnek."], "blocks": [{"type": "prep", "d": 15, "label": "Érkezés", "note": "Kávé, eligazítás"}, {"type": "prep", "d": 60, "label": "Setup", "setup": "Buszmegálló (A fény)", "note": "Világítás, kamera, berendezés. 8:30 színészek: smink, jelmez"}, {"type": "pres", "d": 15, "label": "Próba", "note": "Az 1/1 mozgásának próbája"}, {"type": "shoot", "d": 30, "label": "1/1", "setup": "Wide, 24 mm, sticks", "note": "Teljes jelenet totálból", "group": "A", "talent": "Anna, Bence", "props": "Esernyő\nBuszmenetrend a falon\nAnna táskája", "story": "Anna egyedül vár, megérkezik Bence.", "images": []}, {"type": "move", "d": 10, "label": "Átállás", "setup": "50 mm, Anna közeli", "note": "Fény marad"}, {"type": "shoot", "d": 20, "label": "1/2", "setup": "CU, 50 mm, sticks", "note": "Anna oldaláról a teljes jelenet", "group": "A", "talent": "Anna", "props": "Esernyő", "story": "Anna reakciói, amikor Bence beszél."}, {"type": "move", "d": 15, "label": "Átállás", "setup": "Ellenirány, 50 mm", "note": "Fény átfordítása"}, {"type": "shoot", "d": 20, "label": "1/3", "setup": "CU, 50 mm, sticks", "note": "Bence oldaláról", "group": "B", "talent": "Bence", "props": "Bence kabátja", "story": "Bence elmondja, hogy elköltözik."}, {"type": "lunch", "d": 45, "label": "Ebéd"}, {"type": "move", "d": 20, "label": "Átállás estére", "setup": "Esti fény, esőgép", "note": "Nagy lámpák ki, esőgép be", "group": "C"}, {"type": "shoot", "d": 25, "label": "2/1", "setup": "Medium, 35 mm, dolly", "note": "Dolly mellé, a busz érkezése", "group": "C", "talent": "Anna, Bence", "props": "Esernyő\nBusz fényei (LED-panel)", "story": "Megjön az utolsó busz."}, {"type": "move", "d": 10, "label": "Optikacsere", "setup": "85 mm"}, {"type": "shoot", "d": 15, "label": "2/2", "setup": "ECU, 85 mm, kézi", "note": "Anna szeme", "group": "C", "talent": "Anna", "story": "Anna nem száll fel."}, {"type": "move", "d": 10, "label": "Átállás", "setup": "Wide, 24 mm, esőgép"}, {"type": "shoot", "d": 20, "label": "2/3", "setup": "Wide, 24 mm, sticks", "note": "Csúszásnál ez hagyható ki", "group": "C", "talent": "Anna", "props": "Esernyő (becsukva)", "story": "A busz elmegy, Anna egyedül marad az esőben.", "skippable": true}, {"type": "res", "d": 15, "label": "Tartalék"}], "groups": [{"code": "A", "name": "Nappal, megálló", "desc": "Ablakfény jobbról (HMI), fehér derítő balról"}, {"code": "B", "name": "Nappal, ellenirány", "desc": "HMI átfordítva, negatív a falon"}, {"code": "C", "name": "Este, eső", "desc": "Utcai lámpa (prakti), kék háttérfény, esőgép"}], "cast": [{"role": "Anna", "name": "Minta Anna", "arr": "08:00", "ruha": "08:30", "smink": "08:45", "haj": "", "onset": "09:30", "phone": ""}, {"role": "Bence", "name": "Minta Bence", "arr": "08:30", "ruha": "09:00", "smink": "09:15", "haj": "", "onset": "09:50", "phone": ""}], "crew": [{"dept": "Rendezés", "pos": "Rendező", "name": "Minta Rendező", "arr": "08:00", "phone": ""}, {"dept": "Rendezés", "pos": "1st AD", "name": "Minta Asszisztens", "arr": "07:45", "phone": ""}, {"dept": "Rendezés", "pos": "Szkriptes", "name": "Minta Szkriptes", "arr": "08:00", "phone": ""}, {"dept": "Kamera", "pos": "Operatőr", "name": "Minta Operatőr", "arr": "08:00", "phone": ""}, {"dept": "Világítás", "pos": "Fővilágosító", "name": "Minta Fővilágosító", "arr": "08:00", "phone": ""}, {"dept": "Hang", "pos": "Hangmérnök", "name": "Minta Hangmérnök", "arr": "08:30", "phone": ""}], "script": [{"t": "sh", "x": "KÜLSŐ. BUSZMEGÁLLÓ – NAPPAL", "ids": []}, {"t": "ac", "x": "Anna egyedül áll a megállóban, az esernyőjét forgatja.", "ids": ["1/1", "1/2"]}, {"t": "ac", "x": "Bence érkezik, megáll mellette.", "ids": ["1/1", "1/3"]}, {"t": "ch", "x": "BENCE", "ids": ["1/1", "1/3"]}, {"t": "dl", "x": "Ugye ez az utolsó?", "ids": ["1/1", "1/3"]}, {"t": "ch", "x": "ANNA", "ids": ["1/1", "1/2"]}, {"t": "pa", "x": "(nem néz rá)", "ids": ["1/1", "1/2"]}, {"t": "dl", "x": "Mindig ez az utolsó.", "ids": ["1/1", "1/2"]}, {"t": "ch", "x": "BENCE", "ids": ["1/1", "1/3"]}, {"t": "dl", "x": "Holnap elköltözöm.", "ids": ["1/1", "1/3"]}, {"t": "sh", "x": "KÜLSŐ. BUSZMEGÁLLÓ – ESTE", "ids": []}, {"t": "ac", "x": "Esik. Megjön a busz, kinyílik az ajtó.", "ids": ["2/1"]}, {"t": "ac", "x": "Anna nem mozdul.", "ids": ["2/1", "2/2"]}, {"t": "ac", "x": "A busz elmegy. Anna egyedül marad az esőben.", "ids": ["2/3"]}, {"t": "end", "x": "VÉGE", "ids": []}]};
+const MINTA={"title": "MINTA · Az utolsó busz", "date": "", "call": 480, "wrapTarget": 840, "location": "Stúdió, 1. műterem", "parking": "Udvar, a sorompó mögött", "notes": ["MINTA: ez egy kitalált nap, csak kipróbálásra. Írd felül a saját tervetekkel.", "BIZTONSÁG: a buszmegálló-díszlet üvegfalát ne támasszátok meg.", "A 2/3-hoz esőgép kell, előtte 10 perccel szólni a gripnek."], "blocks": [{"type": "prep", "d": 15, "label": "Érkezés", "note": "Kávé, eligazítás"}, {"type": "prep", "d": 60, "label": "Setup", "setup": "Buszmegálló (A fény)", "note": "Világítás, kamera, berendezés. 8:30 színészek: smink, jelmez"}, {"type": "pres", "d": 15, "label": "Próba", "note": "Az 1/1 mozgásának próbája"}, {"type": "shoot", "d": 30, "label": "1/1", "setup": "Wide, 24 mm, sticks", "note": "Teljes jelenet totálból", "group": "A", "talent": "Anna, Bence", "props": "Esernyő\nBuszmenetrend a falon\nAnna táskája", "story": "Anna egyedül vár, megérkezik Bence.", "images": []}, {"type": "move", "d": 10, "label": "Átállás", "setup": "50 mm, Anna közeli", "note": "Fény marad"}, {"type": "shoot", "d": 20, "label": "1/2", "setup": "CU, 50 mm, sticks", "note": "Anna oldaláról a teljes jelenet", "group": "A", "talent": "Anna", "props": "Esernyő", "story": "Anna reakciói, amikor Bence beszél."}, {"type": "move", "d": 15, "label": "Átállás", "setup": "Ellenirány, 50 mm", "note": "Fény átfordítása"}, {"type": "shoot", "d": 20, "label": "1/3", "setup": "CU, 50 mm, sticks", "note": "Bence oldaláról", "group": "B", "talent": "Bence", "props": "Bence kabátja", "story": "Bence elmondja, hogy elköltözik."}, {"type": "lunch", "d": 45, "label": "Ebéd"}, {"type": "move", "d": 20, "label": "Átállás estére", "setup": "Esti fény, esőgép", "note": "Nagy lámpák ki, esőgép be", "group": "C"}, {"type": "shoot", "d": 25, "label": "2/1", "setup": "Medium, 35 mm, dolly", "note": "Dolly mellé, a busz érkezése", "group": "C", "talent": "Anna, Bence", "props": "Esernyő\nBusz fényei (LED-panel)", "story": "Megjön az utolsó busz."}, {"type": "move", "d": 10, "label": "Optikacsere", "setup": "85 mm"}, {"type": "shoot", "d": 15, "label": "2/2", "setup": "ECU, 85 mm, kézi", "note": "Anna szeme", "group": "C", "talent": "Anna", "story": "Anna nem száll fel."}, {"type": "move", "d": 10, "label": "Átállás", "setup": "Wide, 24 mm, esőgép"}, {"type": "shoot", "d": 20, "label": "2/3", "setup": "Wide, 24 mm, sticks", "note": "Csúszásnál ez hagyható ki", "group": "C", "talent": "Anna", "props": "Esernyő (becsukva)", "story": "A busz elmegy, Anna egyedül marad az esőben.", "skippable": true}, {"type": "res", "d": 15, "label": "Tartalék"}], "groups": [{"code": "A", "name": "Nappal, megálló", "desc": "Ablakfény jobbról (HMI), fehér derítő balról"}, {"code": "B", "name": "Nappal, ellenirány", "desc": "HMI átfordítva, negatív a falon"}, {"code": "C", "name": "Este, eső", "desc": "Utcai lámpa (prakti), kék háttérfény, esőgép"}], "cast": [{"role": "Anna", "name": "Minta Anna", "arr": "08:00", "ruha": "08:30", "smink": "08:45", "haj": "", "onset": "09:30", "phone": ""}, {"role": "Bence", "name": "Minta Bence", "arr": "08:30", "ruha": "09:00", "smink": "09:15", "haj": "", "onset": "09:50", "phone": ""}], "crew": [{"dept": "Rendezés", "pos": "Rendező", "name": "Minta Rendező", "arr": "08:00", "phone": ""}, {"dept": "Rendezés", "pos": "1st AD", "name": "Minta Asszisztens", "arr": "07:45", "phone": ""}, {"dept": "Rendezés", "pos": "Szkriptes", "name": "Minta Szkriptes", "arr": "08:00", "phone": ""}, {"dept": "Kamera", "pos": "Operatőr", "name": "Minta Operatőr", "arr": "08:00", "phone": ""}, {"dept": "Világítás", "pos": "Fővilágosító", "name": "Minta Fővilágosító", "arr": "08:00", "phone": ""}, {"dept": "Hang", "pos": "Hangmérnök", "name": "Minta Hangmérnök", "arr": "08:30", "phone": ""}], "script": [{"t": "sh", "x": "KÜLSŐ. BUSZMEGÁLLÓ – NAPPAL", "ids": []}, {"t": "ac", "x": "Anna egyedül áll a megállóban, az esernyőjét forgatja.", "ids": ["1/1", "1/2"]}, {"t": "ac", "x": "Bence érkezik, megáll mellette.", "ids": ["1/1", "1/3"]}, {"t": "ch", "x": "BENCE", "ids": ["1/1", "1/3"]}, {"t": "dl", "x": "Ugye ez az utolsó?", "ids": ["1/1", "1/3"]}, {"t": "ch", "x": "ANNA", "ids": ["1/1", "1/2"]}, {"t": "pa", "x": "(nem néz rá)", "ids": ["1/1", "1/2"]}, {"t": "dl", "x": "Mindig ez az utolsó.", "ids": ["1/1", "1/2"]}, {"t": "ch", "x": "BENCE", "ids": ["1/1", "1/3"]}, {"t": "dl", "x": "Holnap elköltözöm.", "ids": ["1/1", "1/3"]}, {"t": "sh", "x": "KÜLSŐ. BUSZMEGÁLLÓ – ESTE", "ids": []}, {"t": "ac", "x": "Esik. Megjön a busz, kinyílik az ajtó.", "ids": ["2/1"]}, {"t": "ac", "x": "Anna nem mozdul.", "ids": ["2/1", "2/2"]}, {"t": "ac", "x": "A busz elmegy. Anna egyedül marad az esőben.", "ids": ["2/3"]}, {"t": "end", "x": "VÉGE", "ids": []}], "shots": [{"code": "1/1", "size": "Totál", "lens": "24 mm", "move": "Sticks", "desc": "A megálló egészben, Anna vár, Bence beér a képbe.", "talent": "Anna, Bence", "props": "Esernyő\nBuszmenetrend a falon", "story": "Anna egyedül vár, megérkezik Bence."}, {"code": "1/2", "size": "Közeli", "lens": "50 mm", "move": "Sticks", "desc": "Anna arca, Bence válla felett.", "talent": "Anna", "props": "Esernyő"}, {"code": "1/3", "size": "Közeli", "lens": "50 mm", "move": "Sticks", "desc": "Bence, ellenirány.", "talent": "Bence", "props": "Bence kabátja"}, {"code": "2/1", "size": "Félközeli", "lens": "35 mm", "move": "Dolly", "desc": "Dolly mellé, ahogy megérkezik a busz.", "talent": "Anna, Bence"}, {"code": "2/2", "size": "Nagyközeli", "lens": "85 mm", "move": "Kézi", "desc": "Anna szeme, nem száll fel.", "talent": "Anna"}, {"code": "2/3", "size": "Totál", "lens": "24 mm", "move": "Sticks", "desc": "A busz elmegy, Anna egyedül marad az esőben.", "talent": "Anna", "props": "Esernyő (becsukva)"}, {"code": "2/4", "size": "Részlet", "lens": "85 mm", "move": "Sticks", "desc": "Inzert: esőcseppek a megálló üvegén.", "note": "Ha marad idő."}]};
 const XLSX_SRC="vendor/xlsx.full.min.js";
 const SABLON_URL="Forgatasi_sablon.xlsx";
 let D=null;
@@ -1309,6 +1324,7 @@ function filterP(p,perm){
   if(!perm.notes)q.notes=[];if(!perm.lights)q.groups=q.groups.map(g=>({...g,desc:""}));
   q.groups=q.groups.map(g=>({...g,images:perm.images&&perm.lights?(g.images||[]).filter(x=>x.url):[]}));
   if(!perm.szkript)q.script=[];if(!perm.stab)q.crew=[];
+  q.shots=(q.shots||[]).map(s=>({...s,images:perm.images?(s.images||[]).filter(x=>x.url):[],props:perm.props?s.props:"",story:perm.szkript?s.story:"",note:perm.notes?s.note:""}));
   if(!perm.phones){q.cast.forEach(c=>c.phone="");q.crew.forEach(c=>c.phone="")}
   return q;
 }
@@ -1512,12 +1528,13 @@ const splitLines=s=>String(s||"").split(/\n|;/).map(x=>x.trim()).filter(Boolean)
 const shotIds=l=>{const m=String(l||"").match(/\d+\s*\/\s*\d+[A-Za-z]*/g);return m?[...new Set(m.map(x=>x.replace(/\s/g,"")))]:(String(l||"").trim()?[String(l).trim()]:[])};
 const hhmm=m=>Number.isFinite(m)?`${String(Math.floor(m/60)%24).padStart(2,"0")}:${String(Math.round(m%60)).padStart(2,"0")}`:"";
 function normP(p){
-  p=Object.assign({title:"",date:"",call:480,wrapTarget:0,location:"",parking:"",notes:[],blocks:[],groups:[],cast:[],crew:[],script:[],src:""},p||{});
+  p=Object.assign({title:"",date:"",call:480,wrapTarget:0,location:"",parking:"",notes:[],blocks:[],shots:[],groups:[],cast:[],crew:[],script:[],src:""},p||{});
   p.call=Number.isFinite(+p.call)?+p.call:480;p.wrapTarget=+p.wrapTarget||0;
   if(!Array.isArray(p.notes))p.notes=splitLines(p.notes);
   p.blocks=p.blocks.map(b=>Object.assign({type:"shoot",d:10,label:"",setup:"",note:"",group:"",talent:"",props:"",story:"",skippable:false,images:[]},b,
     {_id:b._id||uid(),d:Math.max(0,Math.round(+b.d||0)),type:TYPES.includes(b.type)?b.type:"shoot",images:(b.images||[]).filter(x=>x&&(x.url||x.idb))}));
   p.groups=p.groups.map(g=>Object.assign({code:"",name:"",desc:""},g,{images:(g.images||[]).filter(x=>x&&(x.url||x.idb))}));
+  p.shots=(p.shots||[]).map(s=>Object.assign({code:"",size:"",lens:"",move:"",desc:"",talent:"",props:"",story:"",note:"",images:[]},s,{_id:s._id||uid(),images:(s.images||[]).filter(x=>x&&(x.url||x.idb))}));
   p.cast=p.cast.map(c=>Object.assign({role:"",name:"",arr:"",ruha:"",smink:"",haj:"",onset:"",phone:""},c));
   p.crew=p.crew.map(c=>Object.assign({dept:"",pos:"",name:"",arr:"",phone:""},c));
   p.script=p.script.map(l=>({t:STYPES.some(s=>s[0]===l.t)?l.t:"ac",x:l.x||"",ids:Array.isArray(l.ids)?l.ids:splitList(l.ids)}));
@@ -1525,7 +1542,10 @@ function normP(p){
 }
 function applyProject(){
   const p=P;let t=p.call;
-  const blocks=p.blocks.map(b=>{const o={s:t,d:b.d,type:b.type,label:(b.label||"").trim()||TNAME[b.type],setup:b.setup||"",note:b.note||"",group:(b.group||"").trim(),skippable:!!b.skippable};t+=b.d;return o});
+  const SL={};p.shots.forEach(s=>{const c=String(s.code||"").replace(/\s/g,"");if(c&&!SL[c])SL[c]=s});
+  const slOf=b=>b.type==="shoot"?shotIds((b.label||"").trim()).map(i=>SL[i]).filter(Boolean):[];
+  const uniq=a=>[...new Set(a.filter(Boolean))];
+  const blocks=p.blocks.map(b=>{const ss=slOf(b),o={s:t,d:b.d,type:b.type,label:(b.label||"").trim()||TNAME[b.type],setup:b.setup||ss.map(s=>[s.size,s.lens,s.move].filter(Boolean).join(", ")).filter(Boolean).join(" + "),note:b.note||"",group:(b.group||"").trim(),skippable:!!b.skippable};t+=b.d;return o});
   const groups={};p.groups.forEach(g=>{if(String(g.code).trim())groups[String(g.code).trim()]=[g.name||"",g.desc||"",(g.images||[]).map(x=>{const u=x.url||IMG[x.idb];return u?{id:String(g.code).trim(),t:u,f:u}:null}).filter(Boolean)]});
   const cast=p.cast.filter(c=>c.name||c.role).map((c,k)=>({...c,k}));
   const crew=p.crew.filter(c=>c.name||c.pos).map(c=>({...c,dept:c.dept||"Stáb"}));
@@ -1533,12 +1553,14 @@ function applyProject(){
   p.blocks.forEach((b,i)=>{
     if(b.type!=="shoot")return;const lab=blocks[i].label;if(shots[lab])return;
     const ids=shotIds(lab);
-    const img=k=>(b.images||[]).filter(x=>x.kind===k).map(x=>{const u=x.url||IMG[x.idb];return u?{id:lab,t:u,f:u}:null}).filter(Boolean);
+    const ss=slOf(b),simgs=ss.flatMap(s=>(s.images||[]).map(x=>({...x,kind:x.kind||"sb"})));
+    const img=k=>[...(b.images||[]),...simgs].filter(x=>x.kind===k).map(x=>{const u=x.url||IMG[x.idb];return u?{id:lab,t:u,f:u}:null}).filter(Boolean);
     const sb=img("sb"),vk=img("vk");boards.push(...sb);vilko.push(...vk);
     const segs=[];let cur=null,head="";
     p.script.forEach(l=>{if(l.t==="sh"&&!(l.ids||[]).length){head=l.x;cur=null;return}
       if((l.ids||[]).some(x=>ids.includes(x))){if(!cur){cur={lab:head,lines:[]};segs.push(cur)}cur.lines.push(l)}else cur=null});
-    shots[lab]={ids,talent:splitList(b.talent),offcam:[],props:splitLines(b.props),story:b.story||"",sb,vk,segs};
+    shots[lab]={ids,talent:splitList(b.talent).length?splitList(b.talent):uniq(ss.flatMap(s=>splitList(s.talent))),offcam:[],props:uniq([...splitLines(b.props),...ss.flatMap(s=>splitLines(s.props))]),
+      story:b.story||ss.map(s=>s.story||s.desc).filter(Boolean).join(" "),desc:ss.map(s=>s.desc).filter(Boolean).join(" "),sb,vk,segs};
   });
   D={title:p.title,src:p.src||"saját terv",plan:{call:p.call,targetWrap:p.wrapTarget},blocks,shots,groups,cast,crew,boards,vilko,
     script:p.script.filter(l=>l.x).map(l=>({t:l.t,x:l.x,cov:(l.ids||[]).length?[{ids:l.ids}]:[]})),
@@ -1603,7 +1625,7 @@ function withRemap(fn){
 const idb=(()=>{let o;const open=()=>o=o||new Promise((res,rej)=>{const r=indexedDB.open("diszpo-app",1);r.onupgradeneeded=()=>r.result.createObjectStore("img");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
   const tx=(m,f)=>open().then(db=>new Promise((res,rej)=>{const t=db.transaction("img",m),q=f(t.objectStore("img"));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)}));
   return{put:(k,v)=>tx("readwrite",s=>s.put(v,k)),get:k=>tx("readonly",s=>s.get(k)),del:k=>tx("readwrite",s=>s.delete(k))}})();
-async function loadImgs(){let n=0;for(const b of [...P.blocks,...P.groups])for(const x of b.images||[])if(x.idb&&!IMG[x.idb]){try{const bl=await idb.get(x.idb);if(bl){IMG[x.idb]=URL.createObjectURL(bl);n++}}catch(e){}}
+async function loadImgs(){let n=0;for(const b of [...P.blocks,...P.groups,...P.shots])for(const x of b.images||[])if(x.idb&&!IMG[x.idb]){try{const bl=await idb.get(x.idb);if(bl){IMG[x.idb]=URL.createObjectURL(bl);n++}}catch(e){}}
   if(n){applyProject();if(view!=="terv")renderAll();else renderEdit()}}
 async function shrink(file){
   try{const bm=await createImageBitmap(file),k=Math.min(1,2400/Math.max(bm.width,bm.height));if(k>=1&&file.size<1.5e6)return file;
@@ -1674,6 +1696,8 @@ const COLDEF={
  crew:[["dept",h=>/^(reszleg|dept|osztaly|csapat)/.test(h)],["pos",h=>/^(pozicio|beosztas|munkakor|position)/.test(h)],["name",h=>/^(nev|name)/.test(h)],["arr",h=>/^(erkezes|call|arr)/.test(h)],["phone",h=>/^(telefon|tel|phone|mobil)/.test(h)]],
  cast:[["role",h=>/^(szerep|karakter|role|character)/.test(h)],["name",h=>/^(szinesz|nev|name|actor)/.test(h)],["arr",h=>/^(erkezes|arr|call)/.test(h)],["ruha",h=>/^(ruha|jelmez)/.test(h)],["smink",h=>/^smink/.test(h)],["haj",h=>/^haj/.test(h)],["onset",h=>/^(setre|onset|forgatasra|keszen)/.test(h)],["phone",h=>/^(telefon|tel|phone|mobil)/.test(h)]],
  groups:[["img",h=>/kep|url|link|vilko/.test(h)],["code",h=>/^(kod|code|jel$)/.test(h)],["name",h=>/^(nev|feny|name|megnevezes)/.test(h)],["desc",h=>/^(leiras|desc|reszletek|eszkozok)/.test(h)]],
+ shotlist:[["sb",h=>/storyboard|rajz|kep/.test(h)],["code",h=>/^(shot|kod|jel|szam)/.test(h)],["size",h=>/^(plan|meret|kepmeret|planmeret)/.test(h)],["lens",h=>/^(optika|obj|lens)/.test(h)],["move",h=>/^(mozgas|move|kameramozgas)/.test(h)],
+  ["desc",h=>/^(leiras|tartalom|desc|mitlatunk)/.test(h)],["talent",h=>/^(szereplo|talent|szinesz)/.test(h)],["props",h=>/^(kellek|props|kontinuitas)/.test(h)],["story",h=>/^(sztori|story)/.test(h)],["note",h=>/^(megjegyzes|note)/.test(h)]],
  script:[["t",h=>/^(tipus|type)/.test(h)],["x",h=>/^(szoveg|text|sor)/.test(h)],["ids",h=>/^(shot|ids|felsnitt)/.test(h)]]
 };
 function mapCols(row,kind){const m={};row.forEach((v,c)=>{const h=nk(v);if(!h)return;for(const [k,f] of COLDEF[kind])if(m[k]==null&&f(h)){m[k]=c;break}});return m}
@@ -1682,6 +1706,7 @@ function headerKind(row){
   let m=mapCols(row,"crew");if(m.pos!=null&&m.name!=null)return["crew",m];
   m=mapCols(row,"cast");if(row.some(v=>/^(szinesz|actor)/.test(nk(v)))||(m.role!=null&&m.name!=null&&(m.ruha!=null||m.smink!=null||m.onset!=null||m.arr!=null)))return["cast",m];
   m=mapCols(row,"script");if(m.x!=null&&m.t!=null)return["script",m];
+  m=mapCols(row,"shotlist");if(m.code!=null&&(m.size!=null||m.lens!=null||m.move!=null))return["shotlist",m];
   m=mapCols(row,"groups");if(m.code!=null&&(m.name!=null||m.desc!=null))return["groups",m];
   m=mapCols(row,"timeline");if(m.label!=null&&(m.d!=null||m.start!=null)&&(m.type!=null||m.setup!=null||m.note!=null))return["timeline",m];
   return null;
@@ -1691,7 +1716,7 @@ function parseDate(v){
   const m=String(v||"").match(/(20\d\d)\s*[.\-\/]\s*(\d{1,2})\s*[.\-\/]\s*(\d{1,2})/);return m?`${m[1]}-${m[2].padStart(2,"0")}-${m[3].padStart(2,"0")}`:"";
 }
 function importBook(wb,fname){
-  const R={blocks:[],cast:[],crew:[],groups:[],script:[],notes:[],warn:[]},kv={};let firstText="",dateGuess="";const contacts=[];
+  const R={blocks:[],shotlist:[],cast:[],crew:[],groups:[],script:[],notes:[],warn:[]},kv={};let firstText="",dateGuess="";const contacts=[];
   const phoneRe=/^\+?[\d][\d\s\-\/()]{6,}$/;
   for(const sn of wb.SheetNames){
     const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:true,defval:""});
@@ -1720,6 +1745,10 @@ function importBook(wb,fname){
             out.push({role:capWords(role),name:capWords(name),arr:t("arr"),ruha:t("ruha"),smink:t("smink"),haj:t("haj"),onset:t("onset"),phone:cellS(g("phone"))});
           }else if(kind==="groups"){
             const code=cellS(g("code"));if(!code)continue;out.push({code,name:cellS(g("name")),desc:cellS(g("desc")),images:splitList(g("img")).filter(u=>/^https?:|^data:/.test(u)).map(u=>({kind:"vk",url:u}))});
+          }else if(kind==="shotlist"){
+            const code=cellS(g("code")),desc=cellS(g("desc"));if(!code&&!desc)continue;
+            out.push({code,size:cellS(g("size")),lens:cellS(g("lens")),move:cellS(g("move")),desc,talent:cellS(g("talent")),props:cellS(g("props")),story:cellS(g("story")),note:cellS(g("note")),
+              images:splitList(g("sb")).filter(u=>/^https?:|^data:/.test(u)).map(u=>({kind:"sb",url:u}))});
           }else if(kind==="script"){
             const x=cellS(g("x"));if(!x)continue;const k=nk(g("t"));
             const t=/^(jel|hely|sh|scene|int|ext|belso|kulso)/.test(k)?"sh":/^(szerep|karakter|ch|nev)/.test(k)?"ch":/^(instr|zarojel|pa|paren)/.test(k)?"pa":/^(dial|szov|dl|beszed)/.test(k)?"dl":/^(veg|end)/.test(k)?"end":"ac";
@@ -1761,7 +1790,7 @@ function importBook(wb,fname){
   if(!R.blocks.length)R.warn.push("Nem találtam időrend-táblázatot. Kell egy fejlécsor, benne legalább: Perc (vagy Kezdés), Típus és Blokk / shot.");
   const zero=R.blocks.filter(b=>!b.d).length;if(zero)R.warn.push(`${zero} blokknál nincs megadva idő (0 perc). A Terv fülön pótolhatod.`);
   return normP({title:cellS(kv.title)||firstText||String(fname||"").replace(/\.[^.]+$/,""),date:parseDate(kv.date)||dateGuess,call,wrapTarget:tmin(kv.wrap)||0,
-    location:cellS(kv.loc),parking:cellS(kv.park),notes:R.notes,blocks:R.blocks,groups:R.groups,cast:R.cast,crew:R.crew,script:R.script,src:fname||"Excel",_warn:R.warn});
+    location:cellS(kv.loc),parking:cellS(kv.park),notes:R.notes,blocks:R.blocks,shots:R.shotlist,groups:R.groups,cast:R.cast,crew:R.crew,script:R.script,src:fname||"Excel",_warn:R.warn});
 }
 let pending=null;
 async function importFile(file){
@@ -1802,6 +1831,8 @@ function exportBook(p){
     ir["B"+r]=b?{t:"n",v:(acc+b.d)/1440,z:"h:mm",f:fB(r)}:{t:"s",v:"",f:fB(r)};
     if(b)acc+=b.d}
   ir["!ref"]=`A1:N${RL}`;
+  add("Shotlist",[["Shot","Plánméret","Optika","Mozgás","Leírás","Szereplők","Kellékek","Sztori","Storyboard kép (URL)","Megjegyzés"],
+    ...p.shots.map(s=>[s.code,s.size,s.lens,s.move,s.desc,s.talent,s.props,s.story,(s.images||[]).filter(x=>x.url).map(x=>x.url).join("\n"),s.note])],[8,12,9,10,40,16,26,30,24,24]);
   add("Szereplők",[["Szerep","Színész","Érkezés","Ruha","Smink","Haj","Setre","Telefon"],...p.cast.map(c=>[c.role,c.name,c.arr,c.ruha,c.smink,c.haj,c.onset,c.phone])],[14,20,8,8,8,8,8,16]);
   add("Stáb",[["Részleg","Pozíció","Név","Érkezés","Telefon"],...p.crew.map(c=>[c.dept,c.pos,c.name,c.arr,c.phone])],[20,18,22,8,16]);
   add("Fények",[["Kód","Név","Leírás","Kép (URL)"],...p.groups.map(g=>[g.code,g.name,g.desc,(g.images||[]).filter(x=>x.url).map(x=>x.url).join("\n")])],[8,24,60,30]);
@@ -1896,14 +1927,14 @@ function importPreview(){
   const p=pending,sh=p.blocks.filter(b=>b.type==="shoot").length,tot=p.blocks.reduce((a,b)=>a+b.d,0);
   return`<section class="card prev"><div class="card-head"><h2>Beolvasva: ${esc(p.src)}</h2></div>
     <div class="rows">${[["Cím",p.title||"–"],["Dátum",p.date||"nincs megadva"],["Crew call",hm(p.call)],["Időrend",`${p.blocks.length} blokk, ebből ${sh} forgatás · ${Math.floor(tot/60)} óra ${tot%60} perc · vége ${hm(p.call+tot)}`],
-      ["Szereplők",p.cast.length+" fő"],["Stáb",p.crew.length+" fő"],["Fények",p.groups.length+" beállítás"],["Forgatókönyv",p.script.length+" sor"]].map(([a,b])=>`<div class="row" style="grid-template-columns:96px minmax(0,1fr)"><small>${a}</small><b>${esc(b)}</b></div>`).join("")}</div>
+      ["Szereplők",p.cast.length+" fő"],["Stáb",p.crew.length+" fő"],["Shotlist",p.shots.length+" shot"],["Fények",p.groups.length+" beállítás"],["Forgatókönyv",p.script.length+" sor"]].map(([a,b])=>`<div class="row" style="grid-template-columns:96px minmax(0,1fr)"><small>${a}</small><b>${esc(b)}</b></div>`).join("")}</div>
     ${(p._warn||[]).length?`<ul class="list">${p._warn.map(w=>`<li class="warn">${esc(w)}</li>`).join("")}</ul>`:""}
     <p class="muted small">${p._full?`<b>Teljes APERATION-projektfájl</b>${Object.keys(p._images||{}).length?`, ${Object.keys(p._images).length} képpel`:""}${p._state&&p._state.cur?", a nap állásával együtt":""}. `:""}A betöltés után ${MP.on?"a közös projektben mindenkinél ez lesz a terv":"a mostani terv a Projektek közé kerül"}${p._full?".":", a nap állása (kész blokkok, take-ek) nullázódik."}</p>
     <div class="wgrid"><button class="btn solid" type="button" data-do="load" ${p.blocks.length?"":"disabled"}>Betöltés</button><button class="btn" type="button" data-do="cancel">Mégse</button></div></section>`;
 }
 function renderEdit(){
   const v=$('[data-view="terv"]');
-  const secs=[["fajl","Fájl"],["idorend","Időrend"],["projekt","Projekt"],["emberek","Emberek"],["szkript","Forgatókönyv"],["csapat","Csapat"]];
+  const secs=[["fajl","Fájl"],["shotlist","Shotlist"],["idorend","Időrend"],["projekt","Projekt"],["emberek","Emberek"],["szkript","Forgatókönyv"],["csapat","Csapat"]];
   let body="";
   if(editSec==="fajl")body=`${pending?importPreview():""}
     <section class="card"><h2>Excel-táblázat betöltése</h2>
@@ -1933,6 +1964,7 @@ function renderEdit(){
       ${rowsTable("cast",[["role","Szerep"],["name","Színész"],["arr","Érkezés",{ph:"8:00",cls:"w1",im:"numeric"}],["ruha","Ruha",{cls:"w1"}],["smink","Smink",{cls:"w1"}],["haj","Haj",{cls:"w1"}],["onset","Setre",{cls:"w1"}],["phone","Telefon",{type:"tel"}]],"Új szereplő")}</section>
     <section class="card"><h2>Stáb</h2>${rowsTable("crew",[["dept","Részleg"],["pos","Pozíció"],["name","Név"],["arr","Érkezés",{ph:"8:00",cls:"w1"}],["phone","Telefon",{type:"tel"}]],"Új stábtag")}</section>`;
   else if(editSec==="csapat")body=teamHTML();
+  else if(editSec==="shotlist")body=shotlistHTML();
   else body=scriptEditHTML();
   document.documentElement.style.setProperty("--hdr-h",($(".hdr")?$(".hdr").offsetHeight:96)+"px");
   renderTabs();$$(".tabs a").forEach(a=>{if(a.getAttribute("href")==="#terv")a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});placeInd();
@@ -1950,6 +1982,7 @@ function drMove(){
   if(t!==DR.t){DR.t=t;try{navigator.vibrate&&navigator.vibrate(5)}catch(e){}
     const sh=DR.h[DR.k]+DR.gap;
     DR.cards.forEach((el,i)=>{if(i===DR.k)return;const v=DR.t>DR.k&&i>DR.k&&i<=DR.t?-sh:DR.t<DR.k&&i>=DR.t&&i<DR.k?sh:0;el.style.transform=v?`translateY(${v}px)`:""});
+    if(DR.list!=="blocks")return;
     const order=DR.cards.map((_,i)=>i).filter(i=>i!==DR.k);order.splice(DR.t,0,DR.k);let tm=P.call;
     order.forEach(i=>{const x=DR.cards[i].querySelector("[data-bs]");x&&(x.textContent=hm(tm));tm+=P.blocks[i].d});
   }
@@ -1961,6 +1994,8 @@ function drEnd(cancel){
   if(!DR)return;const d=DR;DR=null;cancelAnimationFrame(d.raf);document.body.classList.remove("eb-dragging");
   d.cards.forEach(el=>{el.style.transform="";el.classList.remove("dragging","shift")});
   if(cancel||d.t===d.k){renderEdit();return}
+  if(d.list!=="blocks"){const L=P[d.list],it=L.splice(d.k,1)[0];L.splice(d.t,0,it);commit();renderEdit();
+    toast("Áthelyezve.",{action:"Visszavonás",fn:()=>{const x=L.splice(d.t,1)[0];L.splice(d.k,0,x);commit();renderEdit()}});return}
   const from=d.k,to=d.t,b=P.blocks[from];
   withRemap(()=>{P.blocks.splice(from,1);P.blocks.splice(to,0,b)});renderEdit();
   const c=$(`.eb[data-k="${to}"]`);c&&c.classList.add("dropped");
@@ -1971,7 +2006,7 @@ document.addEventListener("pointerdown",e=>{
   const list=h.closest(".eblist"),cards=[...list.querySelectorAll(".eb")],el=h.closest(".eb"),k=cards.indexOf(el);
   const top=cards.map(c=>c.getBoundingClientRect().top+scrollY),hh=cards.map(c=>c.offsetHeight);
   const gap=cards.length>1?top[1]-top[0]-hh[0]:8;
-  DR={el,cards,k,t:k,top,h:hh,gap,startY:e.clientY+scrollY,cy:e.clientY,id:e.pointerId};
+  DR={el,cards,k,t:k,top,h:hh,gap,startY:e.clientY+scrollY,cy:e.clientY,id:e.pointerId,list:list.dataset.dlist||"blocks"};
   try{h.setPointerCapture(e.pointerId)}catch(_){}
   el.classList.add("dragging");cards.forEach(c=>c!==el&&c.classList.add("shift"));document.body.classList.add("eb-dragging");
   drMove();DR.raf=requestAnimationFrame(drLoop);
@@ -1981,9 +2016,10 @@ document.addEventListener("pointerup",e=>{if(DR&&e.pointerId===DR.id)drEnd(false
 document.addEventListener("pointercancel",e=>{if(DR&&e.pointerId===DR.id)drEnd(true)});
 document.addEventListener("keydown",e=>{
   const h=e.target.closest&&e.target.closest(".eb-drag");if(!h||!/^Arrow(Up|Down)$/.test(e.key))return;e.preventDefault();
-  const k=+h.closest("[data-k]").dataset.k,to=k+(e.key==="ArrowUp"?-1:1);if(to<0||to>=P.blocks.length)return;
-  withRemap(()=>{const b=P.blocks.splice(k,1)[0];P.blocks.splice(to,0,b)});renderEdit();
-  const n=$(`.eb[data-k="${to}"] .eb-drag`);n&&n.focus();
+  const L=h.closest("[data-list]").dataset.list,k=+h.closest("[data-k]").dataset.k,to=k+(e.key==="ArrowUp"?-1:1);if(to<0||to>=P[L].length)return;
+  if(L==="blocks")withRemap(()=>{const b=P.blocks.splice(k,1)[0];P.blocks.splice(to,0,b)});else{const it=P[L].splice(k,1)[0];P[L].splice(to,0,it);commit()}
+  renderEdit();
+  const n=$(`.eb[data-list="${L}"][data-k="${to}"] .eb-drag`);n&&n.focus();
 });
 
 /* események (egyszer, delegálva) */
@@ -2063,6 +2099,81 @@ addEventListener("drop",e=>{document.body.classList.remove("dragging");const f=e
 (()=>{let p=null;try{p=JSON.parse(localStorage.getItem(PKEY)||"null")}catch(e){}P=normP(p||{});applyProject();loadImgs()})();
 mpBoot();
 
+/* ---------- shotlist (Terv → Shotlist) ----------
+   A shotok a sztori sorrendjében, jelenetenként: szám, plánméret, optika, mozgás, leírás, szereplők, kellékek,
+   sztori, storyboard, megjegyzés. Húzással átrendezhető. Egy gombbal az Időrendbe kerülnek (forgatási blokként),
+   ott rakod forgatási sorrendbe. Amit itt beírsz, az időrendben és forgatás közben is megjelenik. */
+const SL_SIZES=["Totál","Kistotál","Szekond","Amerikai","Félközeli","Közeli","Nagyközeli","Részlet / inzert","POV","Egyéb"];
+const SL_MOVES=["Sticks","Kézi","Dolly","Gimbal","Steadicam","Svenk","Zoom","Daru","Drón","Autó"];
+let openSL=null;
+const slCode=s=>String(s.code||"").replace(/\s/g,"");
+const slScene=s=>(slCode(s).match(/^(\d+)/)||[])[1]||"";
+const slSetupOf=s=>[s.size,s.lens,s.move].filter(Boolean).join(", ");
+function slScheduled(code){const r=[];B.forEach(b=>{if(b.type==="shoot"&&shotIds(b.label).includes(code))r.push(b)});return r}
+function slNextCode(after){
+  const all=P.shots.map(slCode).filter(Boolean);
+  const base=after?slCode(after):(all[all.length-1]||"");const m=base.match(/^(\d+)\s*\/\s*(\d+)/);
+  if(!m)return all.length?"":"1/1";
+  let n=+m[2]+1;while(all.includes(`${m[1]}/${n}`))n++;return`${m[1]}/${n}`;
+}
+function slNewScene(){const sc=Math.max(0,...P.shots.map(s=>+slScene(s)||0))+1;return`${sc}/1`}
+function slCard(s,k){
+  const code=slCode(s),sch=code?slScheduled(code):[],open=openSL===s._id;
+  const status=!code?`<span class="eb-warn sm">${ic("alert",14)}Adj neki számot (pl. 1/1)</span>`
+    :sch.length?`<span class="slst ok">${ic("check",13)}Időrendben: ${sch.map(b=>`${hm(b.s)} · ${b.d}′`).join(", ")}</span>`
+    :`<span class="slst">Még nincs az időrendben</span>`;
+  return`<div class="eb sl" data-k="${k}" data-list="shots" data-type="shoot">
+    <div class="eb-top"><button type="button" class="eb-drag" aria-label="Húzd az átrendezéshez: ${esc(code||"shot")}"><svg width="14" height="20" viewBox="0 0 14 20" fill="currentColor" aria-hidden="true"><circle cx="4" cy="4" r="1.6"/><circle cx="10" cy="4" r="1.6"/><circle cx="4" cy="10" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="4" cy="16" r="1.6"/><circle cx="10" cy="16" r="1.6"/></svg></button>
+      ${fld("code",s.code,{ph:"1/1",cls:"slcode"})}
+      <select data-f="size" aria-label="Plánméret"><option value="">Plán…</option>${SL_SIZES.map(x=>`<option ${x===s.size?"selected":""}>${x}</option>`).join("")}${s.size&&!SL_SIZES.includes(s.size)?`<option selected>${esc(s.size)}</option>`:""}</select>
+      ${fld("desc",s.desc,{ph:"Mit látunk? (pl. Anna arca, Bence válla felett)",cls:"grow"})}
+      <button type="button" class="ib" data-act="sltog" aria-expanded="${open}" aria-label="Részletek">${ic(open?"up":"dn",18)}</button></div>
+    <div class="eb-sum sl-sum">${[s.lens,s.move,s.talent].filter(Boolean).map(esc).join(" · ")}</div>
+    <div class="sl-status">${status}${code&&!sch.length?`<button type="button" class="btn sm" data-act="sltoplan">${ic("plus",14)}Időrendbe</button>`:""}</div>
+    <div class="eb-more" ${open?"":"hidden"}>
+      <div class="eg">${fld("lens",s.lens,{label:"Optika",ph:"pl. 50 mm"})}${fld("move",s.move,{label:"Mozgás",ph:"pl. Dolly",list:"slmoves"})}${fld("talent",s.talent,{label:"Szereplők (vesszővel)",ph:"Anna, Bence"})}</div>
+      ${fld("props",s.props,{label:"Kellékek, kontinuitás (soronként)",area:1,rows:2})}${fld("story",s.story,{label:"Sztori (mi történik)",area:1})}${fld("note",s.note,{label:"Megjegyzés",area:1})}
+      ${imgEditor(s,[["sb","Storyboard"]])}
+      <div class="eb-act"><button type="button" class="btn sm" data-act="slup">${ic("up",15)}Fel</button><button type="button" class="btn sm" data-act="sldn">${ic("dn",15)}Le</button><button type="button" class="btn sm" data-act="sldup">${ic("dup",15)}Másolat</button><button type="button" class="btn sm" data-act="slins">${ic("plus",15)}Új utána</button><button type="button" class="btn sm danger" data-act="sldel">${ic("x",15)}Törlés</button></div>
+    </div></div>`;
+}
+function shotlistHTML(){
+  const n=P.shots.length,uns=P.shots.filter(s=>slCode(s)&&!slScheduled(slCode(s)).length);
+  let prev=null;
+  const list=P.shots.map((s,k)=>{const sc=slScene(s),h=sc!==prev?`<div class="sl-scene">${sc?`${sc}. jelenet`:"Jelenet nélkül"}</div>`:"";prev=sc;return h+slCard(s,k)}).join("");
+  return`<datalist id="slmoves">${SL_MOVES.map(x=>`<option value="${x}">`).join("")}</datalist>
+    <section class="card"><div class="card-head"><h2>Shotlist</h2><span class="chip neutral">${n} shot</span></div>
+      <p class="muted small">A shotok a <b>sztori sorrendjében</b>. A szám eleje a jelenet (pl. <b>2/3</b> = 2. jelenet 3. shotja). Ha kész, tedd őket az <b>Időrendbe</b>, és ott rakd forgatási sorrendbe. Amit itt beírsz (plán, optika, mozgás, szereplők, kellékek, storyboard), az az időrendben és forgatás közben is megjelenik.</p>
+      ${uns.length?`<div class="wgrid"><button class="btn solid" type="button" data-act="slallplan">${ic("plus",16)}${uns.length===n?"Mind az időrendbe":`A hiányzó ${uns.length} shot az időrendbe`}</button></div>`:n?`<p class="muted small" style="color:var(--ok)">${ic("check",14)} Minden shot benne van az időrendben.</p>`:""}</section>
+    <div class="eblist" data-dlist="shots">${list||`<p class="muted">Még nincs shot. Kezdd az első jelenettel:</p>`}</div>
+    <div class="wgrid add"><button class="btn sm" type="button" data-act="sladd">${ic("plus",14)}Új shot</button><button class="btn sm" type="button" data-act="slscene">${ic("plus",14)}Új jelenet</button></div>`;
+}
+function slToPlan(list){
+  if(!list.length)return;
+  withRemap(()=>{let at=-1;P.blocks.forEach((b,i)=>{if(b.type==="shoot")at=i});at=at<0?P.blocks.length:at+1;
+    const nb=list.map(s=>normP({blocks:[{type:"shoot",d:20,label:slCode(s)}]}).blocks[0]);P.blocks.splice(at,0,...nb)});
+  renderEdit();
+  const sch=slScheduled(slCode(list[0]))[0];
+  toast(list.length===1?`${slCode(list[0])} az időrendbe került${sch?` (${hm(sch.s)})`:""}. Az Időrend részen húzd a helyére.`:`${list.length} shot az időrendbe került. Az Időrend részen rakd sorrendbe.`,{tone:"ok",action:"Időrend",fn:()=>{editSec="idorend";renderEdit()}});
+}
+document.addEventListener("click",e=>{
+  const t=e.target.closest&&e.target.closest("button");if(!t||!t.closest('[data-view="terv"]'))return;const a=t.dataset.act;if(!a||!/^sl/.test(a))return;
+  const host=t.closest('[data-list="shots"]'),k=host?+host.dataset.k:-1,s=P.shots[k];
+  if(a==="sltog"){openSL=openSL===s._id?null:s._id;renderEdit();return}
+  if(a==="sladd"||a==="slscene"){const c=a==="slscene"?slNewScene():slNextCode(P.shots[P.shots.length-1]);
+    const ns=normP({shots:[{code:c}]}).shots[0];P.shots.push(ns);openSL=ns._id;commit();renderEdit();
+    const el=$(`.eb.sl[data-k="${P.shots.length-1}"]`);el&&el.scrollIntoView({block:"center"});const inp=el&&el.querySelector('[data-f="desc"]');inp&&inp.focus();return}
+  if(a==="slallplan"){slToPlan(P.shots.filter(x=>slCode(x)&&!slScheduled(slCode(x)).length));return}
+  if(!s)return;
+  if(a==="sltoplan"){slToPlan([s]);return}
+  if(a==="slup"&&k>0){P.shots.splice(k,1);P.shots.splice(k-1,0,s)}
+  else if(a==="sldn"&&k<P.shots.length-1){P.shots.splice(k,1);P.shots.splice(k+1,0,s)}
+  else if(a==="sldup"){const c=JSON.parse(JSON.stringify(s));c._id=uid();c.code=slNextCode(s);P.shots.splice(k+1,0,c);openSL=c._id}
+  else if(a==="slins"){const c=normP({shots:[{code:slNextCode(s)}]}).shots[0];P.shots.splice(k+1,0,c);openSL=c._id}
+  else if(a==="sldel"){P.shots.splice(k,1);commit();renderEdit();toast(`Shot törölve: ${slCode(s)||"névtelen"}`,{action:"Visszavonás",fn:()=>{P.shots.splice(k,0,s);commit();renderEdit()}});return}
+  commit();renderEdit();
+});
+
 /* ---------- forgatókönyv: jelölés tervezéskor, olvasás forgatás közben ----------
    Tervezéskor (Terv → Forgatókönyv) a bemásolt szöveg forgatókönyv-formában látszik, a jelenetek számozva.
    Fent a terv beállításai (1/1, 1/2, 2/1 …): egyet kiválasztva a sorokra koppintva jelölöd, melyik részt veszi
@@ -2071,7 +2182,7 @@ mpBoot();
    jelenete olvasható, a vett sorok kiemelve. */
 let scrMode="mark",markShot=null,markRange=false,markAnchor=null;
 const natCmp=(a,b)=>String(a).localeCompare(String(b),"hu",{numeric:true});
-function planShotIds(){const s=new Set();P.blocks.forEach(b=>{if(b.type==="shoot")shotIds(b.label).forEach(i=>s.add(i))});return[...s].sort(natCmp)}
+function planShotIds(){const s=new Set();P.shots.forEach(x=>{const c=String(x.code||"").replace(/\s/g,"");if(c)s.add(c)});P.blocks.forEach(b=>{if(b.type==="shoot")shotIds(b.label).forEach(i=>s.add(i))});return[...s].sort(natCmp)}
 function scrPasteCard(open){
   return`<section class="card"><h2>${P.script.length?"Szöveg hozzáadása vagy cseréje":"Forgatókönyv beillesztése"}</h2>
     <p class="muted small">Másold be a forgatókönyvet (pl. Wordből vagy PDF-ből). Az app magától szétszedi: <b>BELSŐ. / KÜLSŐ.</b> = jelenet, <b>NAGYBETŰS név</b> = szereplő, utána a dialógus, <b>(zárójel)</b> = instrukció.</p>
@@ -2100,7 +2211,7 @@ function scriptEditHTML(){
       ${ids.length?`<div class="schips">${ids.map(id=>`<button type="button" class="schip ${id===markShot?"on":""} ${cnt(id)?"":"empty"}" data-mshot="${esc(id)}" aria-pressed="${id===markShot}">${esc(id)}<small>${cnt(id)||"–"}</small></button>`).join("")}</div>
       <div class="scr-row"><label class="fi chkf"><input type="checkbox" data-mrange ${markRange?"checked":""}><span>Tartomány</span></label>
         <span class="muted small">${markAnchor!=null?"<b>Most koppints az utolsó sorra.</b>":markRange?"Koppints az első, majd az utolsó sorra.":`Jelölés: <b>${esc(markShot)}</b>`}</span></div>`
-      :`<p class="muted">A jelöléshez előbb legyenek forgatási blokkok az <b>Időrend</b>ben (pl. 1/1, 1/2).</p>`}
+      :`<p class="muted">A jelöléshez előbb legyenek shotok a <b>Shotlist</b>ben vagy forgatási blokkok az <b>Időrend</b>ben (pl. 1/1, 1/2).</p>`}
     </section>
     <section class="card fs scr-mark" style="padding:14px 8px;gap:0">${lines}</section>${scrPasteCard(false)}`;
 }
@@ -2200,7 +2311,7 @@ function projFileName(){const t=(P.title||"projekt").normalize("NFD").replace(/[
 async function exportProjectFile(){
   flushSave();
   const images={};
-  for(const b of [...P.blocks,...P.groups])for(const x of b.images||[])if(x.idb&&!images[x.idb]){try{const bl=await idb.get(x.idb);if(bl)images[x.idb]=await blobToURL(bl)}catch(e){}}
+  for(const b of [...P.blocks,...P.groups,...P.shots])for(const x of b.images||[])if(x.idb&&!images[x.idb]){try{const bl=await idb.get(x.idb);if(bl)images[x.idb]=await blobToURL(bl)}catch(e){}}
   const data={app:"APERATION",kind:"projekt",version:1,saved:new Date().toISOString(),project:P,state:{...st,sim:fresh().sim,sw:null},images};
   await saveFile(projFileName(),new Blob([JSON.stringify(data)],{type:"application/json"}),"application/json");
 }
@@ -2258,6 +2369,19 @@ function prScript(){
     return`<div class="ln"><div class="tag">${show?esc(key):""}</div><div class="${l.t}">${esc(l.x)}</div></div>`}).join("")}</div>${prFoot()}</div>`;
 }
 function prShotlist(){
+  // ha van shotlist: a sztori sorrendjében, plánnal, optikával, mozgással és azzal, mikor kerül sorra az időrendben
+  if(P.shots&&P.shots.length){
+    const when=code=>B.filter(b=>b.type==="shoot"&&shotIds(b.label).includes(code)).map(b=>hm(b.s)).join(", ");
+    let prev=null;
+    return`<div class="pr-doc">${prHead("Shotlist")}<table class="sl"><thead><tr><th>Shot</th><th>Plán · optika · mozgás</th><th>Leírás · sztori</th><th>Szereplők · kellék</th><th class="num">Időrend</th><th>Storyboard</th></tr></thead><tbody>
+      ${P.shots.map(s=>{const code=String(s.code||"").replace(/\s/g,""),sc=(code.match(/^(\d+)/)||[])[1]||"",h=sc!==prev?`<tr class="dept"><td colspan="6">${sc?sc+". jelenet":"Jelenet nélkül"}</td></tr>`:"";prev=sc;
+        const imgs=(s.images||[]).map(x=>x.url||IMG[x.idb]).filter(Boolean).slice(0,2);
+        return h+`<tr><td><span class="shot">${esc(code)}</span></td><td>${esc([s.size,s.lens,s.move].filter(Boolean).join(" · "))}</td>
+          <td>${esc(s.desc)}${s.story?`<br><small>${esc(s.story)}</small>`:""}${s.note?`<br><small><i>${esc(s.note)}</i></small>`:""}</td>
+          <td>${esc(s.talent)}${s.props?`<br><small>${splitLines(s.props).map(esc).join(" · ")}</small>`:""}</td>
+          <td class="num">${when(code)||"–"}</td><td class="img">${imgs.map(u=>`<img src="${esc(u)}" alt="">`).join("")}</td></tr>`}).join("")}
+      </tbody></table>${prFoot()}</div>`;
+  }
   const sh=prShoots();
   return`<div class="pr-doc">${prHead("Shotlist")}<table class="sl"><thead><tr><th class="num">#</th><th class="num">Idő</th><th>Shot</th><th>Beállítás · fény</th><th>Szereplők · kellék</th><th>Sztori · megjegyzés</th><th>Storyboard</th></tr></thead><tbody>
     ${sh.map((b,n)=>{const s=D.shots[b.label]||{talent:[],props:[],sb:[],vk:[],story:""},g=G(b.group);
@@ -2417,7 +2541,7 @@ const TOUR_F=()=>[
  {state:"move",view:"terv",sec:"idorend",sel:"#tourblock",title:"Vagy írd be itt",html:"Az <b>Időrend</b>ben minden blokk egy kártya: <b>típus, perc, shot</b>. A kezdési idők maguktól számolódnak a crew callból. A jobb oldali nyíl nyitja a részleteket: beállítás, fény, szereplők, kellékek, sztori, képek. Új blokkot a lista alján adsz hozzá; a törlés visszavonható."},
  {state:"move",view:"terv",sec:"idorend",sel:"#tourblock .eb-drag",title:"Átrendezés húzással",html:"A kártya bal szélén lévő <b>⋮⋮ fogantyút</b> megfogva fel-le húzhatod a blokkot. Húzás közben a többi kártya félrecsúszik, és az időpontok már az új sorrendet mutatják. Elengedés után a nap újraszámolódik, és egy koppintással <b>visszavonható</b>. Ha két átállás kerül egymás mellé, az app <b>sárgán jelzi</b>, de engedi."},
  {state:"move",view:"terv",sec:"szkript",sel:".scr-tools",title:"Forgatókönyv jelölése",html:"A <b>Forgatókönyv</b> részen bemásolod a szöveget, aztán fent kiválasztasz egy beállítást (pl. <b>1/2</b>), és <b>a sorokra koppintva</b> jelölöd, melyik részt veszi. A jelenet címére koppintva az egész jelenet ki-be kapcsol, Tartomány módban az első és az utolsó sorral jelölsz. Forgatás közben a <b>Most</b> nézetben így a teljes jelenet olvasható, a vett rész kiemelve."},
- {state:"move",view:"terv",sec:"idorend",sel:'[data-view="terv"] .esec',title:"A terv többi része",html:"<b>Projekt:</b> cím, dátum, crew call, wrap-határ, fontos tudnivalók és a fénybeállítások kódjai. <b>Emberek:</b> szereplők és stáb, érkezéssel, telefonnal. <b>Forgatókönyv:</b> másold be a szöveget, az app szétszedi; utána kiválasztasz egy beállítást, és a sorokra koppintva jelölöd, melyik részt veszi. Forgatás közben így a Most nézetben a teljes jelenet olvasható, a vett rész kiemelve. Minden azonnal mentődik ezen az eszközön."},
+ {state:"move",view:"terv",sec:"idorend",sel:'[data-view="terv"] .esec',title:"A terv többi része",html:"<b>Shotlist:</b> a shotok a sztori sorrendjében (plán, optika, mozgás, leírás, storyboard); egy gombbal kerülnek az időrendbe. <b>Projekt:</b> cím, dátum, crew call, wrap-határ, fontos tudnivalók és a fénybeállítások kódjai. <b>Emberek:</b> szereplők és stáb, érkezéssel, telefonnal. <b>Forgatókönyv:</b> másold be a szöveget, az app szétszedi; utána kiválasztasz egy beállítást, és a sorokra koppintva jelölöd, melyik részt veszi. Forgatás közben így a Most nézetben a teljes jelenet olvasható, a vett rész kiemelve. Minden azonnal mentődik ezen az eszközön."},
  {state:"move",view:"terv",sec:"csapat",sel:"#teamcard",title:"Közös munka a stábbal",html:"A <b>Csapat</b> részen megoszthatod a napot: minden pozíció (2nd AD, operatőr, szkriptes, kellékes, színész…) kap egy <b>belépőkódot</b>. Aki beírja (Kezdés → <b>Csatlakozás kóddal</b>), a saját telefonján élőben látja, mi megy most és mennyit csúsztunk. Pozíciónként te döntöd el, <b>ki mit lát</b> (pl. telefonszámok, forgatókönyv), és ki <b>vezérelheti</b> a napot. A kitiltás és az új kód egy koppintás."},
  {state:"move",view:"terv",sec:"fajl",sel:'[data-do="projexport"]',title:"Mentés és biztonság",html:"Minden módosítás <b>azonnal mentődik</b> ezen az eszközön, és az app percenként biztonsági pillanatképet is készít, ami a Fájl részen visszaállítható. Ha kész a terv, a <b>Projekt exportálása</b> egyetlen fájlba ment mindent (képekkel, jelölésekkel, a nap állásával), ami bármelyik APERATION-ben visszatölthető. Excelbe is mentheted, gépen javítani."},
  {state:"move",title:"Ennyi az egész",html:()=>tour&&tour.tmpP?"Kezdd a <b>Terv</b> fülön: tölts be egy Excel-táblázatot, nyisd meg a mintát, vagy írd be a napot. Ezt a bemutatót az Info fülön bármikor újranézheted.":"Forgatás előtt érdemes egyszer végigmenni a napon <b>próba módban</b>, gyorsított órával. Ezt a bemutatót az Info fülön bármikor újranézheted."}
