@@ -2144,7 +2144,7 @@ function shotlistHTML(){
   return`<datalist id="slmoves">${SL_MOVES.map(x=>`<option value="${x}">`).join("")}</datalist>
     <section class="card"><div class="card-head"><h2>Shotlist</h2><span class="chip neutral">${n} shot</span></div>
       <p class="muted small">A shotok a <b>sztori sorrendjében</b>. A szám eleje a jelenet (pl. <b>2/3</b> = 2. jelenet 3. shotja). Ha kész, tedd őket az <b>Időrendbe</b>, és ott rakd forgatási sorrendbe. Amit itt beírsz (plán, optika, mozgás, szereplők, kellékek, storyboard), az az időrendben és forgatás közben is megjelenik.</p>
-      ${uns.length?`<div class="wgrid"><button class="btn solid" type="button" data-act="slallplan">${ic("plus",16)}${uns.length===n?"Mind az időrendbe":`A hiányzó ${uns.length} shot az időrendbe`}</button></div>`:n?`<p class="muted small" style="color:var(--ok)">${ic("check",14)} Minden shot benne van az időrendben.</p>`:""}</section>
+      ${uns.length>1?`<div class="wgrid"><button class="btn solid" type="button" data-act="slallplan">${ic("plus",16)}${uns.length===n?"Mind az időrendbe":`A hiányzó ${uns.length} shot az időrendbe`}</button></div>`:uns.length?"":n?`<p class="muted small" style="color:var(--ok)">${ic("check",14)} Minden shot benne van az időrendben.</p>`:""}</section>
     <div class="eblist" data-dlist="shots">${list||`<p class="muted">Még nincs shot. Kezdd az első jelenettel:</p>`}</div>
     <div class="wgrid add"><button class="btn sm" type="button" data-act="sladd">${ic("plus",14)}Új shot</button><button class="btn sm" type="button" data-act="slscene">${ic("plus",14)}Új jelenet</button></div>`;
 }
