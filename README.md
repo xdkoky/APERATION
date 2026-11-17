@@ -1,13 +1,24 @@
-# KAPASZKODNI – diszpó
+# APERATION
 
-Interaktív diszpozíció a *Kapaszkodni* rövidfilm forgatásához (2026. 11. 12.).
+Forgatási napvezérlő 1st AD-knek. Telefonon fut, net nélkül is.
 
-- `diszpo/index.html` – a diszpó oldal (shotlist vilkóval, kellékek, stáb, karakterek, inspó, szkript)
-- Szerkeszthető ütemterv (Google Táblázatokhoz is): `diszpo/Kapaszkodni_utemterv_2026-11-12.xlsx` – újragenerálás: `python3 diszpo/build_xlsx.py`
-- 1st AD forgatási app: sablon `diszpo/ad_app_template.html`, a generált `diszpo/ad_app.html` telefonszámokat tartalmaz, ezért nincs a repóban – újragenerálás a táblázatból: `python3 diszpo/build_ad_app.py [táblázat.xlsx]`
-- **Telepíthető, offline app (GitHub Pages):** a `docs/` mappa. Élő cím a Pages bekapcsolása után: https://xdkoky.github.io/ANDRIS--LLOYD/ – újragenerálás: `python3 diszpo/build_ad_app.py && python3 diszpo/build_offline.py`
-- Eredeti minőségű képek (vilkó, storyboard) az anyagok/ PDF-jeiből: `python3 diszpo/build_images.py`
-- **Szkriptes napló** (egy lap: shotonként take-sorok, x a jó take-hez, megjegyzés): `diszpo/Kapaszkodni_szkriptes_2026-11-12.xlsx` – újragenerálás: `python3 diszpo/build_szkriptes.py`
-- **Nyomtatandó dokumentumok** (diszpó, shotlist, forgatókönyv) a legfrissebb táblázatból: `python3 diszpo/build_print.py && node diszpo/build_pdf.js`. A kész PDF-ek telefonszámokat tartalmaznak, ezért a friss változat nincs a nyilvános repóban.
-- `diszpo/vilko/`, `diszpo/inspo/` – a PDF-ekből kivett képek
-- `anyagok/` – az eredeti PDF-ek
+**App:** https://xdkoky.github.io/ANDRIS--LLOYD/base/ – telefonon a főképernyőre kell tenni (Megosztás → Főképernyőhöz adás).
+
+## Mit tud
+
+- **Most:** óra, visszaszámláló, várható wrap, Kész / Vissza / +5′, take-stopper, a következő beállítás és fényváltás.
+- **Terv:** Excel betöltése (a `base/Forgatasi_sablon.xlsx` sablonnal a legbiztosabb) vagy beírás az appban, blokkok húzással átrendezve, mentés Excelbe, korábbi projektek.
+- **Közös munka:** pozíciónkénti belépőkód, beállítható, ki mit lát, és ki vezérelheti a napot (Firebase).
+- **Nyomtatás:** diszpó, forgatókönyv, shotlist, szkriptlap (A4, PDF-be is).
+
+## Fejlesztés
+
+```
+python3 base/build_base.py   # app (base/app.html), sablon, telepíthető változat (docs/base/)
+```
+
+- Források: `base/` (`app_template.html`, `editor.js`, `multi.js`, `print.js`, `gate.js`, `*.css`), logó: `base/brand/`
+- Firebase-szabályok és beállítás: `base/firebase/`
+- A *Kapaszkodni* (2026. 11. 12.) forgatás saját anyagai: `diszpo/`, `anyagok/`, `docs/` gyökere
+
+© 2026 Tóth Tamás János · APERATION™
