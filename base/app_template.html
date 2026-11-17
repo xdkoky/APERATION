@@ -604,7 +604,7 @@ function renderMost(){
     const f=B[nextIdx(-1)]||B[0],lv=live();
     hero=`<section class="now ${enter?"enter":""}" data-type="prep"><div class="now-head"><div class="chips"><span class="chip neutral">${ic("now",15)}${lv?"A nap még nem indult":HASDATE?"Forgatási nap: "+SHOOT_DATE.toLocaleDateString("hu-HU",{month:"long",day:"numeric"}):"Nincs dátum megadva"}</span></div>
       <h1>Crew call ${hm(D.plan.call)}</h1><p class="setup">Első blokk: ${esc(f.label)}</p>
-      <p class="note">${lv?"Indítsd el a napot, amikor a stáb megérkezett. Utána minden blokk végén a Kész gomb visz tovább.":"Ma kipróbálhatod próba módban: gyorsított órával végigmehetsz az egész napon."}${lv?"":` <a href="#info">Ha ma forgattok: Info → Ma forgatunk.</a>`}</p><button class="btn sm" type="button" id="tourbtn">${ic("play",14)}Bemutató · 1 perc</button></div>${ringHTML()}
+      <p class="note">${lv?"Indítsd el a napot, amikor a stáb megérkezett. Utána minden blokk végén a Kész gomb visz tovább.":"Ma kipróbálhatod próba módban: gyorsított órával végigmehetsz az egész napon."}${lv?"":` <a href="#info">Ha ma forgattok: Info → Ma forgatunk.</a>`}</p><button class="btn sm" type="button" id="tourbtn">${ic("play",14)}Bemutató · 2 perc</button></div>${ringHTML()}
       <dl class="meta"><div><dt>Forgatás</dt><dd>${hm((B.find(x=>x.type==="shoot")||f).s)}</dd></div><div><dt>Ebéd</dt><dd>${hm((B.find(x=>x.type==="lunch")||{}).s)}</dd></div><div><dt>Wrap</dt><dd>${hm(PLAN_WRAP)}</dd></div></dl></section>`;
     right=upcomingCard(P)+callsCard(t)+arrivalsCard();
   }else if(!b){
@@ -703,7 +703,7 @@ function renderStrip(P){
 }
 function tick(force){
   if(!B.length){const t=tod();$("#clk").textContent=hm(Math.floor(t));$("#clks").textContent=":"+String(Math.floor((t*60)%60)).padStart(2,"0");
-    $("#wrapv").textContent="--:--";$("#pill").classList.add("idle");$("#pilltx").textContent="Nincs terv betöltve";$("#shotcount").innerHTML="";$("#slack").innerHTML="";$("#strip").innerHTML="";document.body.dataset.state="ok";document.body.classList.remove("over");return}
+    $("#wrapv").textContent="--:--";$("#simchip").hidden=true;$("#pill").classList.add("idle");$("#pilltx").textContent="Nincs terv betöltve";$("#shotcount").innerHTML="";$("#slack").innerHTML="";$("#strip").innerHTML="";document.body.dataset.state="ok";document.body.classList.remove("over");return}
   const {P,wrap,t}=project(),b=curBlock(),wr=Math.round(wrap),s=statusOf(wrap),started=!!st.cur;
   document.body.dataset.state=started||live()?s:"ok";
   document.documentElement.dataset.type=b?b.type:"prep";
@@ -816,7 +816,7 @@ let confirmReset=false;
 function renderInfo(){
   const v=$('[data-view="info"]'),notes=[];
   v.innerHTML=`<div class="vh">Info</div><div class="grid"><div class="stack">
-    <section class="card"><div class="card-head"><h2>Így működik</h2><button class="btn sm solid" type="button" id="tourgo">${ic("play",14)}Bemutató · 1 perc</button></div>
+    <section class="card"><div class="card-head"><h2>Így működik</h2><button class="btn sm solid" type="button" id="tourgo">${ic("play",14)}Bemutató · 2 perc</button></div>
       <ul class="list"><li><b>Kész</b>: lezárja a mostani blokkot, és indítja a következőt.</li><li><b>‹</b> visszalép az előző blokkra. <b>+5′</b> öt percet ad a mostanihoz.</li><li>Zöld: terv szerint. Narancs: késés, de belefér a tartalékba. Piros: a wrap ${hm(TARGET)} utánra csúszik, vagy a blokk kerete lejárt.</li><li>A gyűrűre koppintva teljes képernyős óra a stábnak.</li><li>Az Időrendben egy sorra koppintva odaugorhatsz vagy kihagyhatod.</li></ul></section>
     <section class="card"><h2>Próba mód</h2><p class="muted small">Gyorsított órával végigpróbálhatod a napot. A próba befejezése mindent nulláz, hogy a forgatás tiszta lappal induljon.</p>
       <div class="field"><label class="field">Kezdés <input type="time" id="simt" value="${hm(st.sim.start).padStart(5,"0")}"></label><label class="field">Sebesség <select id="simsp">${[1,5,10,30,60].map(x=>`<option value="${x}" ${st.sim.speed===x?"selected":""}>${x}×</option>`).join("")}</select></label></div>
@@ -876,7 +876,7 @@ const TOUR_KEY="diszpo-app-tour-v1";
 const HERO='[data-view="most"] .now';
 let TOUR=[];
 const TOUR_F=()=>[
- {title:"Egy perc, és mindent tudsz",html:"Végigvezetlek az appon egy <b>mintanapon</b>. A valódi napodhoz és a mentett állapotodhoz ez nem nyúl."},
+ {title:"Két perc, és mindent tudsz",html:"Végigvezetlek az appon egy <b>mintanapon</b>: előbb azon, amit forgatás közben látsz, utána azon, hogyan viszed be a <b>saját napodat</b> Excelből vagy kézzel. A tervedhez és a mentett állapotodhoz ez nem nyúl."},
  {state:"shoot",sel:HERO,title:"Ez megy most",html:"Itt látod, <b>mit forgatunk éppen</b>, milyen beállítással, a táblázatból vett megjegyzéssel. Alul a terv, a tényleges kezdés és a blokk időkerete."},
  {state:"shoot",sel:"#ring",title:"Visszaszámláló",html:"A gyűrű a blokkra szánt időt számolja vissza. Ha lejár, <b>pirosra vált</b>, és azt mutatja, mennyivel csúsztál túl. <b>Koppints rá</b>, és teljes képernyős óra lesz belőle a stábnak."},
  {state:"shoot",sel:".hdr",title:"Hol tart a nap",html:"Balra a pontos idő, jobbra a <b>várható wrap</b>: az app abból számolja, ahol tényleg tartotok. A csík az egész nap, a fehér vonal a mostani pillanat.",
@@ -887,8 +887,12 @@ const TOUR_F=()=>[
  {state:"shoot",sel:"#detailcard",title:"Minden, ami a shothoz kell",html:"Fent a shot <b>storyboard-rajza és világítási terve</b>: koppintásra teljes minőségben nyílnak meg, csíptetéssel nagyíthatók. <b>Setre · kellék:</b> kit kell hívni, mi legyen a képben. <b>Szkript:</b> a szövegrész, amit most veszünk."},
  {state:"shoot",sel:"#formcard",title:"Mi jön utána",html:"Már forgatás közben látod a következő beállítást: mennyi idő az átállás, <b>változik-e a fény</b>, és kit kell majd a setre hívni. Így időben szólhatsz a részlegeknek."},
  {state:"move",sel:HERO,title:"Átállás",html:"Átálláskor a kártya azt mutatja, <b>mire álltok át</b>. Alatta ott a fényváltás, a kellékek, a storyboard és a vilkó. Öt perccel a vége előtt az app jelez: <b>Színészeket a setre!</b>"},
- {state:"move",sel:"#tabs",title:"A többi nézet",html:"<b>Időrend:</b> az egész nap; egy sorra koppintva odaugorhatsz vagy kihagyhatod. <b>Szkript:</b> a teljes szöveg, shotonként jelölve. <b>Stáb:</b> érkezések pipálása. <b>Terv:</b> itt írod át a napot, vagy töltesz be Excel-táblázatot. <b>Info:</b> próba mód, hang, nullázás."},
- {state:"move",title:"Ennyi az egész",html:"Forgatás előtt érdemes egyszer végigmenni a napon <b>próba módban</b>, gyorsított órával. Ezt a bemutatót az Info fülön bármikor újranézheted."}
+ {state:"move",sel:"#tabs",title:"A többi nézet",html:"<b>Időrend:</b> az egész nap; egy sorra koppintva odaugorhatsz vagy kihagyhatod. <b>Szkript:</b> a teljes szöveg, shotonként jelölve. <b>Stáb:</b> érkezések pipálása, telefonszámok. <b>Terv:</b> itt viszed be és írod át a napot. <b>Info:</b> próba mód, hang, nullázás, ez a bemutató."},
+ {state:"move",view:"terv",sec:"fajl",sel:"#drop",title:"A saját napod: Excelből",html:"A <b>Terv</b> fül <b>Fájl</b> részén töltöd be a táblázatot: koppints ide, vagy húzd rá a fájlt az appra. A legbiztosabb a <b>Forgatási sablon</b>, ugyanitt letölthető. Más táblázatot is felismer, ha van benne <b>Perc</b> (vagy Kezdés), <b>Típus</b> és <b>Blokk / shot</b> oszlop. Betöltés előtt megmutatja, mit talált, és csak a <b>Betöltés</b> gombra cseréli a tervet."},
+ {state:"move",view:"terv",sec:"idorend",sel:"#tourblock",title:"Vagy írd be itt",html:"Az <b>Időrend</b>ben minden blokk egy kártya: <b>típus, perc, shot</b>. A kezdési idők maguktól számolódnak a crew callból. A jobb oldali nyíl nyitja a részleteket: beállítás, fény, szereplők, kellékek, sztori, képek. Alul: <b>Fel, Le, Másolat, Új utána, Törlés</b>; a törlés visszavonható. Új blokkot a lista alján adsz hozzá."},
+ {state:"move",view:"terv",sec:"idorend",sel:'[data-view="terv"] .esec',title:"A terv többi része",html:"<b>Projekt:</b> cím, dátum, crew call, wrap-határ, fontos tudnivalók és a fénybeállítások kódjai. <b>Emberek:</b> szereplők és stáb, érkezéssel, telefonnal. <b>Szkript:</b> másold be a forgatókönyvet, az app szétszedi; utána soronként beírod, melyik shot veszi. Minden azonnal mentődik ezen az eszközön."},
+ {state:"move",view:"terv",sec:"fajl",sel:'[data-do="export"]',title:"Mentés Excelbe",html:"A kész tervet <b>Excelbe mentheted</b>. Ugyanolyan, mint a sablon: elküldheted a stábnak, gépen javíthatod, és visszatöltheted. A telefonról feltett képek nem kerülnek bele, csak a kép-linkek."},
+ {state:"move",title:"Ennyi az egész",html:()=>tour&&tour.tmpP?"Kezdd a <b>Terv</b> fülön: tölts be egy Excel-táblázatot, nyisd meg a mintát, vagy írd be a napot. Ezt a bemutatót az Info fülön bármikor újranézheted.":"Forgatás előtt érdemes egyszer végigmenni a napon <b>próba módban</b>, gyorsított órával. Ezt a bemutatót az Info fülön bármikor újranézheted."}
 ];
 function tourState(kind){
   if(tour.state===kind)return;tour.state=kind;
@@ -901,20 +905,24 @@ function tourState(kind){
 }
 function tourStart(){
   if(tour)return;
-  if(!TOUR_SHOT){toast("A bemutatóhoz legalább egy forgatási blokk kell a tervben.");return}
-  TOUR=TOUR_F();present(false);closeViewer();
-  let canDemo=!st.cur&&!isShootDay();
-  tour={i:0,state:null,backup:JSON.stringify(st),canDemo};
+  present(false);closeViewer();
+  const pB=JSON.stringify(P),tmpP=!TOUR_SHOT;
+  if(tmpP){P=normP(JSON.parse(JSON.stringify(MINTA)));applyProject()}
+  TOUR=TOUR_F();
+  let canDemo=!tmpP&&!st.cur&&!isShootDay();
+  tour={i:0,state:null,backup:JSON.stringify(st),canDemo,tmpP,pB,ui:{editSec,openEB,pending}};pending=null;
   $("#tour").hidden=false;tourShow();
 }
 function tourShow(){
   const s=TOUR[tour.i],first=tour.i===0,last=tour.i===TOUR.length-1;
   tourState(s.state||"shoot");
-  if(view!=="most")location.hash="#most";
+  if(s.sec)editSec=s.sec;openEB=null;
+  const want=s.view||"most";if(view!==want)location.hash="#"+want;
   renderAll();
+  if(s.sel==="#tourblock"&&TOUR_SHOT){const c=document.querySelector(`.eb[data-k="${TOUR_SHOT.i}"]`);if(c)c.id="tourblock"}
   const card=$("#tourcard");
   card.innerHTML=`<div class="tour-top"><span class="cap">Bemutató${first||last?"":` · ${tour.i} / ${TOUR.length-2}`}</span>${last?"":`<button type="button" class="tour-skip" id="tskip">Kihagyás</button>`}</div>
-    <h3 id="tourh">${s.title}</h3><p>${s.html}</p>${s.extra||""}
+    <h3 id="tourh">${s.title}</h3><p>${typeof s.html==="function"?s.html():s.html}</p>${s.extra||""}
     <div class="tour-nav">${last?'<span style="flex:1"></span>':`<div class="dots">${TOUR.map((_,k)=>`<i class="${k===tour.i?"on":""}"></i>`).join("")}</div>`}${first?"":`<button type="button" class="btn sm" id="tprev">Vissza</button>`}${last?(tour.canDemo?`<button type="button" class="btn sm" id="tclose">Bezárás</button><button type="button" class="btn sm solid" id="tdemo">Próba indítása</button>`:`<button type="button" class="btn sm solid" id="tclose">Kész</button>`):`<button type="button" class="btn sm solid" id="tnext">${first?"Kezdjük":"Tovább"}</button>`}</div>`;
   const g=id=>card.querySelector(id);
   g("#tnext")&&(g("#tnext").onclick=()=>tourGo(1));g("#tprev")&&(g("#tprev").onclick=()=>tourGo(-1));
@@ -946,11 +954,13 @@ function tourPlace(){
 function tourEnd(startDemo){
   if(!tour)return;const t=tour;tour=null;$("#tour").hidden=true;
   st=Object.assign(fresh(),JSON.parse(t.backup));
+  P=normP(JSON.parse(t.pB));applyProject();editSec=t.ui.editSec;openEB=t.ui.openEB;pending=t.ui.pending;
   if(t.cloud&&t.cloud.upd>st.upd){try{const x=JSON.parse(t.cloud.json);if(x&&x.v===1)st=Object.assign(fresh(),x)}catch(e){}}
   try{localStorage.setItem(TOUR_KEY,"1")}catch(e){}
   lastAlert="";detailSeg="setre";lastHero=null;
   if(startDemo){st.sim={on:true,start:D.plan.call-3,speed:10,base:Date.now()};save()}
-  if(view!=="most")location.hash="#most";
+  const back=t.tmpP?"terv":"most";if(t.tmpP)editSec="fajl";
+  if(view!==back)location.hash="#"+back;
   renderAll();window.scrollTo({top:0});
   toast(startDemo?"Próba mód: 10× sebesség. Indítsd el a napot!":"A bemutatót az Info fülön bármikor újranézheted.");
 }
@@ -959,5 +969,5 @@ addEventListener("keydown",e=>{if(!tour)return;if(e.key==="Escape")tourEnd(false
 
 route(false);
 setInterval(()=>tick(false),250);
-setTimeout(()=>{let seen=true;try{seen=!!localStorage.getItem(TOUR_KEY)}catch(e){}if(!seen&&B.length&&!(isShootDay()&&st.cur))tourStart()},600);
+setTimeout(()=>{let seen=true;try{seen=!!localStorage.getItem(TOUR_KEY)}catch(e){}if(!seen&&!(isShootDay()&&st.cur))tourStart()},600);
 </script>
