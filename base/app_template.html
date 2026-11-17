@@ -445,7 +445,7 @@ details[open]>:not(summary){animation:openIn .32s var(--ease-out) both}
    3) a dallam három hangjára: a hatszög-jel, a felirat, majd a töltősáv
    4) átmenet: a jel előrerepül, fehér villanás, és az app lágyan, élesedve beúszik */
 .boot{position:fixed;inset:0;z-index:1000;background:#000;color:#e6e6e6;font-family:"Courier New",Courier,monospace;font-size:13.5px;line-height:1.45;
-  overflow:hidden;cursor:pointer;-webkit-user-select:none;user-select:none}
+  overflow:hidden;cursor:default;-webkit-user-select:none;user-select:none}
 .boot .scr{position:absolute;inset:0;padding:calc(18px + env(safe-area-inset-top,0px)) 18px 18px;transform:scaleY(.004) scaleX(0);background:#000;
   transform-origin:50% 50%;filter:brightness(3)}
 .boot.on .scr{animation:crtOn .55s cubic-bezier(.2,.9,.2,1) forwards}
@@ -485,7 +485,7 @@ html.booting .app,html.booting .bottom{opacity:0;transform:scale(.94);filter:blu
 html.boot-in .app,html.boot-in .bottom{transition:opacity .7s ease,transform .9s cubic-bezier(.16,1,.3,1),filter .8s ease;opacity:1;transform:none;filter:none}
 </style>
 
-<div class="boot" id="boot" role="presentation" aria-hidden="true"><div class="scr"><pre id="bootpre"></pre></div><div class="bl"></div><div class="flash"></div><div class="hint">KOPPINTS A KIHAGYÁSHOZ</div></div>
+<div class="boot" id="boot" role="presentation" aria-hidden="true"><div class="scr"><pre id="bootpre"></pre></div><div class="bl"></div><div class="flash"></div></div>
 <script>
 /* indulóképernyő: csak valódi betöltéskor (hidegindítás). A jeleneteket a hang ideje vezérli, így pontosan szinkronban vannak.
    Ha a böngésző nem enged hangot magától (iPhone), egy „koppints az indításhoz” képernyő jön; 5 mp után hang nélkül indul. */
@@ -539,7 +539,7 @@ html.boot-in .app,html.boot-in .bottom{transition:opacity .7s ease,transform .9s
     t0=performance.now();loop();
     if(withSound&&audio&&audio.paused){audio.currentTime=0;audio.play().then(()=>{t0=performance.now()-audio.currentTime*1000}).catch(()=>{})}};
   let started=false;
-  box.addEventListener("click",()=>{if(!started){started=true;start(true);return}if(box.classList.contains("warp"))return;warp()});
+  box.addEventListener("click",()=>{if(!started){started=true;start(true)}});  // az intro nem ugorható át, csak az indításhoz kell koppintani
   if(!soundOn||!SND||reduce){started=true;start(false);return}
   audio=new Audio(SND);audio.preload="auto";
   audio.play().then(()=>{started=true;start(true)}).catch(()=>{
