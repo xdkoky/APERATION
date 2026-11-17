@@ -335,6 +335,7 @@ input[type=time],select{height:40px;border-radius:12px;border:1px solid var(--ha
 .tl-sb{float:right;display:flex;gap:4px;margin:1px 0 4px 10px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 /*__EDITOR_CSS__*/
+/*__GLASS_CSS__*/
 </style>
 
 <div class="aura" aria-hidden="true"><i></i><i></i></div>
@@ -368,6 +369,7 @@ input[type=time],select{height:40px;border-radius:12px;border:1px solid var(--ha
   <div class="p-mid"><div class="p-label" id="p-label"></div><div class="p-time num" id="p-time"></div><div class="cap" id="p-cap"></div></div>
   <div class="p-foot" id="p-foot"></div>
 </div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><filter id="lglass" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feImage href="__LGMAP__" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="map"/><feDisplacementMap in="SourceGraphic" in2="map" scale="34" xChannelSelector="R" yChannelSelector="G" result="d"/><feGaussianBlur in="d" stdDeviation="10" edgeMode="duplicate" result="b"/><feColorMatrix in="b" type="saturate" values="1.9" result="s"/><feComponentTransfer in="s"><feFuncR type="linear" slope="1.06"/><feFuncG type="linear" slope="1.06"/><feFuncB type="linear" slope="1.06"/></feComponentTransfer></filter></svg>
 <div class="tour" id="tour" hidden><div class="tour-hole none" id="tourhole"></div><div class="tour-card" id="tourcard" role="dialog" aria-modal="true" aria-labelledby="tourh"></div></div>
 <div class="viewer" id="viewer" hidden>
   <div class="v-stage" id="vstage"><img id="vimg" alt="" draggable="false"></div>
@@ -383,6 +385,8 @@ const MINTA=/*__MINTA__*/null;
 const XLSX_SRC=/*__XLSX__*/"https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
 const SABLON_URL="Forgatasi_sablon.xlsx";
 let D=null;
+// fénytörés az üveg peremén: csak Chromium tudja (backdrop-filter: url()), máshol sima üveg
+try{if(navigator.userAgentData&&navigator.userAgentData.brands.some(b=>/Chromium/.test(b.brand)))document.documentElement.classList.add("refract")}catch(e){}
 /* ---------- alapok ---------- */
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));

@@ -19,6 +19,20 @@ MINTA = json.load(open(os.path.join(HERE, "minta.json"), encoding="utf-8"))
 # ---------- 1) app.html ----------
 tpl = open(os.path.join(HERE, "app_template.html"), encoding="utf-8").read()
 tpl = tpl.replace("/*__EDITOR_CSS__*/", open(os.path.join(HERE, "editor.css"), encoding="utf-8").read())
+# üveg-fénytörés térképe (PNG; Chromium csak ezt fogadja el backdrop-filterben): a peremen befelé húz, középen semleges
+def lgmap(W=256, e=0.16):
+    import base64, io
+    from PIL import ImageFilter
+    f = lambda t: (1 - t / e) ** 2 if t < e else (-((t - (1 - e)) / e) ** 2 if t > 1 - e else 0)
+    im = Image.new("RGB", (W, W))
+    px = im.load()
+    for y in range(W):
+        for x in range(W):
+            px[x, y] = (int(128 + 127 * f(x / (W - 1))), int(128 + 127 * f(y / (W - 1))), 128)
+    b = io.BytesIO(); im.filter(ImageFilter.GaussianBlur(2)).save(b, "PNG")
+    return "data:image/png;base64," + base64.b64encode(b.getvalue()).decode()
+tpl = tpl.replace("__LGMAP__", lgmap())
+tpl = tpl.replace("/*__GLASS_CSS__*/", open(os.path.join(HERE, "glass.css"), encoding="utf-8").read())
 tpl = tpl.replace("/*__EDITOR_JS__*/", open(os.path.join(HERE, "editor.js"), encoding="utf-8").read())
 tpl = tpl.replace("const MINTA=/*__MINTA__*/null;", "const MINTA=" + json.dumps(MINTA, ensure_ascii=False) + ";")
 assert "/*__" not in tpl.replace("/*__XLSX__*/", "")
