@@ -14,10 +14,9 @@ const PERMS=[["most","Most"],["idorend","Időrend"],["szkript","Forgatókönyv"]
 const PERM_HELP={most:"a Most nézet",idorend:"a napi időrend",szkript:"a forgatókönyv szövege és a sztori",stab:"a stáblista",phones:"a telefonszámok",images:"storyboard és vilkó",props:"kellékek, kontinuitás",notes:"megjegyzések, fontos tudnivalók",lights:"a fények leírása",takes:"take stopper, jó take csillag, jegyzet minden take-hez (a napot nem vezérli)",control:"Kész, Vissza, +5′, take, érkezés"};
 const permOf=s=>Object.fromEntries(PERMS.map(([k])=>[k,s.split(" ").includes(k)]));
 const ALLPERM=permOf(PERMS.map(p=>p[0]).join(" "));
-const PRESETS=[["2nd AD","most idorend szkript stab phones images props notes lights takes control"],["Rendező","most idorend szkript stab phones images props notes lights"],
-  ["Operatőr","most idorend szkript stab phones images props notes lights"],["Szkriptes","most idorend szkript stab images props notes takes"],
-  ["Világítás","most idorend stab images notes lights"],["Berendező, kellékes","most idorend stab images props notes"],["Smink, jelmez","most idorend stab notes"],
-  ["Hang","most idorend szkript stab notes"],["Színész","most idorend szkript"],["Stáb (általános)","most idorend"]];
+const PRESETS=[["Rendező","most idorend szkript stab phones images props notes lights"],
+  ["1st AD","most idorend szkript stab phones images props notes lights takes control"],["2nd AD","most idorend szkript stab phones images props notes lights takes control"],
+  ["Szkriptes","most idorend szkript stab images props notes takes"],["Stáb (általános)","most idorend stab notes"]];
 const RAND=(n,al="ABCDEFGHJKLMNPQRSTUVWXYZ23456789")=>{const a=new Uint32Array(n);crypto.getRandomValues(a);return[...a].map(x=>al[x%al.length]).join("")};
 const RID=n=>RAND(n,"abcdefghijkmnpqrstuvwxyz23456789");
 const fmtCode=c=>c?c.slice(0,4)+"-"+c.slice(4):"";
@@ -138,7 +137,7 @@ function mpListen(){
       MP.roles=q.docs.filter(d=>d.id!=="__admin").map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.order||0)-(b.order||0));
       const a=q.docs.find(d=>d.id==="__admin");MP.adminCode=a?a.data().code:"";
       // régebbi projektek: a szkriptes és a 2nd AD megkapja a take-naplót
-      MP.roles.forEach(r=>{if(r.perm&&r.perm.takes===undefined){r.perm.takes=/szkript|2nd ad/i.test(r.name||"");mpRoleSave(r)}});
+      MP.roles.forEach(r=>{if(r.perm&&r.perm.takes===undefined){r.perm.takes=/szkript|1st ad|2nd ad/i.test(r.name||"");mpRoleSave(r)}});
       mpTeamRefresh()},mpErr));
     unsubs.push(r0.collection("members").onSnapshot(q=>{MP.members=q.docs.map(d=>({uid:d.id,...d.data()}));mpTeamRefresh()},mpErr));
   }
@@ -221,7 +220,7 @@ function teamHTML(){
     <a class="btn solid" href="${PAGES_URL}" target="_blank" rel="noopener">${ic("arrow",16)}Telepíthető változat megnyitása</a>
     <p class="muted small">Ott a terved Excelként átvihető: itt Fájl → Terv mentése Excelbe, ott Excel betöltése.</p></section>`;
   if(!MP.on)return`<section class="card" id="teamcard"><h2>Közös munka a stábbal</h2>
-    <p class="muted">Ha megosztod a tervet, minden pozíció (2nd AD, operatőr, szkriptes, kellékes, színész…) kap egy <b>belépőkódot</b>. Aki beírja, a saját telefonján élőben látja a napot: mi megy most, mennyit csúsztunk, mi jön. Te döntöd el pozíciónként, <b>ki mit lát</b>, és ki <b>vezérelheti</b> a napot (Kész, +5′, take, érkezések).</p>
+    <p class="muted">Ha megosztod a tervet, minden pozíció (rendező, 1st AD, 2nd AD, szkriptes, általános stáb) kap egy <b>belépőkódot</b>. Aki beírja, a saját telefonján élőben látja a napot: mi megy most, mennyit csúsztunk, mi jön. Te döntöd el pozíciónként, <b>ki mit lát</b>, és ki <b>vezérelheti</b> a napot (Kész, +5′, take, érkezések).</p>
     <ul class="list"><li>A rejtett adatot (pl. telefonszám, forgatókönyv) a szerver el sem küldi annak, akinek nem szabad látnia.</li><li>Térerő nélkül is megy tovább; amikor visszajön a net, szinkronizál.</li><li>A terv szerkesztése nálad marad. A változtatások pár másodperc múlva mindenkinél megjelennek.</li></ul>
     <button class="btn solid" type="button" data-do="mpcreate" ${P.blocks.length?"":"disabled"}>${ic("users",16)}Közös projekt indítása</button>
     ${P.blocks.length?"":`<p class="muted small">Előbb legyen egy terv a Fájl vagy az Időrend részen.</p>`}</section>`;
@@ -291,7 +290,7 @@ function pvHTML(){
   if(!P.blocks.length||isMember())return"";
   const rs=pvRoles();
   return`<section class="card" id="pvcard"><h2>Szerepek kipróbálása</h2>
-    <p class="muted small">Nézd meg egyedül, mit lát és mit csinálhat egy pozíció a telefonján (pl. a szkriptes mérheti és csillagozhatja a take-eket, a színész csak a napot és a forgatókönyvet látja). Próba közben semmi nem mentődik és nem megy ki a stábnak; a kilépéskor minden visszaáll.</p>
+    <p class="muted small">Nézd meg egyedül, mit lát és mit csinálhat egy pozíció a telefonján (pl. a szkriptes mérheti és csillagozhatja a take-eket, az általános stáb csak a napot és a stáblistát látja). Próba közben semmi nem mentődik és nem megy ki a stábnak; a kilépéskor minden visszaáll.</p>
     <div class="pvlist">${rs.map((r,i)=>`<button type="button" class="btn sm" data-pv="${i}">${ic("play",13)}${esc(r.name)}</button>`).join("")}</div></section>`;
 }
 function pvStart(i){
