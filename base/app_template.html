@@ -336,6 +336,7 @@ input[type=time],select,#simt{height:40px;border-radius:12px;border:1px solid va
 .tl-sb{float:right;display:flex;gap:4px;margin:1px 0 4px 10px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 /*__EDITOR_CSS__*/
+/*__MULTI_CSS__*/
 .credit-line{margin:22px 0 6px;text-align:center;font-size:11.5px;letter-spacing:.02em;color:var(--fg-3)}
 .credit p+p{margin-top:2px}
 /*__GLASS_CSS__*/
@@ -438,7 +439,7 @@ function tod(){
   const d=new Date();return d.getHours()*60+d.getMinutes()+d.getSeconds()/60+d.getMilliseconds()/60000;
 }
 const isShootDay=()=>{const d=new Date();return d.getFullYear()===SHOOT_DATE.getFullYear()&&d.getMonth()===SHOOT_DATE.getMonth()&&d.getDate()===SHOOT_DATE.getDate()};
-const live=()=>st.sim.on||st.force||isShootDay();
+const live=()=>st.sim.on||st.force||isShootDay()||(MP.on&&!!st.cur);
 const dEff=b=>b.d+(st.ext[b.i]||0);
 
 /* ---------- vetítés: mikor mi lesz, ha így haladunk ---------- */
@@ -467,6 +468,7 @@ const nextLabel=b=>{const nx=B[nextIdx(b.i)];if(!nx)return"WRAP";if(nx.type==="m
 function startDay(){st.cur={i:nextIdx(-1),at:tod()};save();renderAll();cue(1)}
 let lastAdv=0;
 function advance(){
+  if(RO())return;
   if(Date.now()-lastAdv<700)return;lastAdv=Date.now();
   if(!st.cur)return startDay();
   const t=tod(),b=curBlock();if(!b)return;
@@ -475,12 +477,14 @@ function advance(){
   toast(`Lezárva: ${b.label} · ${Math.max(1,Math.round(t-st.act[b.i].s))}′`,{action:"Visszavonás",fn:back});
 }
 function back(){
+  if(RO())return;
   if(!st.cur)return;
   let j=-1;for(const k of Object.keys(st.act).map(Number))if(k<st.cur.i&&k>j)j=k;
   if(j<0){st.cur=null;save();return renderAll()}
   st.cur={i:j,at:st.act[j].s};delete st.act[j];save();renderAll();
 }
 function jump(j){
+  if(RO())return;
   const t=tod(),b=curBlock();
   if(b)st.act[b.i]={s:st.cur.at,e:t};
   for(const k of Object.keys(st.act).map(Number))if(k>=j)delete st.act[k];
@@ -488,13 +492,14 @@ function jump(j){
   delete st.skip[j];st.cur={i:j,at:t};save();renderAll();toast(`Most megy: ${B[j].label}`);
 }
 function toggleSkip(j,quiet){
+  if(RO())return;
   if(st.cur&&j===st.cur.i)return;
   if(st.skip[j])delete st.skip[j];else st.skip[j]=true;save();renderAll();
   if(!quiet)toast(st.skip[j]?`Kihagyva: ${B[j].label} (−${B[j].d}′)`:`Visszavéve: ${B[j].label}`,{action:"Visszavonás",fn:()=>toggleSkip(j,true)});
 }
-function extend(m){const b=curBlock();if(!b)return;st.ext[b.i]=Math.max(0,(st.ext[b.i]||0)+m);if(!st.ext[b.i])delete st.ext[b.i];lastAlert="";save();renderAll();
+function extend(m){if(RO())return;const b=curBlock();if(!b)return;st.ext[b.i]=Math.max(0,(st.ext[b.i]||0)+m);if(!st.ext[b.i])delete st.ext[b.i];lastAlert="";save();renderAll();
   toast(m>0?`+${m} perc erre a blokkra · várható wrap ${hm(project().wrap)}`:"Hosszabbítás törölve",m>0?{action:"Visszavonás",fn:()=>extend(-m)}:{})}
-function startSW(){if(st.sw)return;st.sw={at:tod(),i:st.cur?st.cur.i:"gen"};save();renderMost()}
+function startSW(){if(st.sw||RO())return;st.sw={at:tod(),i:st.cur?st.cur.i:"gen"};save();renderMost()}
 function stopSW(silent){if(!st.sw)return;const d=(tod()-st.sw.at)*60,k=st.sw.i;(st.takes[k]=st.takes[k]||[]).push({d,ok:false});st.sw=null;save();if(!silent)renderMost()}
 
 /* ---------- hang, rezgés, ébren tartás, toast ---------- */
@@ -641,8 +646,8 @@ function bindMost(v){
   const on=(sel,fn)=>v.querySelectorAll(sel).forEach(x=>x.onclick=e=>fn(x,e));
   on("#ring",()=>present(true));on("#tourbtn",()=>tourStart());on("#extclr",()=>extend(-(st.ext[st.cur.i]||0)));
   on("#swgo",()=>st.sw?stopSW():startSW());
-  on("[data-ok]",x=>{const[k,n]=x.dataset.ok.split("|"),tk=st.takes[k]&&st.takes[k][+n];if(tk){tk.ok=!tk.ok;save();renderMost()}});
-  on("[data-del]",x=>{const[k,n]=x.dataset.del.split("|");st.takes[k]&&st.takes[k].splice(+n,1);save();renderMost()});
+  on("[data-ok]",x=>{if(RO())return;const[k,n]=x.dataset.ok.split("|"),tk=st.takes[k]&&st.takes[k][+n];if(tk){tk.ok=!tk.ok;save();renderMost()}});
+  on("[data-del]",x=>{if(RO())return;const[k,n]=x.dataset.del.split("|");st.takes[k]&&st.takes[k].splice(+n,1);save();renderMost()});
   on("[data-seg]",x=>{detailSeg=x.dataset.seg;renderMost()});
   on("[data-unskip]",x=>toggleSkip(+x.dataset.unskip));
 }
@@ -818,7 +823,7 @@ function renderCrew(){
     <section class="card"><h2>Szereplők</h2><div class="rows">${D.cast.map(c=>`<div class="row">${chk(c.name)}<div><b>${esc(c.name)}</b><small>${esc(c.role)}</small><div class="steps" style="margin-top:6px">${[["Érkezés",c.arr],["Ruha",c.ruha],["Smink",c.smink],["Haj",c.haj],["Setre",c.onset]].filter(x=>toMin(x[1])!=null).map(([n,x])=>`<span class="step">${n} <b>${esc(x)}</b></span>`).join("")}</div></div><span></span></div>`).join("")}</div></section>
     ${contacts.length?`<section class="card"><h2>Kulcs-telefonszámok</h2><div class="rows">${contacts.map(c=>`<div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div><b>${esc(c.name)}</b><small>${esc(c.role)}</small><div class="phone">${esc(c.phone)}</div></div><button class="btn sm" type="button" data-copy="${esc(c.phone)}">${ic("copy",15)}Másol</button></div>`).join("")}</div></section>`:""}
     </div><div class="stack"><section class="card" style="gap:0"><h2 style="margin-bottom:12px">Stáb</h2>${deps.map(d=>`<div class="dept"><span class="cap">${esc(d)}</span></div><div class="rows">${D.crew.filter(c=>c.dept===d).map(c=>{const m=toMin(c.arr),late=live()&&!st.checkin[c.name]&&m!=null&&t>m+5;return`<div class="row">${chk(c.name)}<div><b>${esc(c.name)}</b><small>${esc(c.pos)}</small></div><span class="t ${late?"late":""}">${esc(c.arr)}</span></div>`}).join("")}</div>`).join("")}</section></div></div>`;
-  v.querySelectorAll("[data-in]").forEach(x=>x.onchange=()=>{st.checkin[x.dataset.in]=x.checked;save();renderCrew()});
+  v.querySelectorAll("[data-in]").forEach(x=>x.onchange=()=>{if(RO()){x.checked=!x.checked;return}st.checkin[x.dataset.in]=x.checked;save();renderCrew()});
   v.querySelectorAll("[data-copy]").forEach(x=>x.onclick=()=>{const p=x.dataset.copy;(navigator.clipboard?navigator.clipboard.writeText(p):Promise.reject()).then(()=>toast("Kimásolva: "+p,{tone:"ok"}),()=>toast("Tartsd nyomva a számot a másoláshoz"))});
 }
 
@@ -829,7 +834,8 @@ function renderInfo(){
   v.innerHTML=`<div class="vh">Info</div><div class="grid"><div class="stack">
     <section class="card"><div class="card-head"><h2>Így működik</h2><button class="btn sm solid" type="button" id="tourgo">${ic("play",14)}Bemutató · 2 perc</button></div>
       ${B.length?`<ul class="list"><li><b>Kész</b>: lezárja a mostani blokkot, és indítja a következőt.</li><li><b>‹</b> visszalép az előző blokkra. <b>+5′</b> öt percet ad a mostanihoz.</li><li>Zöld: terv szerint. Narancs: késés, de belefér a tartalékba. Piros: a wrap ${hm(TARGET)} utánra csúszik, vagy a blokk kerete lejárt.</li><li>A gyűrűre koppintva teljes képernyős óra a stábnak.</li><li>Az Időrendben egy sorra koppintva odaugorhatsz vagy kihagyhatod.</li></ul>`:`<ul class="list"><li>Először tölts be egy <b>Excel-táblázatot</b> a <a href="#most">Kezdés</a> oldalon, vagy írd be a napot a <a href="#terv">Terv</a> fülön.</li><li>Ha még csak ismerkedsz, nyisd meg a <b>mintát</b>, vagy nézd meg a bemutatót.</li></ul>`}</section>
-    ${B.length?`<section class="card"><h2>Próba mód</h2><p class="muted small">Gyorsított órával végigpróbálhatod a napot. A próba befejezése mindent nulláz, hogy a forgatás tiszta lappal induljon.</p>
+    ${B.length&&MP.on?`<section class="card"><h2>Próba mód</h2><p class="muted small">Közös projektben a próba mód ki van kapcsolva, hogy ne zavarja a stáb élő képét. Próbához lépj ki, vagy használj egy másik eszközt.</p></section>`:""}
+    ${B.length&&!MP.on?`<section class="card"><h2>Próba mód</h2><p class="muted small">Gyorsított órával végigpróbálhatod a napot. A próba befejezése mindent nulláz, hogy a forgatás tiszta lappal induljon.</p>
       <div class="field"><label class="field">Kezdés <input type="text" inputmode="numeric" id="simt" value="${hm(st.sim.on?st.sim.start:D.plan.call-5)}" placeholder="8:25" style="width:84px" aria-label="Kezdés időpontja (óra:perc)"></label><label class="field">Sebesség <select id="simsp">${[1,5,10,30,60].map(x=>`<option value="${x}" ${st.sim.speed===x?"selected":""}>${x}×</option>`).join("")}</select></label></div>
       <div class="field"><button class="btn ${st.sim.on?"":"solid"}" type="button" id="simon">${st.sim.on?"Újraindítás ezzel":"Próba indítása"}</button>${st.sim.on?`<button class="btn danger" type="button" id="simoff">Próba befejezése és nullázás</button>`:""}</div></section>`:""}
     <section class="card"><h2>Jelzések</h2><div class="rows">
@@ -837,10 +843,11 @@ function renderInfo(){
       <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div><b>Ma forgatunk</b><small>${HASDATE?`Kapcsold be, ha nem a tervben szereplő napon (${SHOOT_DATE.toLocaleDateString("hu-HU",{month:"long",day:"numeric"})}) forgattok`:"Nincs dátum a tervben: a forgatás napján kapcsold be"}</small></div><input type="checkbox" class="sw" id="force" ${st.force?"checked":""} aria-label="Ma forgatunk"></div></div>
       <div class="field"><button class="btn sm" type="button" id="sndtest">Hang kipróbálása</button></div>
       <p class="muted small">A képernyőt az app ébren tartja, amíg nyitva van. Ha mégis elsötétül, koppints egyet.</p></section>
-    ${B.length?`<section class="card"><h2>Nap nullázása</h2><p class="muted small" id="savest">A terv és a nap állása ezen az eszközön mentődik. Forrás: ${esc(D.src)}</p>
+    ${B.length&&canCtl()?`<section class="card"><h2>Nap nullázása</h2><p class="muted small" id="savest">A terv és a nap állása ezen az eszközön mentődik. Forrás: ${esc(D.src)}</p>
       ${confirmReset?`<p style="color:var(--late);font-weight:650">Biztosan nullázod? A lezárt blokkok, take-ek és érkezések törlődnek.</p><div class="field"><button class="btn danger" type="button" id="rsyes">Igen, nullázom</button><button class="btn" type="button" id="rsno">Mégse</button></div>`:`<div class="field"><button class="btn danger" type="button" id="rs">Nap nullázása</button></div>`}</section>`:""}
     </div><div class="stack">
-    ${B.length?`<section class="card"><div class="card-head"><h2>${esc(D.title||"Forgatási nap")}</h2><a class="btn sm" href="#terv">${ic("edit",14)}Szerkesztés</a></div><div class="rows">
+    ${mpInfoCard()}
+    ${B.length?`<section class="card"><div class="card-head"><h2>${esc(D.title||"Forgatási nap")}</h2>${isMember()?"":`<a class="btn sm" href="#terv">${ic("edit",14)}Szerkesztés</a>`}</div><div class="rows">
       ${[["Dátum",HASDATE?SHOOT_DATE.toLocaleDateString("hu-HU",{year:"numeric",month:"long",day:"numeric",weekday:"long"}):""],["Crew call",hm(D.plan.call)],["Tervezett wrap",hm(PLAN_WRAP)],["Wrap-határ",hm(TARGET)],["Helyszín",D.location],["Parkolás",D.parking]].filter(x=>x[1]).map(([k,x])=>`<div class="row" style="grid-template-columns:110px minmax(0,1fr)"><small>${k}</small><b>${esc(x)}</b></div>`).join("")}</div></section>
     `:""}${D.notes.length?`<section class="card"><h2>Fontos</h2>${propList(D.notes)}</section>`:""}
     ${D.boards&&D.boards.length?`<section class="card"><div class="card-head"><h2>Storyboard</h2><span class="chip neutral num">${D.boards.length} rajz</span></div><div class="vkgrid sb" data-gallery>${D.boards.map(x=>`<button type="button" data-full="${x.f}" data-thumb="${x.t}" data-cap="Storyboard · ${esc(x.id)}"><img src="${x.t}" alt="Storyboard ${esc(x.id)}" loading="lazy"><span>${esc(x.id)}</span></button>`).join("")}</div><p class="muted small">A storyboard-képek forgatási sorrendben.</p></section>`:""}
@@ -869,7 +876,10 @@ const VIEWS=[["most","Most","now"],["idorend","Időrend","list"],["szkript","Szk
 // Terv nélkül csak az kap fület, aminek van értelme: Kezdés (betöltés), Terv (beírás), Info.
 const VIEWS0=[["most","Kezdés","upload"],["terv","Terv","edit"],["info","Info","sliders"]];
 let tabKey="";
-function renderTabs(){const vs=B.length?VIEWS:VIEWS0,k=vs.map(v=>v[1]).join();if(k===tabKey)return;tabKey=k;
+function tabList(){
+  if(isMember()){if(!B.length)return VIEWS0.filter(v=>v[0]!=="terv");const pm=MP.perm||{};const v=VIEWS.filter(([k])=>k==="info"||(k!=="terv"&&pm[k]));return v.length>1?v:[["most","Most","now"],["info","Info","sliders"]]}
+  return B.length?VIEWS:VIEWS0}
+function renderTabs(){const vs=tabList(),k=vs.map(v=>v[1]).join();if(k===tabKey)return;tabKey=k;
   const t=$("#tabs");TB.init=false;
   t.innerHTML=`<i class="tab-ind" aria-hidden="true"></i>`+vs.map(([k,l,i])=>`<a href="#${k}" draggable="false">${ic(i,21)}<span>${l}</span></a>`).join("")
     +`<div class="tab-hi" aria-hidden="true">${vs.map(([k,l,i])=>`<span class="ta">${ic(i,21)}<span>${l}</span></span>`).join("")}</div>`;
@@ -925,7 +935,8 @@ addEventListener("resize",()=>placeInd(false));
 let view="most";
 function route(scroll){
   renderTabs();
-  const h=location.hash.slice(1),vs=B.length?VIEWS:VIEWS0;view=vs.some(v=>v[0]===h)?h:"most";if(h&&h!==view)history.replaceState(null,"","#"+view);
+  const h=location.hash.slice(1),vs=tabList();view=vs.some(v=>v[0]===h)?h:vs[0][0];
+  document.body.classList.toggle("ro",RO()&&!tour);if(h&&h!==view)history.replaceState(null,"","#"+view);
   $$("[data-view]").forEach(s=>s.hidden=s.dataset.view!==view);
   $$(".tabs a").forEach(a=>{if(a.getAttribute("href")==="#"+view)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
   placeInd();
@@ -940,7 +951,7 @@ function route(scroll){
 const renderAll=()=>route(false);
 addEventListener("hashchange",()=>{openRow=null;route(!tour);if(tour)tourPlace()});
 
-const cloud={ok:false};function cloudSave(){}
+const cloud={ok:false};function cloudSave(){mpPush()}
 
 /* ---------- bemutató: mintanapon vezet végig, a valódi állapotot nem érinti ---------- */
 const TOUR_KEY="diszpo-app-tour-v1";
@@ -1028,6 +1039,7 @@ function tourEnd(startDemo){
   P=normP(JSON.parse(t.pB));applyProject();editSec=t.ui.editSec;openEB=t.ui.openEB;pending=t.ui.pending;
   if(t.cloud&&t.cloud.upd>st.upd){try{const x=JSON.parse(t.cloud.json);if(x&&x.v===1)st=Object.assign(fresh(),x)}catch(e){}}
   try{localStorage.setItem(TOUR_KEY,"1")}catch(e){}
+  setTimeout(mpFlush,0);
   lastAlert="";detailSeg="setre";lastHero=null;
   if(startDemo){st.sim={on:true,start:D.plan.call-3,speed:10,base:Date.now()};save()}
   const back=t.tmpP?"terv":"most";if(t.tmpP)editSec="fajl";

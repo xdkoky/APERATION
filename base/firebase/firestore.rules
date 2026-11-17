@@ -1,0 +1,67 @@
+rules_version = '2';
+// Diszpó App – közös munka (multiplayer) szabályai.
+// Elv: minden belépés titkos kóddal történik. A kód (codes/{kód}) megmondja, melyik projekt melyik pozíciója.
+// Aki a kóddal csatlakozott, annak a pozíciójához tartozó nézetet (views/{pozíció}) olvashatja, másét nem.
+// A projekt adminja (a létrehozó és a szerkesztői kóddal belépők) mindent lát és szerkeszt.
+// A nap állását (live/state) mindenki olvassa, de csak az írhatja, akinek a pozíciója vezérelhet.
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function signed() { return request.auth != null; }
+    function P(p) { return /databases/$(db)/documents/projects/$(p); }
+    function memPath(p) { return /databases/$(db)/documents/projects/$(p)/members/$(request.auth.uid); }
+    function isMem(p) { return signed() && exists(memPath(p)); }
+    function mem(p) { return get(memPath(p)).data; }
+    function isOwner(p) { return signed() && get(P(p)).data.owner == request.auth.uid; }
+    function isAdmin(p) { return isOwner(p) || (isMem(p) && mem(p).roleId == '__admin'); }
+    function role(p) { return get(/databases/$(db)/documents/projects/$(p)/roles/$(mem(p).roleId)).data; }
+    function canCtl(p) { return isAdmin(p) || (isMem(p) && role(p).perm.control == true); }
+    function code(c) { return get(/databases/$(db)/documents/codes/$(c)).data; }
+
+    // Belépőkódok: csak pontos kóddal kérhetők le, listázni nem lehet őket.
+    match /codes/{c} {
+      allow get: if signed();
+      allow list: if false;
+      allow create: if signed() && c.size() >= 8 && isAdmin(request.resource.data.pid);
+      allow update: if false;
+      allow delete: if signed() && isAdmin(resource.data.pid);
+    }
+
+    match /projects/{p} {
+      allow get: if isMem(p) || isOwner(p);
+      allow list: if false;
+      allow create: if signed() && request.resource.data.owner == request.auth.uid;
+      allow update: if isAdmin(p) && request.resource.data.owner == resource.data.owner;
+      allow delete: if isOwner(p);
+
+      // Tagság: csak érvényes kóddal, és csak a kódhoz tartozó pozícióval jön létre.
+      match /members/{uid} {
+        allow get: if signed() && (uid == request.auth.uid || isAdmin(p));
+        allow list: if isAdmin(p);
+        allow create: if signed() && uid == request.auth.uid
+          && code(request.resource.data.code).pid == p
+          && code(request.resource.data.code).roleId == request.resource.data.roleId;
+        allow update: if isAdmin(p)
+          || (signed() && uid == request.auth.uid && request.resource.data.roleId == resource.data.roleId && request.resource.data.code == resource.data.code);
+        allow delete: if isAdmin(p) || (signed() && uid == request.auth.uid);
+      }
+
+      // Pozíciók beállításai (ki mit lát, vezérelhet-e): csak az admin látja és írja.
+      match /roles/{r} {
+        allow read, write: if isAdmin(p);
+      }
+
+      // Pozíciónkénti, már megszűrt terv. A tag csak a sajátját kapja meg.
+      match /views/{r} {
+        allow get: if isAdmin(p) || (isMem(p) && mem(p).roleId == r);
+        allow list: if isAdmin(p);
+        allow write: if isAdmin(p);
+      }
+
+      // A nap állása (melyik blokk megy, kész blokkok, take-ek, érkezések).
+      match /live/{d} {
+        allow read: if isMem(p) || isAdmin(p);
+        allow write: if canCtl(p);
+      }
+    }
+  }
+}

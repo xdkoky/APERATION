@@ -33,9 +33,10 @@ def lgmap(W=256, e=0.16):
     return "data:image/png;base64," + base64.b64encode(b.getvalue()).decode()
 tpl = tpl.replace("__LGMAP__", lgmap())
 tpl = tpl.replace("/*__GLASS_CSS__*/", open(os.path.join(HERE, "glass.css"), encoding="utf-8").read())
-tpl = tpl.replace("/*__EDITOR_JS__*/", open(os.path.join(HERE, "editor.js"), encoding="utf-8").read())
+tpl = tpl.replace("/*__MULTI_CSS__*/", open(os.path.join(HERE, "multi.css"), encoding="utf-8").read())
+tpl = tpl.replace("/*__EDITOR_JS__*/", open(os.path.join(HERE, "multi.js"), encoding="utf-8").read() + "\n" + open(os.path.join(HERE, "editor.js"), encoding="utf-8").read())
 tpl = tpl.replace("const MINTA=/*__MINTA__*/null;", "const MINTA=" + json.dumps(MINTA, ensure_ascii=False) + ";")
-assert "/*__" not in tpl.replace("/*__XLSX__*/", "")
+assert "/*__" not in tpl.replace("/*__XLSX__*/", "").replace("/*__FBCFG__*/", "").replace("/*__FBSRC__*/", "")
 open(os.path.join(HERE, "app.html"), "w", encoding="utf-8").write(tpl)
 print("kész: base/app.html")
 
@@ -189,6 +190,24 @@ shutil.copy(vend, os.path.join(PAGES, "vendor", "xlsx.full.min.js"))
 shutil.copy(SABLON, os.path.join(PAGES, "Forgatasi_sablon.xlsx"))
 
 src = tpl.replace('/*__XLSX__*/"' + XLSX_CDN + '"', '"vendor/xlsx.full.min.js"')
+# közös munka: Firebase SDK helyben (npm-ből), konfiguráció a base/firebase/config.json-ból (ha van)
+FBV = "11.10.0"
+fbfiles = ["firebase-app-compat.js", "firebase-auth-compat.js", "firebase-firestore-compat.js"]
+fbcache = os.path.join(HERE, ".cache", "firebase-" + FBV)
+if not all(os.path.exists(os.path.join(fbcache, f)) for f in fbfiles):
+    os.makedirs(fbcache, exist_ok=True)
+    subprocess.run(["npm", "pack", "--silent", f"firebase@{FBV}", "--pack-destination", fbcache], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    tgz = [f for f in os.listdir(fbcache) if f.endswith(".tgz")][0]
+    subprocess.run(["tar", "-xzf", tgz] + [f"package/{f}" for f in fbfiles], cwd=fbcache, check=True)
+    for f in fbfiles:
+        shutil.move(os.path.join(fbcache, "package", f), os.path.join(fbcache, f))
+for f in fbfiles:
+    shutil.copy(os.path.join(fbcache, f), os.path.join(PAGES, "vendor", f))
+cfgp = os.path.join(HERE, "firebase", "config.json")
+fbcfg = json.load(open(cfgp)) if os.path.exists(cfgp) else None
+src = src.replace("const FBCFG=/*__FBCFG__*/null;", "const FBCFG=" + json.dumps(fbcfg) + ";")
+src = src.replace("const FB_SRC=/*__FBSRC__*/null;", "const FB_SRC=" + json.dumps(["vendor/" + f for f in fbfiles]) + ";")
+print("közös munka:", "beállítva (" + fbcfg.get("projectId", "?") + ")" if fbcfg else "nincs config.json, csak emulátorral próbálható")
 href = re.search(r'<link rel="stylesheet" href="(https://fonts\.googleapis\.com[^"]+)"', src).group(1).replace("&amp;", "&")
 UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36"
 gcss = subprocess.check_output(["curl", "-sS", "-A", UA, href]).decode()

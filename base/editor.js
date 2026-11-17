@@ -50,7 +50,7 @@ function applyProject(){
   if(st.cur&&st.cur.i>=B.length)st.cur=B.length?{...st.cur,i:B.length-1}:null;
   document.title=(p.title?p.title+" · ":"")+"Diszpó App";
 }
-function saveP(){if(tour)return;try{localStorage.setItem(PKEY,JSON.stringify(P))}catch(e){toast("Nem sikerült menteni ezen az eszközön (betelt a tárhely?).",{tone:"late"})}}
+function saveP(){if(tour)return;if(isMpAdmin()&&!mpApplying)mpPublishSoon();try{localStorage.setItem(PKEY,JSON.stringify(P))}catch(e){toast("Nem sikerült menteni ezen az eszközön (betelt a tárhely?).",{tone:"late"})}}
 function commit(){saveP();applyProject();tick(true);$$("[data-bs]").forEach(x=>{const b=B[+x.dataset.bs];if(b)x.textContent=hm(b.s)});const w=$("#edwrap");w&&(w.innerHTML=wrapLine())}
 let cTimer=null;const commitSoon=()=>{clearTimeout(cTimer);cTimer=setTimeout(commit,350)};
 function setProject(p,o={}){P=normP(p);if(o.reset){const s=st.sound;st=fresh();st.sound=s;save()}saveP();applyProject();loadImgs();lastHero=null;renderAll()}
@@ -258,6 +258,9 @@ function parseScript(txt){
 
 /* ---------- üdvözlő ---------- */
 function renderWelcome(v){
+  if(isMember()){v.innerHTML=`<div class="welcome"><div class="vh" style="margin-bottom:6px">${esc(MP.title||"Közös projekt")}</div>
+    <section class="card"><h2>${MP.ready?"Várakozás a tervre…":"Kapcsolódás…"}</h2><p class="muted">Csatlakoztál${MP.roleName?` <b>${esc(MP.roleName)}</b> pozícióban`:""}. Amint a szerkesztő terve megérkezik, itt látod a napot. Ha sokáig nem jön, ellenőrizd a netet.</p>
+    <button type="button" class="btn danger" data-do="mpleave">Kilépés a közös projektből</button></section>${creditLine()}</div>`;return}
   v.innerHTML=`<div class="welcome">
     <div class="vh" style="margin-bottom:6px">Diszpó App</div>
     <p class="muted">Egy forgatási nap vezérlője: óra, visszaszámláló, várható wrap, shotonként a beállítás, a fény, a kellék és a szkript. Kezdd egy Excel-táblázattal, vagy írd be itt a napot.</p>
@@ -268,6 +271,7 @@ function renderWelcome(v){
       <button class="btn" type="button" data-do="sablon">${ic("down",16)}Sablon letöltése</button>
       <button class="btn" type="button" data-do="tour">${ic("play",16)}Bemutató · 2 perc</button>
     </div>
+    ${MP_AVAIL?`<section class="card joincard"><div class="card-head"><h2>Kódot kaptál a stábtól?</h2><button class="btn sm solid" type="button" data-do="joinform">${ic("users",14)}Csatlakozás kóddal</button></div><div id="joinbox" hidden>${joinHTML()}</div></section>`:""}
     <p class="muted small">A sablonnal működik a legbiztosabban, de a saját táblázatodat is megpróbálja felismerni: kell egy fejlécsor <b>Perc</b> (vagy Kezdés), <b>Típus</b> és <b>Blokk / shot</b> oszlopokkal. A terv csak ezen az eszközön tárolódik.</p>
     ${creditLine()}
   </div>`;
@@ -315,7 +319,7 @@ function importPreview(){
 }
 function renderEdit(){
   const v=$('[data-view="terv"]');
-  const secs=[["fajl","Fájl"],["idorend","Időrend"],["projekt","Projekt"],["emberek","Emberek"],["szkript","Szkript"]];
+  const secs=[["fajl","Fájl"],["idorend","Időrend"],["projekt","Projekt"],["emberek","Emberek"],["szkript","Szkript"],["csapat","Csapat"]];
   let body="";
   if(editSec==="fajl")body=`${pending?importPreview():""}
     <section class="card"><h2>Excel-táblázat betöltése</h2>
@@ -343,6 +347,7 @@ function renderEdit(){
   else if(editSec==="emberek")body=`<section class="card"><h2>Szereplők</h2><p class="muted small">A Szerep (pl. Anna) ugyanaz legyen, amit az Időrendben a Szereplők mezőbe írsz.</p>
       ${rowsTable("cast",[["role","Szerep"],["name","Színész"],["arr","Érkezés",{ph:"8:00",cls:"w1",im:"numeric"}],["ruha","Ruha",{cls:"w1"}],["smink","Smink",{cls:"w1"}],["haj","Haj",{cls:"w1"}],["onset","Setre",{cls:"w1"}],["phone","Telefon",{type:"tel"}]],"Új szereplő")}</section>
     <section class="card"><h2>Stáb</h2>${rowsTable("crew",[["dept","Részleg"],["pos","Pozíció"],["name","Név"],["arr","Érkezés",{ph:"8:00",cls:"w1"}],["phone","Telefon",{type:"tel"}]],"Új stábtag")}</section>`;
+  else if(editSec==="csapat")body=teamHTML();
   else body=`<section class="card"><h2>Szkript beillesztése szövegként</h2>
       <textarea id="scrpaste" rows="5" placeholder="Másold ide a forgatókönyvet. BELSŐ./KÜLSŐ. = jelenet, NAGYBETŰS név = szereplő, utána a dialógus, (zárójel) = instrukció."></textarea>
       <div class="wgrid"><button class="btn sm" type="button" data-do="scradd">Hozzáfűzés a végéhez</button><button class="btn sm danger" type="button" data-do="scrrep">Csere</button></div></section>
@@ -423,3 +428,4 @@ addEventListener("drop",e=>{document.body.classList.remove("dragging");const f=e
 
 /* indulás: mentett terv, különben üres (üdvözlő) */
 (()=>{let p=null;try{p=JSON.parse(localStorage.getItem(PKEY)||"null")}catch(e){}P=normP(p||{});applyProject();loadImgs()})();
+mpBoot();
