@@ -27,3 +27,15 @@ body.ro .chk{pointer-events:none;opacity:.55}
 #pvbar .btn{white-space:nowrap}
 
 .gcode{font-size:34px;font-weight:800;letter-spacing:.06em;text-align:center;margin:4px 0 8px}
+
+/* jelenlét */
+.presbar{display:inline-flex;gap:0;margin-left:10px;vertical-align:middle}
+.presbar:empty{display:none}
+.pchip{width:28px;height:28px;border-radius:50%;display:inline-grid;place-items:center;font-size:11.5px;font-weight:800;color:#0b0e14;background:var(--pc);border:2px solid var(--bg,#0b0e14);margin-left:-6px;letter-spacing:.02em}
+.pchip:first-child{margin-left:0}
+.esec button{position:relative}
+.pdot{position:absolute;top:4px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--pc);box-shadow:0 0 0 2px var(--surface-2,#1c1f26)}
+.pdot+.pdot{right:16px}
+.pres-on{position:relative;outline:2px solid var(--pc)!important;outline-offset:2px;border-radius:12px}
+.pres-on::after{content:attr(data-pres);position:absolute;top:-11px;right:10px;z-index:3;font-size:10.5px;font-weight:750;line-height:1;padding:3px 6px;border-radius:6px;background:var(--pc);color:#0b0e14;white-space:nowrap;pointer-events:none}
+.pnow{color:var(--ok);font-weight:650}

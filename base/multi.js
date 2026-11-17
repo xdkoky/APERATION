@@ -256,11 +256,13 @@ function mpOnView(s){
 }
 function mpFlush(){const v=MP.pendView,l=MP.pendLive,tk=MP.pendTakes;MP.pendView=MP.pendLive=MP.pendTakes=null;if(v)mpOnView(v);if(l)mpOnLive(l);if(tk)mpOnTakes(tk)}
 let unsubs=[];
-function mpStop(){unsubs.forEach(u=>{try{u()}catch(e){}});unsubs=[];MP.ready=false}
+function mpStop(){presLeave();unsubs.forEach(u=>{try{u()}catch(e){}});unsubs=[];MP.ready=false;MP.pres=[];presPaint()}
 function mpListen(){
   mpStop();const r0=pref(),vid=isMpAdmin()?"__admin":MP.roleId;
   unsubs.push(r0.collection("views").doc(vid).onSnapshot(mpOnView,e=>e.code==="permission-denied"&&isMember()?mpLost():mpErr(e)));
   unsubs.push(r0.collection("live").doc("state").onSnapshot(mpOnLive,e=>e.code==="permission-denied"&&isMember()?mpLost():mpErr(e)));
+  // jelenlét: ki melyik részen, melyik blokkon/mezőn dolgozik (csak a szerkesztők látják egymást)
+  if(isMpAdmin()){unsubs.push(r0.collection("presence").onSnapshot(q=>{MP.pres=q.docs.filter(d=>d.id!==UID).map(d=>({uid:d.id,...d.data()}));presPaint()},e=>{if(e.code!=="permission-denied")mpErr(e)}));setTimeout(()=>presTouch(true),300)}
   // képek: ha valaki feltölt egyet, a kis „imgmeta” dokumentum jelzi, és letöltjük
   unsubs.push(r0.collection("imgmeta").onSnapshot(()=>mpFetchImgs(),e=>{if(e.code!=="permission-denied")mpErr(e)}));
   unsubs.push(r0.collection("live").doc("takes").onSnapshot(mpOnTakes,e=>e.code==="permission-denied"&&isMember()?mpLost():mpErr(e)));
@@ -287,7 +289,8 @@ async function mpCreate(btn){
     await fbInit();const pid=RID(20),r0=fdb.collection("projects").doc(pid),ts=Date.now();
     await r0.set({owner:UID,title:P.title||"",created:ts,ts});
     const b=fdb.batch(),acode=RAND(8);
-    MP={...MP,base:null,on:true,mode:"admin",pid,roleId:"__owner",code:acode,name:"",perm:ALLPERM,roleName:"Szerkesztő",title:P.title,roles:[],members:[]};
+    const myname=(($("#myname")||{}).value||MP.name||"").trim();
+    MP={...MP,base:null,on:true,mode:"admin",pid,roleId:"__owner",code:acode,name:myname,perm:ALLPERM,roleName:"Szerkesztő",title:P.title,roles:[],members:[]};
     let tpl=null;try{tpl=JSON.parse(localStorage.getItem("aperation-team-tpl")||"null")}catch(e){}
     const list=Array.isArray(tpl)&&tpl.length?tpl.map(r=>[r.name,Object.assign(permOf(""),r.perm||{})]):PRESETS.map(([n,s])=>[n,permOf(s)]);
     try{localStorage.removeItem("aperation-team-tpl")}catch(e){}
@@ -330,7 +333,7 @@ async function mpLeave(silent){
 }
 async function mpDeleteProject(){
   try{const r0=pref();
-    for(const sub of ["views","roles","members","live","imgmeta","imgdata"]){const q=await r0.collection(sub).get();for(const d of q.docs){if(sub==="roles"&&d.data().code){try{await fdb.collection("codes").doc(d.data().code).delete()}catch(e){}}await d.ref.delete()}}
+    for(const sub of ["presence","views","roles","members","live","imgmeta","imgdata"]){const q=await r0.collection(sub).get();for(const d of q.docs){if(sub==="roles"&&d.data().code){try{await fdb.collection("codes").doc(d.data().code).delete()}catch(e){}}await d.ref.delete()}}
     await r0.delete();
   }catch(e){mpErr(e);return}
   MP.roleId="__owner";await mpLeave(true);toast("A közös projekt törölve. A terv megmaradt ezen az eszközön.",{tone:"ok"});
@@ -359,6 +362,7 @@ function teamHTML(){
   if(!MP.on)return`<section class="card" id="teamcard"><h2>Közös munka a stábbal</h2>
     <p class="muted">Már a diszpó írásakor dolgozhattok együtt: indítsd el a közös projektet, és küldj <b>meghívó linket</b> vagy kódot. A <b>társszerkesztők</b> veled együtt írják a tervet (shotlist, időrend, emberek, forgatókönyv), a változások pár másodperc alatt mindenkinél megjelennek. A többi pozíció (rendező, 1st AD, 2nd AD, szkriptes, stáb) a kész napot látja a telefonján, és te döntöd el, ki mit lát.</p>
     <ul class="list"><li>Ha ketten egyszerre írtok, az app összefésüli: más-más blokk, shot vagy mező szerkesztése nem írja felül egymást.</li><li>A rejtett adatot (pl. telefonszám, forgatókönyv) a szerver el sem küldi annak, akinek nem szabad látnia.</li><li>Térerő nélkül is megy tovább; amikor visszajön a net, szinkronizál.</li></ul>
+    <label class="fi"><span class="flab">A neved (ezt látják a társszerkesztők)</span><input id="myname" autocomplete="name" placeholder="pl. Tóth Tamás" value="${esc(MP.name||"")}"></label>
     <button class="btn solid" type="button" data-do="mpcreate">${ic("users",16)}Közös projekt indítása</button>
     ${P.blocks.length||P.title?"":`<p class="muted small">Üres tervvel is indíthatod: a címet és a napot közösen is kitölthetitek.</p>`}</section>`;
   const cnt=id=>MP.members.filter(m=>m.roleId===id).length;
@@ -367,6 +371,7 @@ function teamHTML(){
       <p class="muted small">A kódot küldd el annak, aki az adott pozícióban dolgozik. A telepíthető változatban: <b>Kezdés → Csatlakozás kóddal</b> (vagy Info fül).</p>
       ${MP.roleId==="__owner"||MP.adminCode?`<div class="code-row"><div><b>Társszerkesztők</b><small>együtt írjátok a diszpót: mindent lát és szerkeszt</small></div><button type="button" class="codebtn num" data-copy="${MP.adminCode||""}">${fmtCode(MP.adminCode||"")}</button><button type="button" class="btn sm" data-do="admincode">Új kód</button></div>
       <button type="button" class="btn solid" data-invite="${MP.adminCode||""}" data-irole="társszerkesztő">${ic("users",16)}Társszerkesztő meghívása (link)</button>`:""}
+      <label class="fi"><span class="flab">A neved (ezt látják a társszerkesztők)</span><input id="mynamelive" autocomplete="name" placeholder="pl. Tóth Tamás" value="${esc(MP.name||"")}"></label>
     </section>
     <section class="card"><div class="card-head"><h2>Pozíciók</h2><span class="chip neutral">${MP.roles.length}</span></div>
       <p class="muted small">Koppints a jelölőkre: kiemelve, amit az adott pozíció lát. A <b>Vezérlés</b> jog a nap léptetése.</p>
@@ -375,7 +380,7 @@ function teamHTML(){
         <div class="perms">${PERMS.map(([k,l])=>`<button type="button" class="perm ${r.perm[k]?"on":""} ${k==="control"?"ctl":""}" data-perm="${k}" aria-pressed="${!!r.perm[k]}" title="${esc(PERM_HELP[k])}">${l}</button>`).join("")}</div>
         <div class="role-act"><span class="muted small">${cnt(r.id)} csatlakozott</span><span style="flex:1"></span><button type="button" class="btn sm" data-do="rolecode">Új kód</button><button type="button" class="btn sm danger" data-do="roledel">${ic("x",14)}Törlés</button></div></div>`).join("")}</div>
       <button type="button" class="btn sm" data-do="roleadd">${ic("plus",14)}Új pozíció</button></section>
-    <section class="card"><h2>Csatlakozott emberek</h2>${MP.members.length?`<div class="rows">${MP.members.map(m=>{const r=m.roleId==="__admin"?{name:"Szerkesztő"}:MP.roles.find(x=>x.id===m.roleId)||{name:"?"};return`<div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div><b>${esc(m.name||"Névtelen")}</b><small>${esc(r.name)}</small></div><button type="button" class="btn sm danger" data-kick="${m.uid}">Kitiltás</button></div>`}).join("")}</div>`:`<p class="muted small">Még senki. Ha valaki beírja a kódját, itt megjelenik.</p>`}</section>
+    <section class="card"><h2>Csatlakozott emberek</h2>${MP.members.length?`<div class="rows">${MP.members.map(m=>{const r=m.roleId==="__admin"?{name:"Szerkesztő"}:MP.roles.find(x=>x.id===m.roleId)||{name:"?"};return`<div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div><b>${esc(m.name||"Névtelen")}</b><small>${esc(r.name)} <span class="pnow" data-presuid="${m.uid}"></span></small></div><button type="button" class="btn sm danger" data-kick="${m.uid}">Kitiltás</button></div>`}).join("")}</div>`:`<p class="muted small">Még senki. Ha valaki beírja a kódját, itt megjelenik.</p>`}</section>
     <section class="card"><h2>Kapcsolat</h2><div class="wgrid">${MP.roleId==="__owner"?`<button type="button" class="btn danger" data-do="mpdelete">${ic("x",16)}Közös projekt törlése</button>`:""}<button type="button" class="btn" data-do="mpleave">Leválasztás erről az eszközről</button></div>
       <p class="muted small">${MP.roleId==="__owner"?"Törlés után a kódok nem működnek, és a stáb telefonjáról is eltűnik a terv. ":""}Leválasztás után ez az eszköz nem szinkronizál tovább; a többieknél minden marad.</p></section>
   </div>`;
@@ -460,3 +465,56 @@ function pvBar(){
   b.querySelector("[data-pvstop]").onclick=pvStop;
 }
 document.addEventListener("click",e=>{const t=e.target.closest("[data-pv]");if(t)pvStart(+t.dataset.pv)});
+
+/* ---------- jelenlét (mint a Google Docsban) ----------
+   Minden szerkesztő egy kis dokumentumot tart fenn (presence/{uid}): név, rész, blokk/shot, mező, időbélyeg.
+   Csak akkor ír, ha máshova lép, illetve percenként egyszer életjelként; eltávozáskor törli. */
+const PCOL=["#5ac8fa","#ff9f0a","#bf5af2","#30d158","#ff6482","#ffd60a","#64d2ff","#ac8e68"];
+const pColor=u=>{let h=0;for(const c of String(u))h=(h*31+c.charCodeAt(0))>>>0;return PCOL[h%PCOL.length]};
+const pInit=n=>String(n||"?").trim().split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase()||"?";
+const PRES_SEC={projekt:"Projekt",shotlist:"Shotlist",idorend:"Időrend",emberek:"Emberek",szkript:"Forgatókönyv",csapat:"Csapat",fajl:"Fájl"};
+const PRES_TTL=150000;
+let presLast="",presT=null,presAt=0,presGone=false;
+function presState(){
+  const a=document.activeElement,inT=view==="terv";
+  let id="",f="";
+  if(inT&&a&&a.closest&&a.closest('[data-view="terv"]')){const h=a.closest("[data-id]");id=h?h.dataset.id:"";f=a.dataset&&a.dataset.f||""}
+  if(inT&&!id)id=editSec==="shotlist"?(typeof openSL!=="undefined"&&openSL)||"":editSec==="idorend"?openEB||"":"";
+  return{sec:inT?editSec:"",view,id,f};
+}
+function presTouch(force){
+  if(!isMpAdmin()||!MP.ready||PV||tour||document.hidden||presGone)return;
+  clearTimeout(presT);presT=setTimeout(()=>{const s=presState(),k=J(s);
+    if(!force&&k===presLast&&Date.now()-presAt<60000)return;presLast=k;presAt=Date.now();
+    pref().collection("presence").doc(UID).set({...s,name:MP.name||"Szerkesztő",ts:Date.now()}).catch(()=>{})},force?0:350);
+}
+function presLeave(){clearTimeout(presT);if(fdb&&UID&&MP.pid&&isMpAdmin()){presLast="";pref().collection("presence").doc(UID).delete().catch(()=>{})}}
+function presLive(){return(MP.pres||[]).filter(p=>Date.now()-p.ts<PRES_TTL)}
+function presPaint(){
+  const live=MP.on&&isMpAdmin()?presLive():[];
+  const bar=$("#presbar");
+  if(bar)bar.innerHTML=live.map(p=>`<span class="pchip" style="--pc:${pColor(p.uid)}" title="${esc(p.name)} · ${esc(p.view==="terv"?PRES_SEC[p.sec]||"Terv":"nem a Terven")}">${esc(pInit(p.name))}</span>`).join("");
+  document.querySelectorAll(".pdot").forEach(x=>x.remove());
+  document.querySelectorAll(".pres-on").forEach(x=>{x.classList.remove("pres-on");x.style.removeProperty("--pc");x.removeAttribute("data-pres")});
+  for(const p of live){if(p.view!=="terv")continue;const c=pColor(p.uid);
+    const sb=document.querySelector(`[data-view="terv"] .esec [data-sec="${p.sec}"]`);
+    if(sb){const d=document.createElement("i");d.className="pdot";d.style.setProperty("--pc",c);d.title=p.name;sb.append(d)}
+    if(p.sec!==editSec)continue;
+    const mark=el=>{if(!el)return;el.classList.add("pres-on");el.style.setProperty("--pc",c);el.setAttribute("data-pres",p.name+" szerkeszti")};
+    let host=null;try{host=p.id?document.querySelector(`[data-view="terv"] [data-id="${CSS.escape(p.id)}"]`):null}catch(e){}
+    if(host)mark(host);
+    if(p.f){let fe=null;try{fe=host?host.querySelector(`[data-f="${CSS.escape(p.f)}"]`):[...document.querySelectorAll(`[data-view="terv"] [data-f="${CSS.escape(p.f)}"]`)].find(x=>!x.closest("[data-id]"))}catch(e){}
+      if(fe){const w=fe.closest(".fi")||fe;if(w!==host)mark(w)}}
+  }
+  // Csapat: ki hol tart
+  document.querySelectorAll("[data-presuid]").forEach(x=>{const p=live.find(q=>q.uid===x.dataset.presuid);x.textContent=p?(p.view==="terv"?"most: "+(PRES_SEC[p.sec]||"Terv"):"most: az appban"):""});
+}
+document.addEventListener("focusin",()=>presTouch());
+document.addEventListener("focusout",()=>presTouch());
+addEventListener("hashchange",()=>setTimeout(()=>presTouch(),50));
+document.addEventListener("visibilitychange",()=>{if(document.hidden)presLeave();else{presGone=false;presTouch(true)}});
+addEventListener("pagehide",()=>{presGone=true;presLeave()});
+addEventListener("pageshow",()=>{presGone=false});
+setInterval(()=>{presTouch();presPaint()},30000);
+document.addEventListener("change",e=>{if(e.target&&e.target.id==="mynamelive"){MP.name=e.target.value.trim();mpSaveLocal();presTouch(true);
+  if(isMember()||MP.roleId!=="__owner")pref().collection("members").doc(UID).update({name:MP.name}).catch(()=>{})}});

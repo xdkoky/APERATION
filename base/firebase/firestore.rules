@@ -59,6 +59,13 @@ service cloud.firestore {
       }
 
       // Feltöltött képek (storyboard, vilkó): az láthatja, aki a „Képek” jogot kapta; csak a szerkesztők töltenek fel.
+      // Jelenlét: melyik szerkesztő hol dolgozik. Csak a szerkesztők látják, mindenki csak a sajátját írja.
+      match /presence/{u} {
+        allow read: if isAdmin(p);
+        allow create, update: if isAdmin(p) && u == request.auth.uid;
+        allow delete: if isOwner(p) || (isAdmin(p) && u == request.auth.uid);
+      }
+
       match /imgmeta/{k} {
         allow read: if isAdmin(p) || (isMem(p) && role(p).perm.get('images', false) == true);
         allow write: if isAdmin(p);
