@@ -644,7 +644,7 @@ html.gated,html.gated body{overflow:hidden}
 .authgate{position:fixed;inset:0;z-index:290;background:var(--bg);overflow:auto;-webkit-overflow-scrolling:touch;padding:calc(24px + env(safe-area-inset-top,0px)) 16px calc(24px + env(safe-area-inset-bottom,0px))}
 .authgate .brand-logo{display:flex;justify-content:center}
 .authgate .brand-logo svg{height:84px}
-.authgate h1.ag-hi{font-size:22px;font-weight:750;letter-spacing:-.02em;text-align:center;margin:0}
+.authgate h1.ag-hi{font-size:56px;font-weight:800;letter-spacing:-.045em;line-height:1;text-align:center;margin:10px 0 2px;background:linear-gradient(120deg,#fff 20%,var(--shoot) 60%,#bf5af2 95%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .authgate .ag-sub{text-align:center;margin:-8px 0 0}
 html.authed-gate body{overflow:hidden}
 .gsteps{margin:4px 0 0;padding-left:22px;display:grid;gap:10px;line-height:1.5}
@@ -2010,7 +2010,7 @@ function authHTML(){
   if(legacy&&!authForce)authMode="reg";
   const reg=authMode==="reg",off=!navigator.onLine;
   return`<div class="gate-in"><div class="brand-logo">${LOGO_SVG}</div>
-    <h1 class="ag-hi">Üdv az APERATION-ben</h1><p class="muted ag-sub">${reg?"Hozz létre egy fiókot: a diszpóid és a közös projektjeid így bármelyik eszközön megmaradnak.":"Lépj be a fiókodba."}</p>
+    <h1 class="ag-hi">Hello!</h1><p class="muted ag-sub">${reg?"Hozz létre egy fiókot: a diszpóid és a közös projektjeid így bármelyik eszközön megmaradnak.":"Lépj be a fiókodba."}</p>
     <section class="card"><div class="seg" role="group" aria-label="Belépés vagy új fiók"><button type="button" data-agmode="in" aria-pressed="${!reg}">Belépés</button><button type="button" data-agmode="reg" aria-pressed="${reg}">Új fiók</button></div>
       ${authForce?`<p class="eb-warn sum">${ic("alert",16)}<span>${esc(authForce)}</span></p>`:legacy?`<p class="eb-warn sum">${ic("alert",16)}<span>Ezen az eszközön már van közös projekted. Hozz létre fiókot, így a tiéd marad, és más eszközön is eléred.</span></p>`:""}
       <div class="eg">${reg?`<label class="fi span2"><span class="flab">A neved (ezt látják a többiek)</span><input id="agname" autocomplete="name" placeholder="pl. Tóth Tamás" value="${esc(MP.name||localStorage.getItem(JOINNAME)||"")}"></label>`:""}
@@ -2031,7 +2031,10 @@ function authShow(force){
     g.innerHTML=authHTML();for(const [k,v] of Object.entries(keep)){const i=g.querySelector("#"+k);if(i&&v)i.value=v}
     document.documentElement.classList.add("authed-gate")}
 }
-function authGate(){if(authNeeded())authShow(false);else{const g=$("#authgate");if(g){g.remove();document.documentElement.classList.remove("authed-gate")}}}
+let TOUR_AFTER_AUTH=false;
+function authGate(){if(authNeeded())authShow(false);else{const g=$("#authgate");if(g){g.remove();document.documentElement.classList.remove("authed-gate");
+  // első indításkor a bemutató a belépés után jön
+  if(TOUR_AFTER_AUTH){TOUR_AFTER_AUTH=false;setTimeout(()=>{if(!tour&&!MP.on&&!B.length)tourStart()},700)}}}}
 async function authSubmit(btn){
   const reg=authMode==="reg",m=(($("#agmail")||{}).value||"").trim(),pw=($("#agpw")||{}).value||"",nm=(($("#agname")||{}).value||"").trim();
   if(!m||!pw||reg&&!nm){authMsg=reg?"Add meg a neved, az e-mailt és a jelszót.":"Add meg az e-mailt és a jelszót.";authShow(true);return}
@@ -3141,7 +3144,7 @@ const TOUR_KEY="diszpo-app-tour-v1";
 const HERO='[data-view="most"] .now';
 let TOUR=[];
 const TOUR_F=()=>[
- {title:"Két perc, és mindent tudsz",html:"Végigvezetlek az appon egy <b>mintanapon</b>: előbb azon, amit forgatás közben látsz, utána azon, hogyan viszed be a <b>saját napodat</b> Excelből vagy kézzel. A tervedhez és a mentett állapotodhoz ez nem nyúl.",extra:`<p class="credit-line" style="margin:0;text-align:left">APERATION™ · készítette ${AUTHOR}</p>`},
+ {title:"Két perc, és mindent tudsz",html:"Végigvezetlek az appon egy <b>mintanapon</b>: előbb azon, amit forgatás közben látsz, utána azon, hogyan írod meg a <b>saját napodat</b> itt az appban (vagy töltöd be Excelből). A tervedhez és a mentett állapotodhoz ez nem nyúl.",extra:`<p class="credit-line" style="margin:0;text-align:left">APERATION™ · készítette ${AUTHOR}</p>`},
  {state:"shoot",sel:HERO,title:"Ez megy most",html:"Itt látod, <b>mit forgatunk éppen</b>, milyen beállítással, a táblázatból vett megjegyzéssel. Alul a terv, a tényleges kezdés és a blokk időkerete."},
  {state:"shoot",sel:"#ring",title:"Visszaszámláló",html:"A gyűrű a blokkra szánt időt számolja vissza. Ha lejár, <b>pirosra vált</b>, és azt mutatja, mennyivel csúsztál túl. <b>Koppints rá</b>, és teljes képernyős óra lesz belőle a stábnak."},
  {state:"shoot",sel:".hdr",title:"Hol tart a nap",html:"Balra a pontos idő, jobbra a <b>várható wrap</b>: az app abból számolja, ahol tényleg tartotok. A csík az egész nap, a fehér vonal a mostani pillanat.",
@@ -3310,7 +3313,7 @@ addEventListener("keydown",e=>{
 addEventListener("resize",()=>{tabKey="";renderTabs();placeInd(false)});
 route(false);
 setInterval(()=>tick(false),250);
-setTimeout(()=>{let seen=true;try{seen=!!localStorage.getItem(TOUR_KEY)}catch(e){}if(!seen&&!GATED&&!(isShootDay()&&st.cur))tourStart()},600);
+setTimeout(()=>{let seen=true;try{seen=!!localStorage.getItem(TOUR_KEY)}catch(e){}if(!seen&&!GATED&&!(isShootDay()&&st.cur)){if(authNeeded())TOUR_AFTER_AUTH=true;else tourStart()}},600);
 </script>
 
 <script>

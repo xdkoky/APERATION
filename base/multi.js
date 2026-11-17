@@ -640,7 +640,7 @@ function authHTML(){
   if(legacy&&!authForce)authMode="reg";
   const reg=authMode==="reg",off=!navigator.onLine;
   return`<div class="gate-in"><div class="brand-logo">${LOGO_SVG}</div>
-    <h1 class="ag-hi">Üdv az APERATION-ben</h1><p class="muted ag-sub">${reg?"Hozz létre egy fiókot: a diszpóid és a közös projektjeid így bármelyik eszközön megmaradnak.":"Lépj be a fiókodba."}</p>
+    <h1 class="ag-hi">Hello!</h1><p class="muted ag-sub">${reg?"Hozz létre egy fiókot: a diszpóid és a közös projektjeid így bármelyik eszközön megmaradnak.":"Lépj be a fiókodba."}</p>
     <section class="card"><div class="seg" role="group" aria-label="Belépés vagy új fiók"><button type="button" data-agmode="in" aria-pressed="${!reg}">Belépés</button><button type="button" data-agmode="reg" aria-pressed="${reg}">Új fiók</button></div>
       ${authForce?`<p class="eb-warn sum">${ic("alert",16)}<span>${esc(authForce)}</span></p>`:legacy?`<p class="eb-warn sum">${ic("alert",16)}<span>Ezen az eszközön már van közös projekted. Hozz létre fiókot, így a tiéd marad, és más eszközön is eléred.</span></p>`:""}
       <div class="eg">${reg?`<label class="fi span2"><span class="flab">A neved (ezt látják a többiek)</span><input id="agname" autocomplete="name" placeholder="pl. Tóth Tamás" value="${esc(MP.name||localStorage.getItem(JOINNAME)||"")}"></label>`:""}
@@ -661,7 +661,10 @@ function authShow(force){
     g.innerHTML=authHTML();for(const [k,v] of Object.entries(keep)){const i=g.querySelector("#"+k);if(i&&v)i.value=v}
     document.documentElement.classList.add("authed-gate")}
 }
-function authGate(){if(authNeeded())authShow(false);else{const g=$("#authgate");if(g){g.remove();document.documentElement.classList.remove("authed-gate")}}}
+let TOUR_AFTER_AUTH=false;
+function authGate(){if(authNeeded())authShow(false);else{const g=$("#authgate");if(g){g.remove();document.documentElement.classList.remove("authed-gate");
+  // első indításkor a bemutató a belépés után jön
+  if(TOUR_AFTER_AUTH){TOUR_AFTER_AUTH=false;setTimeout(()=>{if(!tour&&!MP.on&&!B.length)tourStart()},700)}}}}
 async function authSubmit(btn){
   const reg=authMode==="reg",m=(($("#agmail")||{}).value||"").trim(),pw=($("#agpw")||{}).value||"",nm=(($("#agname")||{}).value||"").trim();
   if(!m||!pw||reg&&!nm){authMsg=reg?"Add meg a neved, az e-mailt és a jelszót.":"Add meg az e-mailt és a jelszót.";authShow(true);return}
