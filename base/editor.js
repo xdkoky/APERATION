@@ -107,17 +107,35 @@ async function shrink(file){
     return await new Promise(r=>c.toBlob(b=>r(b||file),"image/jpeg",.86))}catch(e){return file}}
 
 /* fájlok mentése */
+// Telefonon (főleg a főképernyős appban) a böngészős letöltés nem működik: ott a rendszer Megosztás menüjét
+// nyitjuk meg (Mentés a Fájlokba, AirDrop, levél, megnyitás Excelben). Ha a megosztás a várakozás miatt nem
+// indulhat, egy gomb jelenik meg, amire koppintva azonnal megnyílik.
+const shareFile=file=>navigator.share({files:[file],title:file.name});
 async function saveFile(name,data,mime){
+  const blob=data instanceof Blob?data:new Blob([data],{type:mime||"application/octet-stream"});
   try{const dl=window.claude&&claude.use?await claude.use("downloads"):null;
-    if(dl){try{await dl.save({filename:name,data});return}catch(e){if(e&&e.code==="declined")return;}}}catch(e){}
-  const url=URL.createObjectURL(data instanceof Blob?data:new Blob([data],{type:mime||"application/octet-stream"}));
-  const a=document.createElement("a");a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);
+    if(dl){try{await dl.save({filename:name,data:blob});return}catch(e){if(e&&e.code==="declined")return;}}}catch(e){}
+  const phone=typeof IS_IOS!=="undefined"&&(IS_IOS||IS_ANDROID);
+  if(phone&&navigator.canShare){
+    const file=new File([blob],name,{type:blob.type||mime||"application/octet-stream"});
+    let ok=false;try{ok=navigator.canShare({files:[file]})}catch(e){}
+    if(ok){try{await shareFile(file);return}catch(e){if(e&&e.name==="AbortError")return;
+        toast("Kész: "+name,{action:"Megosztás / mentés",fn:()=>shareFile(file).catch(()=>{}),ms:15000});return}}
+  }
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+  if(phone)toast("Ha nem jött le a fájl: "+name,{action:"Megnyitás",fn:()=>window.open(url,"_blank"),ms:12000});
 }
+// előtöltés: a megosztás csak közvetlenül a koppintás után indulhat, ezért az Excel-író és a sablon előre betöltődik
+let sablonBlob=null;
+function preloadFiles(){try{needXLSX().catch(()=>{})}catch(e){}
+  fetch(SABLON_URL).then(r=>r.ok?r.blob():null).then(b=>{sablonBlob=b}).catch(()=>{})}
+setTimeout(()=>{if(typeof requestIdleCallback==="function")requestIdleCallback(preloadFiles);else preloadFiles()},2500);
 let xlsxP=null;
 function needXLSX(){if(window.XLSX)return Promise.resolve(window.XLSX);
   return xlsxP=xlsxP||new Promise((res,rej)=>{const s=document.createElement("script");s.src=XLSX_SRC;s.onload=()=>window.XLSX?res(window.XLSX):rej();s.onerror=()=>{xlsxP=null;rej(new Error("xlsx"))};document.head.append(s)})}
 async function downloadSablon(){
-  try{const r=await fetch(SABLON_URL);if(!r.ok)throw 0;await saveFile("Forgatasi_sablon.xlsx",await r.blob());}
+  try{const bl=sablonBlob||await fetch(SABLON_URL).then(r=>{if(!r.ok)throw 0;return r.blob()});await saveFile("Forgatasi_sablon.xlsx",bl);}
   catch(e){try{await needXLSX();await saveFile("Forgatasi_sablon.xlsx",exportBook(normP(MINTA)));}catch(x){toast("A sablont most nem sikerült letölteni.",{tone:"late"})}}
 }
 

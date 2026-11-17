@@ -80,7 +80,10 @@ function printCard(){
     <p class="muted small">A mostani tervből készül, A4-re. A nyomtatás ablakában <b>PDF-be is mentheted</b> (iPhone-on: Nyomtatás → Megosztás → Mentés a Fájlokba). A <b>Szkript</b> a szkriptes lapja: shotonként egy oldal, sok hellyel a jegyzeteknek.</p>
     <div class="wgrid">${PR_KINDS.map(([k,l])=>`<button class="btn" type="button" data-print="${k}" ${B.length?"":"disabled"}>${ic("doc",16)}${l}</button>`).join("")}</div>
     <div class="wgrid"><button class="btn solid" type="button" data-print="all" ${B.length?"":"disabled"}>${ic("doc",16)}Mind a négy egyben</button></div>
-    <p class="muted small">Ha a nyomtatás nem nyílik meg: <button type="button" class="linkbtn" data-printsave="all" ${B.length?"":"disabled"}>mentés fájlba</button>, és onnan nyomtatható.</p></section>`;
+    ${typeof IS_IOS!=="undefined"&&(IS_IOS||IS_ANDROID)
+      ?`<div class="wgrid"><button class="btn" type="button" data-printsave="all" ${B.length?"":"disabled"}>${ic("upload",16)}Megosztás / mentés fájlként</button></div>
+        <p class="muted small">Ha a nyomtatás nem nyílik meg: a Megosztással mentsd a Fájlokba vagy küldd el magadnak, és onnan nyomtasd.</p>`
+      :`<p class="muted small">Ha a nyomtatás nem nyílik meg: <button type="button" class="linkbtn" data-printsave="all" ${B.length?"":"disabled"}>mentés fájlba</button>, és onnan nyomtatható.</p>`}</section>`;
 }
 document.addEventListener("click",e=>{const t=e.target.closest("[data-print],[data-printsave]");if(!t)return;
   const v=t.dataset.print||t.dataset.printsave,kinds=v==="all"?PR_KINDS.map(x=>x[0]):[v];
