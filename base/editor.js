@@ -316,6 +316,9 @@ const fld=(f,v,o={})=>{const ph=o.ph?` placeholder="${esc(o.ph)}"`:"",l=o.label?
   if(o.area)return`<label class="fi ${o.cls||""}">${l}<textarea data-f="${f}" rows="${o.rows||2}"${ph}>${esc(v)}</textarea></label>`;
   return`<label class="fi ${o.cls||""}">${l}<input data-f="${f}" type="${o.type||"text"}" value="${esc(v)}"${ph}${o.list?` list="${o.list}"`:""}${o.type==="number"?' inputmode="numeric" min="0" step="5"':""}${o.im?` inputmode="${o.im}"`:""}></label>`};
 const wrapLine=()=>B.length?`Crew call ${hm(P.call)} · ${B.length} blokk · ${B.filter(b=>b.type==="shoot").length} forgatás · tervezett vég <b>${hm(PLAN_WRAP)}</b>${P.wrapTarget?` · wrap-határ ${hm(P.wrapTarget)}`:""}${PLAN_WRAP>P.wrapTarget&&P.wrapTarget?` <span style="color:var(--late)">(+${PLAN_WRAP-P.wrapTarget}′)</span>`:""}`:"Még nincs blokk a tervben.";
+// egymás utáni átállások: jelezzük, de nem tiltjuk
+const dupMove=k=>P.blocks[k]&&P.blocks[k].type==="move"&&((P.blocks[k-1]||{}).type==="move"||(P.blocks[k+1]||{}).type==="move");
+const dupMoveCount=()=>P.blocks.reduce((n,b,k)=>n+(b.type==="move"&&(P.blocks[k-1]||{}).type==="move"?1:0),0);
 function blockCard(b,k){
   const imgs=(b.images||[]).map((x,n)=>{const u=x.url||IMG[x.idb];return`<span class="ethumb">${u?`<img src="${esc(u)}" alt="">`:`<i>${ic("img",18)}</i>`}<em>${x.kind==="sb"?"Storyboard":"Vilkó"}</em><button type="button" data-imgdel="${n}" aria-label="Kép törlése">${ic("x",14)}</button></span>`}).join("");
   const open=openEB===b._id;
@@ -325,6 +328,7 @@ function blockCard(b,k){
       <label class="fi mins"><input data-f="d" type="number" inputmode="numeric" min="0" step="5" value="${b.d}" aria-label="Perc"><span>perc</span></label>
       ${fld("label",b.label,{ph:b.type==="shoot"?"Shot, pl. 1/1":TNAME[b.type],cls:"grow"})}
       <button type="button" class="ib" data-act="tog" aria-expanded="${open}" aria-label="Részletek">${ic(open?"up":"dn",18)}</button></div>
+    ${dupMove(k)?`<div class="eb-warn">${ic("alert",16)}<span>${(P.blocks[k-1]||{}).type==="move"?"Előtte is átállás van.":"Utána is átállás jön."} Biztos kell mindkettő? Ha igen, maradhat így.</span></div>`:""}
     <div class="eb-more" ${open?"":"hidden"}>
       <div class="eg">${fld("setup",b.setup,{label:"Beállítás",ph:"pl. CU, 50 mm, sticks"})}${fld("group",b.group,{label:"Fény",ph:"kód, pl. A",list:"glist"})}</div>
       ${fld("note",b.note,{label:"Megjegyzés",area:1})}
@@ -364,7 +368,7 @@ function renderEdit(){
       <p class="muted small">Az elmentett Excel ugyanebben a formában van, mint a sablon: átküldheted, javíthatod gépen, és visszatöltheted.</p></section>
     <section class="card" id="projcard" style="scroll-margin-top:120px"><div class="card-head"><h2>Projektek</h2><button class="btn sm solid" type="button" data-do="newproj">${ic("plus",14)}Új projekt</button></div>
       ${projectsHTML()}<div class="wgrid"><button class="btn" type="button" data-do="minta">${ic("play",16)}Minta megnyitása</button></div></section>`;
-  else if(editSec==="idorend")body=`<p class="muted small" id="edwrap">${wrapLine()}</p>
+  else if(editSec==="idorend")body=`<p class="muted small" id="edwrap">${wrapLine()}</p>${dupMoveCount()?`<p class="eb-warn sum">${ic("alert",16)}<span>${dupMoveCount()===1?"Egy helyen":dupMoveCount()+" helyen"} két átállás áll egymás után. Ez nem hiba, csak nézd át.</span></p>`:""}
     <datalist id="glist">${P.groups.filter(g=>g.code).map(g=>`<option value="${esc(g.code)}">${esc(g.name)}</option>`).join("")}</datalist>
     ${P.blocks.length?"":`<section class="card empty"><h2>Üres a terv</h2><p class="muted">Add hozzá az első blokkot az alábbi gombokkal, sorban, ahogy a nap megy: érkezés, előkészület, forgatás, átállás, ebéd… A crew callt és a dátumot a <b>Projekt</b> részen állítod. Ha Excelben már megvan a nap, töltsd be a <b>Fájl</b> részen.</p></section>`}
     <div class="eblist">${P.blocks.map(blockCard).join("")}</div>
@@ -415,7 +419,7 @@ function drEnd(cancel){
   const from=d.k,to=d.t,b=P.blocks[from];
   withRemap(()=>{P.blocks.splice(from,1);P.blocks.splice(to,0,b)});renderEdit();
   const c=$(`.eb[data-k="${to}"]`);c&&c.classList.add("dropped");
-  toast(`Áthelyezve: ${b.label||TNAME[b.type]} · kezdés ${hm(B[to].s)}`,{action:"Visszavonás",fn:()=>{withRemap(()=>{const x=P.blocks.splice(to,1)[0];P.blocks.splice(from,0,x)});renderEdit()}});
+  toast(`Áthelyezve: ${b.label||TNAME[b.type]} · kezdés ${hm(B[to].s)}${[to-1,to,to+1].some(i=>P.blocks[i]&&P.blocks[i].type==="move"&&(P.blocks[i-1]||{}).type==="move")?" · Figyelem: két átállás került egymás mellé":""}`,{action:"Visszavonás",fn:()=>{withRemap(()=>{const x=P.blocks.splice(to,1)[0];P.blocks.splice(from,0,x)});renderEdit()}});
 }
 document.addEventListener("pointerdown",e=>{
   const h=e.target.closest(".eb-drag");if(!h||e.button>0||DR)return;e.preventDefault();

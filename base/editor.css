@@ -64,3 +64,7 @@ body.dragging::after{content:"Engedd el: beolvasom a táblázatot";position:fixe
 body.eb-dragging{-webkit-user-select:none;user-select:none;cursor:grabbing}
 .eb.dropped{animation:dropped .6s ease}
 @keyframes dropped{0%{box-shadow:0 0 0 2px var(--shoot)}100%{box-shadow:0 0 0 0 transparent}}
+.eb-warn{display:flex;gap:8px;align-items:flex-start;color:var(--warn);font-size:13px;font-weight:600;line-height:1.4;padding:6px 8px;border-radius:10px;background:color-mix(in srgb,var(--warn) 10%,transparent)}
+.eb-warn .ic{flex:none;margin-top:1px}
+.eb-warn.sum{margin:-6px 0 12px}
+.eb:has(.eb-warn){border-left-color:var(--warn)}
