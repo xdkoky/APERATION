@@ -262,7 +262,7 @@ function renderWelcome(v){
     <section class="card"><h2>${MP.ready?"Várakozás a tervre…":"Kapcsolódás…"}</h2><p class="muted">Csatlakoztál${MP.roleName?` <b>${esc(MP.roleName)}</b> pozícióban`:""}. Amint a szerkesztő terve megérkezik, itt látod a napot. Ha sokáig nem jön, ellenőrizd a netet.</p>
     <button type="button" class="btn danger" data-do="mpleave">Kilépés a közös projektből</button></section>${creditLine()}</div>`;return}
   v.innerHTML=`<div class="welcome">
-    <div class="vh" style="margin-bottom:6px">Diszpó App</div>
+    <h1 class="brand-logo">${LOGO_SVG}</h1>
     <p class="muted">Egy forgatási nap vezérlője: óra, visszaszámláló, várható wrap, shotonként a beállítás, a fény, a kellék és a szkript. Kezdd egy Excel-táblázattal, vagy írd be itt a napot.</p>
     <label class="drop" id="drop">${ic("upload",28)}<b>Excel-táblázat betöltése</b><span class="muted small">Koppints, vagy húzd ide a fájlt (.xlsx, .xls, .ods, .csv)</span><input type="file" accept=".xlsx,.xls,.xlsm,.ods,.csv,.json" data-import hidden></label>
     <div class="wgrid">

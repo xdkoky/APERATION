@@ -8,7 +8,7 @@ from openpyxl import Workbook
 from openpyxl.formatting.rule import FormulaRule
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.worksheet.datavalidation import DataValidation
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -32,6 +32,8 @@ def lgmap(W=256, e=0.16):
     b = io.BytesIO(); im.filter(ImageFilter.GaussianBlur(2)).save(b, "PNG")
     return "data:image/png;base64," + base64.b64encode(b.getvalue()).decode()
 tpl = tpl.replace("__LGMAP__", lgmap())
+LOGO_SVG = open(os.path.join(HERE, "brand", "aperation-logo.svg"), encoding="utf-8").read().strip()
+tpl = tpl.replace("/*__LOGO__*/null", json.dumps(LOGO_SVG, ensure_ascii=False))
 tpl = tpl.replace("/*__GLASS_CSS__*/", open(os.path.join(HERE, "glass.css"), encoding="utf-8").read())
 tpl = tpl.replace("/*__MULTI_CSS__*/", open(os.path.join(HERE, "multi.css"), encoding="utf-8").read())
 tpl = tpl.replace("/*__EDITOR_JS__*/", open(os.path.join(HERE, "multi.js"), encoding="utf-8").read() + "\n" + open(os.path.join(HERE, "editor.js"), encoding="utf-8").read())
@@ -188,6 +190,9 @@ if not os.path.exists(vend):
     subprocess.run(["curl", "-sSfL", "-o", vend, XLSX_CDN], check=True)
 shutil.copy(vend, os.path.join(PAGES, "vendor", "xlsx.full.min.js"))
 shutil.copy(SABLON, os.path.join(PAGES, "Forgatasi_sablon.xlsx"))
+os.makedirs(os.path.join(PAGES, "brand"))
+for f in ("aperation-logo.svg", "aperation-mark.svg", "aperation-icon.svg"):
+    shutil.copy(os.path.join(HERE, "brand", f), os.path.join(PAGES, "brand", f))
 
 src = tpl.replace('/*__XLSX__*/"' + XLSX_CDN + '"', '"vendor/xlsx.full.min.js"')
 # közös munka: Firebase SDK helyben (npm-ből), konfiguráció a base/firebase/config.json-ból (ha van)
@@ -226,24 +231,20 @@ src = src.replace("<style>", "<style>\n" + "\n".join(faces) + "\n", 1)
 src = re.sub(r'<meta name="claude:viewport-fit-sides"[^>]*>\n?', "", src)
 src = re.sub(r"<title>.*?</title>\n", "", src, count=1)
 
+# app-ikon: az APERATION rekeszjele a kapott logóból (brand/aperation-logo-source.png), #10141D négyzeten, torzítás nélkül
+BRAND = os.path.join(HERE, "brand")
 def icon(size):
-    im = Image.new("RGB", (size, size), (7, 9, 13))
-    glow = Image.new("RGB", (size, size), (7, 9, 13)); g = ImageDraw.Draw(glow)
-    pad = size * 0.16; w = max(2, int(size * 0.075))
-    g.ellipse([pad, pad, size - pad, size - pad], outline=(63, 224, 143), width=w * 2)
-    im = Image.blend(im, glow.filter(ImageFilter.GaussianBlur(size * 0.05)), 0.9); d = ImageDraw.Draw(im)
-    d.arc([pad, pad, size - pad, size - pad], start=-90, end=220, fill=(63, 224, 143), width=w)
-    d.arc([pad, pad, size - pad, size - pad], start=220, end=270, fill=(53, 216, 232), width=w)
-    f = None
-    for fp in ("/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"):
-        try: f = ImageFont.truetype(fp, int(size * 0.42)); break
-        except Exception: pass
-    d.text((size / 2, size / 2), "D", fill=(234, 240, 245), font=f or ImageFont.load_default(), anchor="mm")
-    return im
+    src = Image.open(os.path.join(BRAND, "aperation-logo-source.png")).convert("RGBA")
+    mark = src.crop((540, 55, 820, 377))                      # csak a rekeszjel (a felirat nélkül)
+    im = Image.new("RGBA", (size, size), (16, 20, 29, 255))
+    k = size * 0.64 / max(mark.size)                          # biztonsági margó a maszkolt (kerek) ikonokhoz
+    m = mark.resize((round(mark.width * k), round(mark.height * k)), Image.LANCZOS)
+    im.alpha_composite(m, ((size - m.width) // 2, (size - m.height) // 2))
+    return im.convert("RGB")
 for s in (180, 192, 512):
     icon(s).save(os.path.join(PAGES, f"icon-{s}.png"))
 json.dump({"name": "Diszpó App", "short_name": "Diszpó", "start_url": "./", "scope": "./", "display": "standalone", "orientation": "any",
-           "background_color": "#07090d", "theme_color": "#07090d", "lang": "hu",
+           "background_color": "#10141D", "theme_color": "#07090d", "lang": "hu",
            "icons": [{"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
                      {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}]},
           open(os.path.join(PAGES, "manifest.json"), "w"), ensure_ascii=False, indent=1)
@@ -260,7 +261,8 @@ head = """<!doctype html>
 <meta name="apple-mobile-web-app-title" content="Diszpó">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="icon" href="icon-192.png">
+<link rel="icon" href="brand/aperation-icon.svg" type="image/svg+xml">
+<link rel="icon" href="icon-192.png" sizes="192x192">
 <style>html{padding-top:env(safe-area-inset-top,0px)}[hidden]{display:none!important}img{max-width:100%}</style>
 </head><body>
 """
