@@ -11,14 +11,4 @@ Forgatási napvezérlő 1st AD-knek. Telefonon fut, net nélkül is.
 - **Közös munka:** pozíciónkénti belépőkód, beállítható, ki mit lát, és ki vezérelheti a napot (Firebase).
 - **Nyomtatás:** diszpó, forgatókönyv, shotlist, szkriptlap (A4, PDF-be is).
 
-## Fejlesztés
-
-```
-python3 base/build_base.py   # app (base/app.html), sablon, telepíthető változat (docs/base/)
-```
-
-- Források: `base/` (`app_template.html`, `editor.js`, `multi.js`, `print.js`, `gate.js`, `*.css`), logó: `base/brand/`
-- Firebase-szabályok és beállítás: `base/firebase/`
-- A *Kapaszkodni* (2026. 11. 12.) forgatás saját anyagai: `diszpo/`, `anyagok/`, `docs/` gyökere
-
 © 2026 Tóth Tamás János · APERATION™
