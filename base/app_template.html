@@ -1,10 +1,9 @@
 <title>APERATION</title>
-<script>/* téma: alapból „Lab” (világos); az Info fülön választható az Éjszakai (sötét) */try{if((localStorage.getItem("aperation-theme")||"lab")==="lab")document.documentElement.classList.add("lab")}catch(e){document.documentElement.classList.add("lab")}</script>
 <meta name="author" content="Tóth Tamás János">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&family=Cormorant+Garamond:wght@500;600;700&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap">
 <style>
 /* Layout: telefon-első forgatási vezérlő. Fent óra + állapot + napi sáv, középen a mostani blokk gyűrűs visszaszámlálóval,
    lent állandó akciósáv (Vissza · Kész · +5′) és fülek. Egyetlen sötét téma szándékosan: díszletben, félhomályban használjuk.
@@ -394,7 +393,6 @@ html{min-height:calc(100% + env(safe-area-inset-top,0px))}
 .credit p+p{margin-top:2px}
 /*__GLASS_CSS__*/
 /*__DESKTOP_CSS__*/
-/*__LAB_CSS__*/
 </style>
 
 <div class="aura" aria-hidden="true"><i></i><i></i></div>
@@ -430,7 +428,7 @@ html{min-height:calc(100% + env(safe-area-inset-top,0px))}
   <div class="p-mid"><div class="p-label" id="p-label"></div><div class="p-time num" id="p-time"></div><div class="cap" id="p-cap"></div></div>
   <div class="p-foot" id="p-foot"></div>
 </div>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs><linearGradient id="labhex" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff2b87"/><stop offset=".38" stop-color="#ff5a3c"/><stop offset=".7" stop-color="#ff9a1f"/><stop offset="1" stop-color="#ffd21f"/></linearGradient></defs><filter id="lglass" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feImage href="__LGMAP__" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="map"/><feDisplacementMap in="SourceGraphic" in2="map" scale="34" xChannelSelector="R" yChannelSelector="G" result="d"/><feGaussianBlur in="d" stdDeviation="10" edgeMode="duplicate" result="b"/><feColorMatrix in="b" type="saturate" values="1.9" result="s"/><feComponentTransfer in="s"><feFuncR type="linear" slope="1.06"/><feFuncG type="linear" slope="1.06"/><feFuncB type="linear" slope="1.06"/></feComponentTransfer></filter></svg>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><filter id="lglass" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feImage href="__LGMAP__" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="map"/><feDisplacementMap in="SourceGraphic" in2="map" scale="34" xChannelSelector="R" yChannelSelector="G" result="d"/><feGaussianBlur in="d" stdDeviation="10" edgeMode="duplicate" result="b"/><feColorMatrix in="b" type="saturate" values="1.9" result="s"/><feComponentTransfer in="s"><feFuncR type="linear" slope="1.06"/><feFuncG type="linear" slope="1.06"/><feFuncB type="linear" slope="1.06"/></feComponentTransfer></filter></svg>
 <div class="tour" id="tour" hidden><div class="tour-hole none" id="tourhole"></div><div class="tour-card" id="tourcard" role="dialog" aria-modal="true" aria-labelledby="tourh"></div></div>
 <div class="viewer" id="viewer" hidden>
   <div class="v-stage" id="vstage"><img id="vimg" alt="" draggable="false"></div>
@@ -916,8 +914,6 @@ function renderCrew(){
 
 /* ---------- INFO ---------- */
 let confirmReset=false;
-document.addEventListener("click",e=>{const t=e.target.closest("[data-theme]");if(!t)return;const lab=t.dataset.theme==="lab";
-  document.documentElement.classList.toggle("lab",lab);try{localStorage.setItem("aperation-theme",lab?"lab":"night")}catch(e){}tabKey="";renderAll()});
 function renderInfo(){
   const v=$('[data-view="info"]'),notes=[];
   v.innerHTML=`<div class="vh">Info</div><div class="grid"><div class="stack">
@@ -927,8 +923,6 @@ function renderInfo(){
     ${B.length&&!MP.on?`<section class="card"><h2>Próba mód</h2><p class="muted small">Gyorsított órával végigpróbálhatod a napot. A próba befejezése mindent nulláz, hogy a forgatás tiszta lappal induljon.</p>
       <div class="field"><label class="field">Kezdés <input type="text" inputmode="numeric" id="simt" value="${hm(st.sim.on?st.sim.start:D.plan.call-5)}" placeholder="8:25" style="width:84px" aria-label="Kezdés időpontja (óra:perc)"></label><label class="field">Sebesség <select id="simsp">${[1,5,10,30,60].map(x=>`<option value="${x}" ${st.sim.speed===x?"selected":""}>${x}×</option>`).join("")}</select></label></div>
       <div class="field"><button class="btn ${st.sim.on?"":"solid"}" type="button" id="simon">${st.sim.on?"Újraindítás ezzel":"Próba indítása"}</button>${st.sim.on?`<button class="btn danger" type="button" id="simoff">Próba befejezése és nullázás</button>`:""}</div></section>`:""}
-    <section class="card"><h2>Megjelenés</h2><div class="seg" role="group" aria-label="Téma"><button type="button" data-theme="lab" aria-pressed="${document.documentElement.classList.contains("lab")}">Lab · világos</button><button type="button" data-theme="night" aria-pressed="${!document.documentElement.classList.contains("lab")}">Éjszakai · sötét</button></div>
-      <p class="muted small">Az <b>Éjszakai</b> téma félhomályos díszletben, éjszakai forgatáson kíméletesebb a szemnek.</p></section>
     <section class="card"><h2>Jelzések</h2><div class="rows">
       <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div><b>Hang és rezgés</b><small>5 perccel a keret vége előtt és lejáratkor</small></div><input type="checkbox" class="sw" id="snd" ${st.sound?"checked":""} aria-label="Hangjelzés"></div>
       <div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div><b>Ma forgatunk</b><small>${HASDATE?`Kapcsold be, ha nem a tervben szereplő napon (${SHOOT_DATE.toLocaleDateString("hu-HU",{month:"long",day:"numeric"})}) forgattok`:"Nincs dátum a tervben: a forgatás napján kapcsold be"}</small></div><input type="checkbox" class="sw" id="force" ${st.force?"checked":""} aria-label="Ma forgatunk"></div></div>
