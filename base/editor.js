@@ -549,7 +549,7 @@ async function addImages(el,files){
 }
 document.addEventListener("click",async e=>{
   const t=e.target.closest("button,[data-do]");if(!t||!t.closest('[data-view]'))return;const d=t.dataset;
-  if(d.sec){editSec=d.sec;renderEdit();if(t.closest(".nextsec")){const h=document.querySelector('[data-view="terv"] .esec');h&&h.scrollIntoView({block:"start",behavior:"smooth"})}return}
+  if(d.sec){const ch=editSec!==d.sec;editSec=d.sec;renderEdit();if(ch)animIn(document.querySelector('[data-view="terv"] .stack'),"sec-enter");if(t.closest(".nextsec")){const h=document.querySelector('[data-view="terv"] .esec');h&&h.scrollIntoView({block:"start",behavior:"smooth"})}return}
   if(d.popen){openProject(d.popen);return}
   if(d.pdel){if(sure(t,"Törlöd?"))delProject(d.pdel);return}
   if(d.do){
@@ -573,7 +573,7 @@ document.addEventListener("click",async e=>{
     const last=$$(".eb");last.length&&last[last.length-1].scrollIntoView({block:"center"});return}
   if(!d.act&&d.imgdel==null)return;
   const host=t.closest("[data-k]"),k=host?hostK(host):-1;
-  if(d.act==="tog"){const b=P.blocks[k];openEB=openEB===b._id?null:b._id;renderEdit();return}
+  if(d.act==="tog"){const b=P.blocks[k];openEB=openEB===b._id?null:b._id;renderEdit();if(openEB)animIn(document.querySelector(`.eb[data-id="${openEB}"] .eb-more`));return}
   if(d.act==="rowadd"){const L=d.list;P[L].push(L==="script"?{t:"ac",x:"",ids:[]}:L==="groups"?normP({groups:[{}]}).groups[0]:L==="cast"?normP({cast:[{}]}).cast[0]:normP({crew:[{}]}).crew[0]);commit();renderEdit();const r=$$(`[data-list="${L}"].er`);r.length&&r[r.length-1].querySelector("input,textarea,select").focus();return}
   if(d.act==="rowdel"){const L=host.dataset.list,old=P[L][k];P[L].splice(k,1);commit();renderEdit();toast("Sor törölve.",{action:"Visszavonás",fn:()=>{P[L].splice(k,0,old);commit();renderEdit()}});return}
   if(d.act==="imgurl"){const u=host.querySelector("[data-imgurl]").value.trim();if(!/^https?:\/\//.test(u)){toast("Teljes linket adj meg (https://…).");return}const it=P[host.dataset.list][k];(it.images=it.images||[]).push({kind:host.querySelector("[data-imgkind]").value,url:u});commit();renderEdit();return}

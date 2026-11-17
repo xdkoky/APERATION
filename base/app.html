@@ -740,6 +740,32 @@ html.refract .tabs,html.refract .dk:not(.primary),html.refract .toast,html.refra
 .eb-sum{display:none}
 @media (min-width:1100px){.eb-sum{display:block}.eb-sum:empty{display:none}}
 
+/* ---------- mozgás: lágy, rövid átvezetések mindenhol ----------
+   Nézetváltáskor a tartalom lépcsőzetesen beúszik, a lenyíló részek kinyílnak, a gombok finoman visszarugóznak.
+   Akinek a rendszerben ki van kapcsolva a mozgás, annál minden azonnali. */
+:root{--ease:cubic-bezier(.22,.8,.24,1);--ease-out:cubic-bezier(.16,1,.3,1)}
+@keyframes vIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes openIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px) scale(.97)}}
+[data-view].v-enter>:not(.grid):not(.stack),[data-view].v-enter .stack>*,.sec-enter>*{animation:vIn .48s var(--ease-out) both}
+[data-view].v-enter .stack>:nth-child(2),.sec-enter>:nth-child(2){animation-delay:.045s}
+[data-view].v-enter .stack>:nth-child(3),.sec-enter>:nth-child(3){animation-delay:.09s}
+[data-view].v-enter .stack>:nth-child(4),.sec-enter>:nth-child(4){animation-delay:.135s}
+[data-view].v-enter .stack>:nth-child(5),.sec-enter>:nth-child(5){animation-delay:.18s}
+[data-view].v-enter .stack>:nth-child(n+6),.sec-enter>:nth-child(n+6){animation-delay:.22s}
+[data-view].v-enter .grid>.stack:nth-child(2)>*{animation-delay:.08s}
+.anim-open{animation:openIn .34s var(--ease-out) both}
+.btn,.dk,.seg button,.perm,.tk button,.take button,.ib,.linkbtn,.codebtn,.chip button,.sbt,.imgs button{transition:transform .16s var(--ease),background-color .22s ease,border-color .22s ease,color .22s ease,opacity .22s ease,box-shadow .22s ease}
+.btn:active,.seg button:active,.perm:active,.ib:active,.codebtn:active,.tk button:active{transform:scale(.965)}
+.card,.eb,.tl-row,.row,.stat{transition:background-color .25s ease,border-color .25s ease,box-shadow .25s ease}
+input,textarea,select{transition:border-color .2s ease,box-shadow .2s ease,background-color .2s ease}
+.toast.out{animation:toastOut .24s ease forwards}
+.authgate,.gate,.tour-card{animation:fadeIn .35s ease both}
+.viewer:not([hidden]){animation:fadeIn .22s ease both}
+details[open]>:not(summary){animation:openIn .32s var(--ease-out) both}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
 /* panelek: tömör alap, hogy a háttér rácsa ne látsszon át rajtuk; finom felső fényél és mély árnyék emeli ki őket */
 :root{--panel-solid:#0b0f15}
 .card,.now{background-color:var(--panel-solid);box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 22px 44px -30px rgba(0,0,0,.95)}
@@ -944,12 +970,15 @@ function cue(n=1,freq=880,vib){
 let wl=null;async function wake(){try{if("wakeLock" in navigator&&!wl){wl=await navigator.wakeLock.request("screen");wl.addEventListener("release",()=>{wl=null})}}catch(e){}}
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")wake()});
 document.addEventListener("pointerdown",()=>{wake();try{actx=actx||new (window.AudioContext||window.webkitAudioContext)()}catch(e){}},{once:true});
+/* animáció-segédek: egy elem kinyílása, illetve nézetváltáskor a tartalom beúszása */
+function animIn(el,cls="anim-open"){if(!el)return;el.classList.toggle(cls,false);void el.offsetWidth;el.classList.add(cls);clearTimeout(el._at);el._at=setTimeout(()=>el.classList.toggle(cls,false),900)}
+let lastRouteView="";
 function toast(msg,o={}){
   const box=$("#toasts");box.innerHTML="";
   const el=document.createElement("div");el.className="toast";if(o.tone)el.dataset.tone=o.tone;
   const sp=document.createElement("span");sp.textContent=msg;el.append(sp);
   if(o.action){const b=document.createElement("button");b.type="button";b.textContent=o.action;b.onclick=()=>{el.remove();o.fn()};el.append(b)}
-  box.append(el);setTimeout(()=>el.remove(),o.ms||(o.action?7000:4200));
+  box.append(el);setTimeout(()=>{el.classList.add("out");setTimeout(()=>el.remove(),260)},o.ms||(o.action?7000:4200));
 }
 
 /* ---------- képnagyító, kivetítő ---------- */
@@ -1230,7 +1259,8 @@ function renderTimeline(){
     <section class="card" style="padding:8px 6px"><div class="tl">${rows}<div class="tl-row last" data-type="pres"><div class="tl-time"><b>${hm(wrap)}</b>${wr!==PLAN_WRAP?`<span>terv ${hm(PLAN_WRAP)}</span>`:""}</div><div class="tl-rail"><i></i></div><div class="tl-body"><b>Wrap</b><div class="sub">Bontás, pakolás, napi riport</div></div><div class="tl-end"></div></div></div></section>
     <p class="muted small" style="margin-top:10px;text-align:center">Koppints egy sorra: ugrás oda vagy kihagyás.</p>`;
   bindTakes(v,renderTimeline);
-  v.querySelectorAll("[data-row]").forEach(r=>r.onclick=e=>{if(e.target.closest("button,a,input,.tl-tk"))return;const i=+r.dataset.row;openRow=openRow===i?null:i;renderTimeline()});
+  v.querySelectorAll("[data-row]").forEach(r=>r.onclick=e=>{if(e.target.closest("button,a,input,.tl-tk"))return;const i=+r.dataset.row;openRow=openRow===i?null:i;renderTimeline();
+    if(openRow!=null)$$(`[data-row="${openRow}"] .tl-body>:not(b):not(.sub):not(.tl-sb)`).forEach(x=>animIn(x))});
   v.querySelectorAll("[data-jump]").forEach(x=>x.onclick=()=>{openRow=null;jump(+x.dataset.jump);location.hash="#most"});
   v.querySelectorAll("[data-skip]").forEach(x=>x.onclick=()=>{openRow=null;toggleSkip(+x.dataset.skip)});
 }
@@ -2564,7 +2594,7 @@ async function addImages(el,files){
 }
 document.addEventListener("click",async e=>{
   const t=e.target.closest("button,[data-do]");if(!t||!t.closest('[data-view]'))return;const d=t.dataset;
-  if(d.sec){editSec=d.sec;renderEdit();if(t.closest(".nextsec")){const h=document.querySelector('[data-view="terv"] .esec');h&&h.scrollIntoView({block:"start",behavior:"smooth"})}return}
+  if(d.sec){const ch=editSec!==d.sec;editSec=d.sec;renderEdit();if(ch)animIn(document.querySelector('[data-view="terv"] .stack'),"sec-enter");if(t.closest(".nextsec")){const h=document.querySelector('[data-view="terv"] .esec');h&&h.scrollIntoView({block:"start",behavior:"smooth"})}return}
   if(d.popen){openProject(d.popen);return}
   if(d.pdel){if(sure(t,"Törlöd?"))delProject(d.pdel);return}
   if(d.do){
@@ -2588,7 +2618,7 @@ document.addEventListener("click",async e=>{
     const last=$$(".eb");last.length&&last[last.length-1].scrollIntoView({block:"center"});return}
   if(!d.act&&d.imgdel==null)return;
   const host=t.closest("[data-k]"),k=host?hostK(host):-1;
-  if(d.act==="tog"){const b=P.blocks[k];openEB=openEB===b._id?null:b._id;renderEdit();return}
+  if(d.act==="tog"){const b=P.blocks[k];openEB=openEB===b._id?null:b._id;renderEdit();if(openEB)animIn(document.querySelector(`.eb[data-id="${openEB}"] .eb-more`));return}
   if(d.act==="rowadd"){const L=d.list;P[L].push(L==="script"?{t:"ac",x:"",ids:[]}:L==="groups"?normP({groups:[{}]}).groups[0]:L==="cast"?normP({cast:[{}]}).cast[0]:normP({crew:[{}]}).crew[0]);commit();renderEdit();const r=$$(`[data-list="${L}"].er`);r.length&&r[r.length-1].querySelector("input,textarea,select").focus();return}
   if(d.act==="rowdel"){const L=host.dataset.list,old=P[L][k];P[L].splice(k,1);commit();renderEdit();toast("Sor törölve.",{action:"Visszavonás",fn:()=>{P[L].splice(k,0,old);commit();renderEdit()}});return}
   if(d.act==="imgurl"){const u=host.querySelector("[data-imgurl]").value.trim();if(!/^https?:\/\//.test(u)){toast("Teljes linket adj meg (https://…).");return}const it=P[host.dataset.list][k];(it.images=it.images||[]).push({kind:host.querySelector("[data-imgkind]").value,url:u});commit();renderEdit();return}
@@ -2674,7 +2704,7 @@ function slToPlan(list){
 document.addEventListener("click",e=>{
   const t=e.target.closest&&e.target.closest("button");if(!t||!t.closest('[data-view="terv"]'))return;const a=t.dataset.act;if(!a||!/^sl/.test(a))return;
   const host=t.closest('[data-list="shots"]'),k=host?hostK(host):-1,s=P.shots[k];
-  if(a==="sltog"){openSL=openSL===s._id?null:s._id;renderEdit();return}
+  if(a==="sltog"){openSL=openSL===s._id?null:s._id;renderEdit();if(openSL)animIn(document.querySelector(`.eb.sl[data-id="${openSL}"] .eb-more`));return}
   if(a==="sladd"||a==="slscene"){const c=a==="slscene"?slNewScene():slNextCode(P.shots[P.shots.length-1]);
     const ns=normP({shots:[{code:c}]}).shots[0];P.shots.push(ns);openSL=ns._id;commit();renderEdit();
     const el=$(`.eb.sl[data-k="${P.shots.length-1}"]`);el&&el.scrollIntoView({block:"center"});const inp=el&&el.querySelector('[data-f="desc"]');inp&&inp.focus();return}
@@ -3073,6 +3103,7 @@ function route(scroll){
   else ({most:renderMost,idorend:renderTimeline,szkript:renderScript,stab:renderCrew,terv:renderEdit,info:renderInfo})[view]();
   if(view!=="most"||!B.length)tick(true);
   authGate();
+  if(view!==lastRouteView){lastRouteView=view;const sv=$(`[data-view="${view}"]`);if(sv){sv.classList.toggle("v-enter",false);void sv.offsetWidth;sv.classList.add("v-enter");clearTimeout(sv._vt);sv._vt=setTimeout(()=>sv.classList.toggle("v-enter",false),900)}}
   if(scroll){window.scrollTo({top:0});
     if(view==="idorend"){const c=document.querySelector(".tl-row.cur");c&&c.scrollIntoView({block:"center"})}
     if(view==="szkript")scrollToHot()}

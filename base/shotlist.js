@@ -58,7 +58,7 @@ function slToPlan(list){
 document.addEventListener("click",e=>{
   const t=e.target.closest&&e.target.closest("button");if(!t||!t.closest('[data-view="terv"]'))return;const a=t.dataset.act;if(!a||!/^sl/.test(a))return;
   const host=t.closest('[data-list="shots"]'),k=host?hostK(host):-1,s=P.shots[k];
-  if(a==="sltog"){openSL=openSL===s._id?null:s._id;renderEdit();return}
+  if(a==="sltog"){openSL=openSL===s._id?null:s._id;renderEdit();if(openSL)animIn(document.querySelector(`.eb.sl[data-id="${openSL}"] .eb-more`));return}
   if(a==="sladd"||a==="slscene"){const c=a==="slscene"?slNewScene():slNextCode(P.shots[P.shots.length-1]);
     const ns=normP({shots:[{code:c}]}).shots[0];P.shots.push(ns);openSL=ns._id;commit();renderEdit();
     const el=$(`.eb.sl[data-k="${P.shots.length-1}"]`);el&&el.scrollIntoView({block:"center"});const inp=el&&el.querySelector('[data-f="desc"]');inp&&inp.focus();return}
