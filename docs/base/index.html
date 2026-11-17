@@ -1062,7 +1062,7 @@ function renderInfo(){
    A projekt létrehozója (admin) pozíciókat oszt ki: mindegyikhez tartozik egy belépőkód és egy láthatósági beállítás.
    A szerver minden pozíciónak külön, már megszűrt tervet ad (views/{pozíció}), így a rejtett adat el sem jut a telefonra.
    A nap állását (live/state) mindenki látja, de csak a „Vezérlés” jogú pozíciók írhatják. Szabályok: firebase/firestore.rules. */
-const FBCFG=null;
+const FBCFG={"apiKey": "AIzaSyCJ6D8PRIVzf8Hqg0ljUgVu7IWrfzx0LL0", "authDomain": "aperation-281e9.firebaseapp.com", "projectId": "aperation-281e9", "storageBucket": "aperation-281e9.firebasestorage.app", "messagingSenderId": "479450059358", "appId": "1:479450059358:web:b81a7387ff942987505acf"};
 const FB_SRC=["vendor/firebase-app-compat.js", "vendor/firebase-auth-compat.js", "vendor/firebase-firestore-compat.js"];
 const FB_EMU=/^(localhost|127\.)/.test(location.hostname)&&/[?&]emu\b/.test(location.search);
 const FBC=FB_EMU?{apiKey:"demo-key",projectId:"demo-diszpo",authDomain:"localhost"}:FBCFG;
@@ -1162,7 +1162,7 @@ function mpStop(){unsubs.forEach(u=>{try{u()}catch(e){}});unsubs=[];MP.ready=fal
 function mpListen(){
   mpStop();const r0=pref(),vid=isMpAdmin()?"__admin":MP.roleId;
   unsubs.push(r0.collection("views").doc(vid).onSnapshot(mpOnView,e=>e.code==="permission-denied"&&isMember()?mpLost():mpErr(e)));
-  unsubs.push(r0.collection("live").doc("state").onSnapshot(mpOnLive,mpErr));
+  unsubs.push(r0.collection("live").doc("state").onSnapshot(mpOnLive,e=>e.code==="permission-denied"&&isMember()?mpLost():mpErr(e)));
   // ha a szerkesztő kitilt, a saját tagsági dokumentum eltűnik
   if(MP.roleId!=="__owner")unsubs.push(r0.collection("members").doc(UID).onSnapshot(s=>{if(!s.exists&&!s.metadata.hasPendingWrites&&!s.metadata.fromCache)mpLost()},e=>{if(e.code==="permission-denied")mpLost()}));
   if(isMpAdmin()){

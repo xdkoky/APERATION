@@ -102,7 +102,7 @@ function mpStop(){unsubs.forEach(u=>{try{u()}catch(e){}});unsubs=[];MP.ready=fal
 function mpListen(){
   mpStop();const r0=pref(),vid=isMpAdmin()?"__admin":MP.roleId;
   unsubs.push(r0.collection("views").doc(vid).onSnapshot(mpOnView,e=>e.code==="permission-denied"&&isMember()?mpLost():mpErr(e)));
-  unsubs.push(r0.collection("live").doc("state").onSnapshot(mpOnLive,mpErr));
+  unsubs.push(r0.collection("live").doc("state").onSnapshot(mpOnLive,e=>e.code==="permission-denied"&&isMember()?mpLost():mpErr(e)));
   // ha a szerkesztő kitilt, a saját tagsági dokumentum eltűnik
   if(MP.roleId!=="__owner")unsubs.push(r0.collection("members").doc(UID).onSnapshot(s=>{if(!s.exists&&!s.metadata.hasPendingWrites&&!s.metadata.fromCache)mpLost()},e=>{if(e.code==="permission-denied")mpLost()}));
   if(isMpAdmin()){
