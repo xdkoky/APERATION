@@ -27,6 +27,11 @@ service cloud.firestore {
       allow delete: if signed() && isAdmin(resource.data.pid);
     }
 
+    // Fiók: a saját közös projektjeim listája (telefoncsere után innen nyitom meg újra őket).
+    match /users/{u}/projects/{p} {
+      allow read, write: if signed() && request.auth.uid == u;
+    }
+
     match /projects/{p} {
       allow get: if isMem(p) || isOwner(p);
       allow list: if false;

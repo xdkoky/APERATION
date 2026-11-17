@@ -177,7 +177,7 @@ async function mpPublish(){
       tx.update(r0,{title:merged.title||"",ts});
       out={merged,ts};
     });
-    MP.lastPub=out.ts;setBase(out.merged);
+    MP.lastPub=out.ts;setBase(out.merged);if(MP._recTitle!==out.merged.title){MP._recTitle=out.merged.title;myProjRec()}
     if(!jeq(out.merged,sent)){ // közben másik szerkesztő is írt: az ő változásai bekerülnek nálunk is
       const now=jeq(P,sent)?out.merged:normP(merge3(sent,P,out.merged));
       mpApplyPlan(now);if(!jeq(now,out.merged))pubAgain=true;
@@ -297,7 +297,7 @@ async function mpCreate(btn){
     list.forEach(([name,perm],k)=>{const id=RID(12),code=RAND(8);MP.roles.push({id,name,perm,code,order:k});
       b.set(r0.collection("roles").doc(id),{name,perm,code,order:k});b.set(fdb.collection("codes").doc(code),{pid,roleId:id})});
     b.set(r0.collection("roles").doc("__admin"),{name:"Szerkesztő (társ-AD)",admin:true,code:acode,order:-1});b.set(fdb.collection("codes").doc(acode),{pid,roleId:"__admin"});
-    await b.commit();MP.adminCode=acode;mpSaveLocal();mpListen();await mpPublish();mpPush();mpPushTakes(null);
+    await b.commit();MP.adminCode=acode;mpSaveLocal();mpListen();await mpPublish();mpPush();mpPushTakes(null);myProjRec();
     toast("Közös projekt kész. Oszd ki a kódokat a stábnak.",{tone:"ok"});
   }catch(e){mpErr(e);MP.on=false;mpSaveLocal()}
   renderAll();
@@ -315,6 +315,7 @@ async function mpJoin(raw,name){
     if(isMember()){P=normP({});applyProject()}
     const s=st.sound;st=fresh();st.sound=s;mpApplying=true;save();mpApplying=false;
     try{localStorage.removeItem(JOINKEY)}catch(e){}
+    myProjRec();
     mpSaveLocal();mpListen();if(isMpAdmin()){editSec="projekt";location.hash="#terv"}else location.hash="#most";renderAll();
     toast(isMember()?"Csatlakoztál. A terv mindjárt megjelenik.":"Csatlakoztál társszerkesztőként: együtt írjátok a diszpót.",{tone:"ok"});return true;
   }catch(e){mpErr(e);return false}
@@ -323,6 +324,7 @@ async function mpLeave(silent){
   if(PV){pvStop();return}
   const was={...MP};mpStop();
   if(was.mode==="member"&&fdb&&UID&&!silent){try{await fdb.collection("projects").doc(was.pid).collection("members").doc(UID).delete()}catch(e){}}
+  if(!silent&&was.mode==="member"&&fdb&&UID&&was.pid){fdb.collection("users").doc(UID).collection("projects").doc(was.pid).delete().catch(()=>{})}
   MP={on:false,ready:false,roles:[],members:[],lastPub:0,lastPush:0,liveTs:0,leaving:false};mpSaveLocal();
   if(was.mode!=="admin"||was.roleId!=="__owner"){
     let p=null,s=null;try{p=JSON.parse(localStorage.getItem(LOCALP)||"null");s=JSON.parse(localStorage.getItem(LOCALS)||"null")}catch(e){}
@@ -335,6 +337,7 @@ async function mpDeleteProject(){
   try{const r0=pref();
     for(const sub of ["presence","views","roles","members","live","imgmeta","imgdata"]){const q=await r0.collection(sub).get();for(const d of q.docs){if(sub==="roles"&&d.data().code){try{await fdb.collection("codes").doc(d.data().code).delete()}catch(e){}}await d.ref.delete()}}
     await r0.delete();
+    fdb.collection("users").doc(UID).collection("projects").doc(MP.pid).delete().catch(()=>{});
   }catch(e){mpErr(e);return}
   MP.roleId="__owner";await mpLeave(true);toast("A közös projekt törölve. A terv megmaradt ezen az eszközön.",{tone:"ok"});
 }
@@ -369,6 +372,7 @@ function teamHTML(){
   return`<div class="team">
     <section class="card" id="teamcard"><div class="card-head"><h2>Közös projekt</h2><span class="chip" style="--c:var(--ok)">${ic("check",14)}Élő</span></div>
       <p class="muted small">A kódot küldd el annak, aki az adott pozícióban dolgozik. A telepíthető változatban: <b>Kezdés → Csatlakozás kóddal</b> (vagy Info fül).</p>
+      ${accLoad()?"":`<p class="eb-warn sum">${ic("alert",16)}<span>A közös projekt most ehhez a készülékhez kötődik. <button type="button" class="linkbtn" data-do="gotoacct">Mentsd e-mailhez</button>, hogy telefoncsere vagy -vesztés után is a tiéd maradjon.</span></p>`}
       ${MP.roleId==="__owner"||MP.adminCode?`<div class="code-row"><div><b>Társszerkesztők</b><small>együtt írjátok a diszpót: mindent lát és szerkeszt</small></div><button type="button" class="codebtn num" data-copy="${MP.adminCode||""}">${fmtCode(MP.adminCode||"")}</button><button type="button" class="btn sm" data-do="admincode">Új kód</button></div>
       <button type="button" class="btn solid" data-invite="${MP.adminCode||""}" data-irole="társszerkesztő">${ic("users",16)}Társszerkesztő meghívása (link)</button>`:""}
       <label class="fi"><span class="flab">A neved (ezt látják a társszerkesztők)</span><input id="mynamelive" autocomplete="name" placeholder="pl. Tóth Tamás" value="${esc(MP.name||"")}"></label>
@@ -423,7 +427,7 @@ document.addEventListener("click",async e=>{
 });
 document.addEventListener("change",e=>{const el=e.target;if(!el.matches||!el.matches("[data-rname]"))return;const r=MP.roles.find(x=>x.id===el.closest("[data-rid]").dataset.rid);if(r){r.name=el.value.trim()||"Pozíció";mpRoleSave(r)}});
 document.addEventListener("input",e=>{const el=e.target;if(el.id==="jcode"){const c=normCode(el.value).slice(0,8);const v=c.length>4?c.slice(0,4)+"-"+c.slice(4):c;if(el.value!==v)el.value=v}});
-function mpBoot(){if(MP.on&&MP_AVAIL)fbInit().then(()=>{mpListen();renderAll();setTimeout(mpUploadImgs,3000)}).catch(mpErr)}
+function mpBoot(){if(MP.on&&MP_AVAIL)fbInit().then(()=>{mpListen();renderAll();setTimeout(mpUploadImgs,3000);setTimeout(myProjRec,5000)}).catch(mpErr)}
 
 /* ---------- szerepek kipróbálása (egyedül, egy eszközön) ----------
    A szerkesztő megnézheti, mit lát és mit tehet egy pozíció. A terv a szerepre szűrve jelenik meg,
@@ -518,3 +522,99 @@ addEventListener("pageshow",()=>{presGone=false});
 setInterval(()=>{presTouch();presPaint()},30000);
 document.addEventListener("change",e=>{if(e.target&&e.target.id==="mynamelive"){MP.name=e.target.value.trim();mpSaveLocal();presTouch(true);
   if(isMember()||MP.roleId!=="__owner")pref().collection("members").doc(UID).update({name:MP.name}).catch(()=>{})}});
+
+/* ---------- fiók: a hozzáférés e-mailhez kötése ----------
+   Alapból névtelen (anonim) belépéssel megy minden, ami a készülékhez kötött. Ha e-mailt és jelszót adsz hozzá,
+   ugyanaz a felhasználó marad (a tulajdonosi jog is), és egy másik eszközön belépve visszakapod a közös projektjeidet.
+   A projektek listája: users/{uid}/projects/{pid}. */
+const ACCKEY="aperation-account";
+const accLoad=()=>{try{return JSON.parse(localStorage.getItem(ACCKEY)||"null")}catch(e){return null}};
+const accSave=a=>{try{a?localStorage.setItem(ACCKEY,J(a)):localStorage.removeItem(ACCKEY)}catch(e){}};
+let accList=null,accBusy=false;
+function myProjRec(){
+  if(!fdb||!UID||!MP.on||!MP.pid||PV)return;
+  fdb.collection("users").doc(UID).collection("projects").doc(MP.pid).set({title:P.title||MP.title||"",roleId:MP.roleId||"",roleName:MP.roleName||"",code:MP.code||"",mode:MP.mode||"",name:MP.name||"",ts:Date.now()},{merge:true}).catch(()=>{});
+}
+const accErr=e=>{const c=e&&e.code||"";return{
+  "auth/email-already-in-use":"Ez az e-mail már egy fiókhoz tartozik. Lépj be vele lent.",
+  "auth/credential-already-in-use":"Ez az e-mail már egy fiókhoz tartozik. Lépj be vele lent.",
+  "auth/invalid-email":"Ez nem érvényes e-mail-cím.",
+  "auth/weak-password":"A jelszó legyen legalább 6 karakter.",
+  "auth/missing-password":"Add meg a jelszót.",
+  "auth/wrong-password":"Hibás e-mail vagy jelszó.","auth/invalid-credential":"Hibás e-mail vagy jelszó.","auth/invalid-login-credentials":"Hibás e-mail vagy jelszó.","auth/user-not-found":"Hibás e-mail vagy jelszó.",
+  "auth/too-many-requests":"Túl sok próbálkozás. Várj pár percet.",
+  "auth/operation-not-allowed":"Az e-mailes belépés még nincs bekapcsolva a Firebase-ben (Authentication → Sign-in method → Email/Password).",
+  "auth/network-request-failed":"Nincs internet. Próbáld újra, ha van térerő."}[c]||("Nem sikerült: "+(c||e))};
+function acctCard(){
+  if(!MP_AVAIL||isMember()&&!accLoad())return"";
+  const a=accLoad();
+  if(a)return`<section class="card" id="acctcard"><div class="card-head"><h2>Fiók</h2><span class="chip" style="--c:var(--ok)">${ic("check",14)}Mentve</span></div>
+    <p class="muted small">Bejelentkezve: <b>${esc(a.email)}</b>. Ha elveszik vagy cseréled a telefonod, egy másik eszközön ezzel belépve visszakapod a közös projektjeidet, tulajdonosként is.</p>
+    <div class="wgrid"><button class="btn" type="button" data-do="accprojs">${ic("list",16)}Közös projektjeim</button><button class="btn" type="button" data-do="accout">Kijelentkezés</button></div>
+    <div id="acclist">${accListHTML()}</div></section>`;
+  return`<section class="card" id="acctcard"><h2>Fiók</h2>
+    <p class="muted small">A közös projektek most <b>ehhez a készülékhez</b> kötődnek. Kösd őket e-mailhez: ha elveszik, összetörik vagy cseréled a telefonod, egy másik eszközön belépve visszakapod őket, a tulajdonosi joggal együtt. Nem kell hozzá semmit telepíteni.</p>
+    <div class="eg"><label class="fi"><span class="flab">E-mail</span><input id="accmail" type="email" autocomplete="email" inputmode="email" placeholder="nev@pelda.hu"></label>
+      <label class="fi"><span class="flab">Jelszó (legalább 6 karakter)</span><input id="accpw" type="password" autocomplete="current-password"></label></div>
+    <div class="wgrid"><button class="btn solid" type="button" data-do="acclink">${ic("check",16)}Hozzáférés mentése</button><button class="btn" type="button" data-do="accin">Belépés meglévő fiókba</button></div>
+    <p class="muted small"><b>Hozzáférés mentése:</b> ezen a készüléken az eddigi projektek az új fiókhoz kerülnek. <b>Belépés:</b> ha egy másik eszközön már mentetted, itt visszakapod. <button type="button" class="linkbtn" data-do="accreset">Elfelejtett jelszó</button></p></section>`;
+}
+function accListHTML(){
+  if(accList==null)return"";
+  if(!accList.length)return`<p class="muted small">Még nincs közös projekted ezzel a fiókkal.</p>`;
+  return`<div class="rows">${accList.map(r=>`<div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div><b>${esc(r.title||"Névtelen projekt")}</b><small>${esc(r.roleId==="__owner"?"tulajdonos":r.mode==="admin"?"társszerkesztő":r.roleName||"tag")}${MP.on&&MP.pid===r.id?" · ezen az eszközön nyitva":""}</small></div>${MP.on&&MP.pid===r.id?"":`<button class="btn sm" type="button" data-accopen="${esc(r.id)}">Megnyitás</button>`}</div>`).join("")}</div>`;
+}
+async function accRefreshList(){
+  try{await fbInit();const q=await fdb.collection("users").doc(UID).collection("projects").get();
+    accList=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.ts||0)-(a.ts||0))}catch(e){accList=[];toast(accErr(e),{tone:"warn"})}
+  const l=$("#acclist");if(l)l.innerHTML=accListHTML();
+}
+async function accLink(btn){
+  const m=($("#accmail")||{}).value||"",pw=($("#accpw")||{}).value||"";if(!m.trim()||!pw){toast("Add meg az e-mailt és a jelszót.");return}
+  if(accBusy)return;accBusy=true;btn.disabled=true;
+  try{await fbInit();const u=fauth.currentUser;
+    await u.linkWithCredential(firebase.auth.EmailAuthProvider.credential(m.trim(),pw));
+    accSave({email:m.trim()});if(MP.on)myProjRec();toast("Hozzáférés mentve. Másik eszközön ezzel az e-maillel lépj be.",{tone:"ok",ms:6000});renderAll();
+  }catch(e){toast(accErr(e),{tone:"warn",ms:7000})}
+  accBusy=false;btn.disabled=false;
+}
+async function accIn(btn){
+  const m=($("#accmail")||{}).value||"",pw=($("#accpw")||{}).value||"";if(!m.trim()||!pw){toast("Add meg az e-mailt és a jelszót.");return}
+  if(MP.on&&MP.roleId==="__owner"&&!sure(btn,"Ezen az eszközön van saját közös projekt, ami nincs mentve. Biztos?"))return;
+  if(accBusy)return;accBusy=true;btn.disabled=true;
+  try{await fbInit();
+    if(MP.on)await mpLeave(true);
+    await fauth.signInWithEmailAndPassword(m.trim(),pw);UID=fauth.currentUser.uid;
+    accSave({email:m.trim()});toast("Beléptél. Válaszd ki, melyik közös projektet nyitod meg.",{tone:"ok"});
+    location.hash="#info";renderAll();await accRefreshList();
+  }catch(e){toast(accErr(e),{tone:"warn",ms:7000})}
+  accBusy=false;btn.disabled=false;
+}
+async function accOpen(pid){
+  const r=(accList||[]).find(x=>x.id===pid);if(!r)return;
+  try{await fbInit();
+    const ok=await fdb.collection("projects").doc(pid).get().then(d=>d.exists).catch(()=>false);
+    if(!ok){toast("Ez a közös projekt már nem létezik.",{tone:"warn"});fdb.collection("users").doc(UID).collection("projects").doc(pid).delete().catch(()=>{});accList=accList.filter(x=>x.id!==pid);const l=$("#acclist");if(l)l.innerHTML=accListHTML();return}
+    if(MP.on)await mpLeave(true);
+    try{localStorage.setItem(LOCALP,JSON.stringify(P));localStorage.setItem(LOCALS,JSON.stringify(st))}catch(e){}
+    const admin=r.mode==="admin";
+    MP={...MP,base:null,on:true,mode:admin?"admin":"member",pid,roleId:r.roleId,code:r.code,name:r.name||"",perm:admin?ALLPERM:null,roleName:r.roleName||"",title:r.title||"",roles:[],members:[],lastPub:0,liveTs:0,leaving:false};
+    if(!admin){P=normP({});applyProject()}
+    const s=st.sound;st=fresh();st.sound=s;mpApplying=true;save();mpApplying=false;
+    mpSaveLocal();mpListen();if(admin){editSec="projekt";location.hash="#terv"}else location.hash="#most";renderAll();
+    toast(`Megnyitva: ${r.title||"közös projekt"}`,{tone:"ok"});
+  }catch(e){toast(accErr(e),{tone:"warn"})}
+}
+async function accOut(btn){
+  if(!sure(btn,"Biztos? Koppints újra"))return;
+  try{await fbInit();if(MP.on)await mpLeave(true);await fauth.signOut();UID=null;accSave(null);accList=null;toast("Kijelentkeztél ezen az eszközön.");renderAll()}catch(e){toast(accErr(e),{tone:"warn"})}
+}
+async function accReset(){
+  const m=(($("#accmail")||{}).value||"").trim();if(!m){toast("Írd be fent az e-mail-címed, és koppints újra.");return}
+  try{await fbInit();await fauth.sendPasswordResetEmail(m);toast("Elküldtük a jelszó-visszaállító e-mailt (nézd meg a spam mappát is).",{tone:"ok",ms:6000})}catch(e){toast(accErr(e),{tone:"warn"})}
+}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-do],[data-accopen]");if(!t)return;const d=t.dataset;
+  if(d.accopen){accOpen(d.accopen);return}
+  if(d.do==="acclink")accLink(t);else if(d.do==="accin")accIn(t);else if(d.do==="accout")accOut(t);else if(d.do==="accreset")accReset();
+  else if(d.do==="accprojs")accRefreshList();
+  else if(d.do==="gotoacct"){location.hash="#info";setTimeout(()=>{const c=$("#acctcard");c&&c.scrollIntoView({block:"start",behavior:"smooth"})},200)}});
