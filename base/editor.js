@@ -95,11 +95,11 @@ function projectsHTML(){
 function setProject(p,o={}){if(o.archive)archiveCurrent();P=normP(p);if(o.reset){const s=st.sound;st=fresh();st.sound=s;save()}saveP();applyProject();loadImgs();lastHero=null;renderAll()}
 function withRemap(fn){
   const old=P.blocks.map(b=>b._id);fn();const n={};P.blocks.forEach((b,i)=>n[b._id]=i);
-  const mo=o=>{const r={};for(const k in o){const id=old[k];if(id!=null&&n[id]!=null)r[n[id]]=o[k]}return r};
+  const mo=o=>{const r={};for(const k in o){if(k==="gen"){r[k]=o[k];continue}const id=old[k];if(id!=null&&n[id]!=null)r[n[id]]=o[k]}return r};
   st.act=mo(st.act);st.skip=mo(st.skip);st.ext=mo(st.ext);st.takes=mo(st.takes);
   if(st.cur){const id=old[st.cur.i];st.cur=n[id]!=null?{...st.cur,i:n[id]}:(P.blocks.length?{...st.cur,i:Math.min(st.cur.i,P.blocks.length-1)}:null)}
-  if(st.sw){const id=old[st.sw.i];st.sw=n[id]!=null?{...st.sw,i:n[id]}:null}
-  save();saveP();applyProject();
+  if(st.sw&&st.sw.i!=="gen"){const id=old[st.sw.i];st.sw=n[id]!=null?{...st.sw,i:n[id]}:null}
+  save();saveP();applyProject();mpPushTakes(null);
 }
 
 /* képek a készüléken (IndexedDB) */

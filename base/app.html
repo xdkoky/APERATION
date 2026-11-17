@@ -143,6 +143,24 @@ body.over .ring .big{color:var(--late)}
 .take.ok{border-color:color-mix(in srgb,var(--ok) 55%,transparent);background:color-mix(in srgb,var(--ok) 12%,transparent)}
 .take button{border:0;background:none;width:30px;height:30px;display:grid;place-items:center;color:var(--fg-3);padding:0}
 .take.ok button.star{color:var(--ok)} .take.ok button.star svg{fill:currentColor}
+.tks{grid-column:1/-1;display:grid;gap:6px}
+.tk{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto auto;align-items:center;gap:6px;padding:4px 4px 4px 10px;border-radius:12px;background:var(--surface-2);border:1px solid var(--hair);font-variant-numeric:tabular-nums}
+.tk em{font-style:normal;font-weight:750;color:var(--fg-3);font-size:13px}
+.tk .num{font-weight:650;font-size:14px;min-width:38px}
+.tk-note{min-width:0;width:100%;border:0;background:transparent;color:var(--fg);font:inherit;font-size:14px;line-height:1.35;padding:7px 6px;border-radius:8px;resize:none;overflow:hidden;field-sizing:content;min-height:34px;display:block}
+.tl-tk .tk{grid-template-columns:auto minmax(0,1fr) auto auto;padding-left:10px}
+.tl-tk .tk .tk-note{grid-column:1/-1;grid-row:2;margin:-4px 0 2px -6px;width:calc(100% + 6px)}
+.tl-tk .tk .tk-note:placeholder-shown{display:none}
+body.cantake .tl-tk .tk .tk-note:placeholder-shown{display:block}
+.tk-note:focus{outline:none;background:var(--surface-3)}
+.tk-note::placeholder{color:var(--fg-3)}
+.tk button{border:0;background:none;width:34px;height:34px;display:grid;place-items:center;color:var(--fg-3);padding:0;border-radius:9px;cursor:pointer}
+.tk.ok{border-color:color-mix(in srgb,var(--ok) 55%,transparent);background:color-mix(in srgb,var(--ok) 12%,transparent)}
+.tk.ok button.star{color:var(--ok)} .tk.ok button.star svg{fill:currentColor}
+.tk.ro button.del{display:none} .tk.ro{grid-template-columns:auto auto minmax(0,1fr) auto} .tl-tk .tk.ro{grid-template-columns:auto minmax(0,1fr) auto}
+.tl-tk{margin-top:10px}
+.tl-tk .cap{margin-bottom:6px;display:block}
+.tl-stars{color:var(--ok);font-weight:650}
 
 /* következő formáció */
 .form-title{font-size:26px;font-weight:750;letter-spacing:-.025em;line-height:1.05}
@@ -544,7 +562,7 @@ html.gated,html.gated body{overflow:hidden}
 .perm.ctl.on{background:color-mix(in srgb,var(--warn) 20%,transparent);border-color:color-mix(in srgb,var(--warn) 60%,transparent)}
 .role-act{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 /* csak nézők: a vezérlők rejtve */
-body.ro #dock,body.ro .rec,body.ro .tl-x,body.ro [data-skipnow],body.ro [data-unskip],body.ro #extclr,body.ro #demo{display:none!important}
+body.ro #dock,body.ro:not(.cantake) .rec,body.ro .tl-x,body.ro [data-skipnow],body.ro [data-unskip],body.ro #extclr,body.ro #demo{display:none!important}
 body.ro .chk{pointer-events:none;opacity:.55}
 
 .credit-line{margin:22px 0 6px;text-align:center;font-size:11.5px;letter-spacing:.02em;color:var(--fg-3)}
@@ -813,8 +831,27 @@ function toggleSkip(j,quiet){
 }
 function extend(m){if(RO())return;const b=curBlock();if(!b)return;st.ext[b.i]=Math.max(0,(st.ext[b.i]||0)+m);if(!st.ext[b.i])delete st.ext[b.i];lastAlert="";save();renderAll();
   toast(m>0?`+${m} perc erre a blokkra · várható wrap ${hm(project().wrap)}`:"Hosszabbítás törölve",m>0?{action:"Visszavonás",fn:()=>extend(-m)}:{})}
-function startSW(){if(st.sw||RO())return;st.sw={at:tod(),i:st.cur?st.cur.i:"gen"};save();renderMost()}
-function stopSW(silent){if(!st.sw)return;const d=(tod()-st.sw.at)*60,k=st.sw.i;(st.takes[k]=st.takes[k]||[]).push({d,ok:false});st.sw=null;save();if(!silent)renderMost()}
+function takesSaved(k){save();mpPushTakes(k)}
+function startSW(){if(st.sw||!canTake())return;st.sw={at:tod(),i:st.cur?st.cur.i:"gen"};takesSaved([]);renderMost()}
+function stopSW(silent){if(!st.sw)return;const d=(tod()-st.sw.at)*60,k=st.sw.i;(st.takes[k]=st.takes[k]||[]).push({d,ok:false,at:st.sw.at,note:""});st.sw=null;takesSaved(k);if(!silent)renderMost()}
+/* take-lista: idő, jó take csillag, jegyzet – a Most nézetben és az Időrendben is */
+function takeList(k){const tk=st.takes[k]||[],ed=canTake();if(!tk.length)return"";
+  return`<div class="tks">${tk.map((x,n)=>`<div class="tk ${x.ok?"ok":""} ${ed?"":"ro"}"><em>T${n+1}</em><span class="num">${mmss(x.d)}</span>
+    <textarea class="tk-note" rows="1" enterkeyhint="done" placeholder="${ed?"Jegyzet…":" "}" data-note="${k}|${n}" ${ed?"":"readonly"} aria-label="Jegyzet a ${n+1}. take-hez">${esc(x.note||"")}</textarea>
+    <button type="button" class="star" aria-label="Jó take" aria-pressed="${!!x.ok}" data-ok="${k}|${n}">${ic("star",18)}</button>${ed?`<button type="button" class="del" aria-label="Take törlése" data-del="${k}|${n}">${ic("x",15)}</button>`:""}</div>`).join("")}</div>`}
+function takeSum(k){const tk=st.takes[k]||[];if(!tk.length)return"";const ok=tk.map((x,n)=>x.ok?"T"+(n+1):"").filter(Boolean);
+  return` · ${tk.length} take${ok.length?` · <span class="tl-stars">★ ${ok.join(", ")}</span>`:""}`}
+function bindTakes(v,redraw){
+  const tkAt=x=>{const[k,n]=x.dataset[Object.keys(x.dataset)[0]].split("|");return[k,st.takes[k]&&st.takes[k][+n],+n]};
+  v.querySelectorAll("[data-ok]").forEach(x=>x.onclick=()=>{if(!canTake())return;const[k,tk]=tkAt(x);if(tk){tk.ok=!tk.ok;takesSaved(k);redraw()}});
+  v.querySelectorAll("[data-del]").forEach(x=>x.onclick=()=>{if(!canTake())return;const[k,tk,n]=tkAt(x);if(!tk)return;st.takes[k].splice(n,1);if(!st.takes[k].length)delete st.takes[k];takesSaved(k);redraw();
+    toast(`T${n+1} törölve`,{action:"Visszavonás",fn:()=>{(st.takes[k]=st.takes[k]||[]).splice(n,0,tk);takesSaved(k);redraw()}})});
+  v.querySelectorAll("[data-note]").forEach(x=>{
+    const fit=()=>{if(CSS.supports&&CSS.supports("field-sizing","content"))return;x.style.height="auto";x.style.height=x.scrollHeight+"px"};fit();requestAnimationFrame(fit);
+    x.oninput=fit;x.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();x.blur()}};
+    x.onchange=()=>{if(!canTake())return;const[k,tk]=tkAt(x);if(tk){tk.note=x.value.trim();takesSaved(k)}};
+    x.onblur=()=>{if(takesHold)setTimeout(()=>{if(!(document.activeElement&&document.activeElement.matches(".tk-note")))takesRedraw()},0)}});
+}
 
 /* ---------- hang, rezgés, ébren tartás, toast ---------- */
 let actx=null;
@@ -961,8 +998,7 @@ function bindMost(v){
   const on=(sel,fn)=>v.querySelectorAll(sel).forEach(x=>x.onclick=e=>fn(x,e));
   on("#ring",()=>present(true));on("#tourbtn",()=>tourStart());on("#extclr",()=>extend(-(st.ext[st.cur.i]||0)));
   on("#swgo",()=>st.sw?stopSW():startSW());
-  on("[data-ok]",x=>{if(RO())return;const[k,n]=x.dataset.ok.split("|"),tk=st.takes[k]&&st.takes[k][+n];if(tk){tk.ok=!tk.ok;save();renderMost()}});
-  on("[data-del]",x=>{if(RO())return;const[k,n]=x.dataset.del.split("|");st.takes[k]&&st.takes[k].splice(+n,1);save();renderMost()});
+  bindTakes(v,renderMost);
   on("[data-seg]",x=>{detailSeg=x.dataset.seg;renderMost()});
   on("[data-unskip]",x=>toggleSkip(+x.dataset.unskip));
 }
@@ -982,7 +1018,7 @@ function recCard(b){
   return`<section class="card rec ${run?"run":""}"><button class="recbtn" type="button" id="swgo" aria-label="${run?"Take leállítása":"Take indítása"}"><i></i></button>
     <div><div class="cap">${run?'<span class="live"></span>':""}Take ${tk.length+1}${run?" · forog":""}</div><div class="rec-time num" id="swt">0:00</div></div>
     <div class="rec-stat"><b>${tk.length}</b>take · ${tk.filter(x=>x.ok).length} jó</div>
-    ${tk.length?`<div class="takes">${tk.map((x,n)=>`<span class="take ${x.ok?"ok":""}"><em>T${n+1}</em>${mmss(x.d)}<button type="button" class="star" aria-label="Jó take" data-ok="${k}|${n}">${ic("star",17)}</button><button type="button" aria-label="Take törlése" data-del="${k}|${n}">${ic("x",15)}</button></span>`).join("")}</div>`:""}</section>`;
+    ${takeList(k)}</section>`;
 }
 function shootDetail(b){
   const sh=D.shots[b.label];if(!sh)return"";
@@ -1100,13 +1136,14 @@ function renderTimeline(){
     if(p.skip)end="kihagyva";else if(p.done){const dd=(p.e-p.s)-b.d;end=`<span class="drift ${driftCls(dd)}">${Math.abs(dd)>=1?signMin(dd):ic("check",16)}</span>`}
     else if(p.cur)end=`<span class="nowtag">MOST</span>`;else{const dr=p.s-b.s;end=Math.abs(dr)>=1?`<span class="drift ${driftCls(dr)}">${signMin(dr)}</span>`:""}
     return`<div class="tl-row ${cls}" data-type="${b.type}" data-row="${b.i}"><div class="tl-time"><b>${main}</b>${planDiff?`<span>terv ${hm(b.s)}</span>`:""}</div><div class="tl-rail"><i></i></div>
-      <div class="tl-body">${(()=>{const sh=D.shots[b.label];return sh&&sh.sb.length?`<span class="tl-sb" data-gallery>${sh.sb.map(x=>sbThumb(x)).join("")}</span>`:""})()}<b>${esc(b.label)}</b><div class="sub">${esc(TNAME[b.type])} · ${dEff(b)}′${b.setup?" · "+esc(b.setup):""}</div>
-      ${open?`${b.note?`<p class="muted small" style="margin-top:8px">${esc(b.note)}</p>`:""}<div class="tl-x">${p.cur?"":`<button class="btn sm solid" type="button" data-jump="${b.i}">${ic("play",14)}Ez megy most</button><button class="btn sm" type="button" data-skip="${b.i}">${ic("skip",14)}${p.skip?"Visszavétel":"Kihagyás"}</button>`}${p.cur?`<a class="btn sm" href="#most">Vissza a Most nézethez</a>`:""}</div>`:""}</div>
+      <div class="tl-body">${(()=>{const sh=D.shots[b.label];return sh&&sh.sb.length?`<span class="tl-sb" data-gallery>${sh.sb.map(x=>sbThumb(x)).join("")}</span>`:""})()}<b>${esc(b.label)}</b><div class="sub">${esc(TNAME[b.type])} · ${dEff(b)}′${b.setup?" · "+esc(b.setup):""}${takeSum(b.i)}</div>
+      ${open?`${b.note?`<p class="muted small" style="margin-top:8px">${esc(b.note)}</p>`:""}${b.type==="shoot"&&(st.takes[b.i]||[]).length?`<div class="tl-tk"><span class="cap">Take-ek</span>${takeList(b.i)}</div>`:""}<div class="tl-x">${p.cur?"":`<button class="btn sm solid" type="button" data-jump="${b.i}">${ic("play",14)}Ez megy most</button><button class="btn sm" type="button" data-skip="${b.i}">${ic("skip",14)}${p.skip?"Visszavétel":"Kihagyás"}</button>`}${p.cur?`<a class="btn sm" href="#most">Vissza a Most nézethez</a>`:""}</div>`:""}</div>
       <div class="tl-end">${end}</div></div>`}).join("");
   v.innerHTML=`<div class="vh">Időrend</div><div class="stats"><div class="stat"><span class="cap">Shot</span><b>${shDone}/${shTot}</b></div><div class="stat"><span class="cap">Várható wrap</span><b style="color:var(--${s})">${hm(wrap)}</b></div><div class="stat"><span class="cap">Tervhez</span><b>${signMin(wr-PLAN_WRAP)}</b></div></div>
     <section class="card" style="padding:8px 6px"><div class="tl">${rows}<div class="tl-row last" data-type="pres"><div class="tl-time"><b>${hm(wrap)}</b>${wr!==PLAN_WRAP?`<span>terv ${hm(PLAN_WRAP)}</span>`:""}</div><div class="tl-rail"><i></i></div><div class="tl-body"><b>Wrap</b><div class="sub">Bontás, pakolás, napi riport</div></div><div class="tl-end"></div></div></div></section>
     <p class="muted small" style="margin-top:10px;text-align:center">Koppints egy sorra: ugrás oda vagy kihagyás.</p>`;
-  v.querySelectorAll("[data-row]").forEach(r=>r.onclick=e=>{if(e.target.closest("button,a"))return;const i=+r.dataset.row;openRow=openRow===i?null:i;renderTimeline()});
+  bindTakes(v,renderTimeline);
+  v.querySelectorAll("[data-row]").forEach(r=>r.onclick=e=>{if(e.target.closest("button,a,input,.tl-tk"))return;const i=+r.dataset.row;openRow=openRow===i?null:i;renderTimeline()});
   v.querySelectorAll("[data-jump]").forEach(x=>x.onclick=()=>{openRow=null;jump(+x.dataset.jump);location.hash="#most"});
   v.querySelectorAll("[data-skip]").forEach(x=>x.onclick=()=>{openRow=null;toggleSkip(+x.dataset.skip)});
 }
@@ -1198,13 +1235,13 @@ const FBC=FB_EMU?{apiKey:"demo-key",projectId:"demo-diszpo",authDomain:"localhos
 const MP_AVAIL=!!(FB_SRC&&FBC);
 const PAGES_URL="https://xdkoky.github.io/APERATION/base/";
 const MPKEY="diszpo-app-multi-v1",LOCALP="diszpo-app-project-local",LOCALS="diszpo-app-state-local";
-const LIVEKEYS=["cur","act","skip","ext","takes","sw","checkin"];
-const PERMS=[["most","Most"],["idorend","Időrend"],["szkript","Forgatókönyv"],["stab","Stáb"],["phones","Telefonszámok"],["images","Képek"],["props","Kellékek"],["notes","Megjegyzések"],["lights","Fények"],["control","Vezérlés"]];
-const PERM_HELP={most:"a Most nézet",idorend:"a napi időrend",szkript:"a forgatókönyv szövege és a sztori",stab:"a stáblista",phones:"a telefonszámok",images:"storyboard és vilkó",props:"kellékek, kontinuitás",notes:"megjegyzések, fontos tudnivalók",lights:"a fények leírása",control:"Kész, Vissza, +5′, take, érkezés"};
+const LIVEKEYS=["cur","act","skip","ext","checkin"];
+const PERMS=[["most","Most"],["idorend","Időrend"],["szkript","Forgatókönyv"],["stab","Stáb"],["phones","Telefonszámok"],["images","Képek"],["props","Kellékek"],["notes","Megjegyzések"],["lights","Fények"],["takes","Take-napló"],["control","Vezérlés"]];
+const PERM_HELP={most:"a Most nézet",idorend:"a napi időrend",szkript:"a forgatókönyv szövege és a sztori",stab:"a stáblista",phones:"a telefonszámok",images:"storyboard és vilkó",props:"kellékek, kontinuitás",notes:"megjegyzések, fontos tudnivalók",lights:"a fények leírása",takes:"take stopper, jó take csillag, jegyzet minden take-hez (a napot nem vezérli)",control:"Kész, Vissza, +5′, take, érkezés"};
 const permOf=s=>Object.fromEntries(PERMS.map(([k])=>[k,s.split(" ").includes(k)]));
 const ALLPERM=permOf(PERMS.map(p=>p[0]).join(" "));
-const PRESETS=[["2nd AD","most idorend szkript stab phones images props notes lights control"],["Rendező","most idorend szkript stab phones images props notes lights"],
-  ["Operatőr","most idorend szkript stab phones images props notes lights"],["Szkriptes","most idorend szkript stab images props notes"],
+const PRESETS=[["2nd AD","most idorend szkript stab phones images props notes lights takes control"],["Rendező","most idorend szkript stab phones images props notes lights"],
+  ["Operatőr","most idorend szkript stab phones images props notes lights"],["Szkriptes","most idorend szkript stab images props notes takes"],
   ["Világítás","most idorend stab images notes lights"],["Berendező, kellékes","most idorend stab images props notes"],["Smink, jelmez","most idorend stab notes"],
   ["Hang","most idorend szkript stab notes"],["Színész","most idorend szkript"],["Stáb (általános)","most idorend"]];
 const RAND=(n,al="ABCDEFGHJKLMNPQRSTUVWXYZ23456789")=>{const a=new Uint32Array(n);crypto.getRandomValues(a);return[...a].map(x=>al[x%al.length]).join("")};
@@ -1220,6 +1257,8 @@ const isMember=()=>MP.on&&MP.mode==="member";
 const isMpAdmin=()=>MP.on&&MP.mode==="admin";
 const canCtl=()=>!MP.on||MP.mode==="admin"||!!(MP.perm&&MP.perm.control);
 const RO=()=>!canCtl();
+/* take-napló: a szkriptes vezérlés nélkül is mérhet, csillagozhat, jegyzetelhet */
+const canTake=()=>canCtl()||!!(MP.perm&&MP.perm.takes);
 let mpApplying=false;
 
 /* Firebase betöltése (helyi fájlokból, offline gyorsítótárral) */
@@ -1274,8 +1313,31 @@ function mpOnLive(s){
   MP.liveTs=d.ts;let x;try{x=JSON.parse(d.s)}catch(e){return}
   LIVEKEYS.forEach(k=>{st[k]=x[k]??fresh()[k]});
   mpApplying=true;save();mpApplying=false;lastHero=null;
-  if(view==="terv"&&document.activeElement&&document.activeElement.closest('[data-view="terv"]'))tick(true);else renderAll();
+  if(document.activeElement&&document.activeElement.matches(".tk-note")){takesHold=true;tick(true)}
+  else if(view==="terv"&&document.activeElement&&document.activeElement.closest('[data-view="terv"]'))tick(true);else renderAll();
 }
+/* take-ek külön dokumentumban (live/takes), blokkonként összefésülve, hogy a szkriptes és az AD ne írja felül egymást */
+let takesT=null,takesDirty=new Set(),takesAll=false;
+function mpPushTakes(keys){
+  if(!MP.on||!MP.ready||mpApplying||tour||st.sim.on||!canTake())return;
+  if(keys==null)takesAll=true;else[].concat(keys).forEach(k=>takesDirty.add(String(k)));
+  clearTimeout(takesT);takesT=setTimeout(()=>{const ts=Date.now();MP.takesTs=ts;const t={};
+    const ks=takesAll?Object.keys(st.takes):[...takesDirty];ks.forEach(k=>t[k]=JSON.stringify(st.takes[k]||[]));
+    const all=takesAll;takesAll=false;takesDirty.clear();
+    pref().collection("live").doc("takes").set({t,sw:st.sw?JSON.stringify(st.sw):"",ts,by:UID},all?{}:{merge:true}).catch(mpErr)},200);
+}
+let takesHold=false;
+function mpOnTakes(s){
+  if(!s.exists)return;const d=s.data();if(d.by===UID&&d.ts<=(MP.takesTs||0))return;
+  if(tour){MP.pendTakes=s;return}
+  const t={};for(const k in d.t||{}){try{const a=JSON.parse(d.t[k]);if(a&&a.length)t[k]=a}catch(e){}}
+  st.takes=t;try{st.sw=d.sw?JSON.parse(d.sw):null}catch(e){st.sw=null}
+  mpApplying=true;save();mpApplying=false;
+  // jegyzetírás közben nem rajzolunk újra (elveszne a fókusz); a mező elhagyásakor frissül
+  if(document.activeElement&&document.activeElement.matches(".tk-note")){takesHold=true;return}
+  takesRedraw();
+}
+function takesRedraw(){takesHold=false;if(view==="most")renderMost();else if(view==="idorend")renderTimeline()}
 function mpOnView(s){
   if(!s.exists){if(isMember())mpLost();return}
   const d=s.data();
@@ -1287,19 +1349,23 @@ function mpOnView(s){
   mpApplying=true;P=normP(p);saveP();applyProject();mpApplying=false;
   tabKey="";if(view==="terv"&&document.activeElement&&document.activeElement.closest('[data-view="terv"]'))tick(true);else renderAll();
 }
-function mpFlush(){const v=MP.pendView,l=MP.pendLive;MP.pendView=MP.pendLive=null;if(v)mpOnView(v);if(l)mpOnLive(l)}
+function mpFlush(){const v=MP.pendView,l=MP.pendLive,tk=MP.pendTakes;MP.pendView=MP.pendLive=MP.pendTakes=null;if(v)mpOnView(v);if(l)mpOnLive(l);if(tk)mpOnTakes(tk)}
 let unsubs=[];
 function mpStop(){unsubs.forEach(u=>{try{u()}catch(e){}});unsubs=[];MP.ready=false}
 function mpListen(){
   mpStop();const r0=pref(),vid=isMpAdmin()?"__admin":MP.roleId;
   unsubs.push(r0.collection("views").doc(vid).onSnapshot(mpOnView,e=>e.code==="permission-denied"&&isMember()?mpLost():mpErr(e)));
   unsubs.push(r0.collection("live").doc("state").onSnapshot(mpOnLive,e=>e.code==="permission-denied"&&isMember()?mpLost():mpErr(e)));
+  unsubs.push(r0.collection("live").doc("takes").onSnapshot(mpOnTakes,e=>e.code==="permission-denied"&&isMember()?mpLost():mpErr(e)));
   // ha a szerkesztő kitilt, a saját tagsági dokumentum eltűnik
   if(MP.roleId!=="__owner")unsubs.push(r0.collection("members").doc(UID).onSnapshot(s=>{if(!s.exists&&!s.metadata.hasPendingWrites&&!s.metadata.fromCache)mpLost()},e=>{if(e.code==="permission-denied")mpLost()}));
   if(isMpAdmin()){
     unsubs.push(r0.collection("roles").onSnapshot(q=>{
       MP.roles=q.docs.filter(d=>d.id!=="__admin").map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.order||0)-(b.order||0));
-      const a=q.docs.find(d=>d.id==="__admin");MP.adminCode=a?a.data().code:"";mpTeamRefresh()},mpErr));
+      const a=q.docs.find(d=>d.id==="__admin");MP.adminCode=a?a.data().code:"";
+      // régebbi projektek: a szkriptes és a 2nd AD megkapja a take-naplót
+      MP.roles.forEach(r=>{if(r.perm&&r.perm.takes===undefined){r.perm.takes=/szkript|2nd ad/i.test(r.name||"");mpRoleSave(r)}});
+      mpTeamRefresh()},mpErr));
     unsubs.push(r0.collection("members").onSnapshot(q=>{MP.members=q.docs.map(d=>({uid:d.id,...d.data()}));mpTeamRefresh()},mpErr));
   }
   MP.ready=true;
@@ -1319,7 +1385,7 @@ async function mpCreate(btn){
     PRESETS.forEach(([name,s],k)=>{const id=RID(12),code=RAND(8),perm=permOf(s);MP.roles.push({id,name,perm,code,order:k});
       b.set(r0.collection("roles").doc(id),{name,perm,code,order:k});b.set(fdb.collection("codes").doc(code),{pid,roleId:id})});
     b.set(r0.collection("roles").doc("__admin"),{name:"Szerkesztő (társ-AD)",admin:true,code:acode,order:-1});b.set(fdb.collection("codes").doc(acode),{pid,roleId:"__admin"});
-    await b.commit();MP.adminCode=acode;mpSaveLocal();mpListen();await mpPublish();mpPush();
+    await b.commit();MP.adminCode=acode;mpSaveLocal();mpListen();await mpPublish();mpPush();mpPushTakes(null);
     toast("Közös projekt kész. Oszd ki a kódokat a stábnak.",{tone:"ok"});
   }catch(e){mpErr(e);MP.on=false;mpSaveLocal()}
   renderAll();
@@ -1538,11 +1604,11 @@ function projectsHTML(){
 function setProject(p,o={}){if(o.archive)archiveCurrent();P=normP(p);if(o.reset){const s=st.sound;st=fresh();st.sound=s;save()}saveP();applyProject();loadImgs();lastHero=null;renderAll()}
 function withRemap(fn){
   const old=P.blocks.map(b=>b._id);fn();const n={};P.blocks.forEach((b,i)=>n[b._id]=i);
-  const mo=o=>{const r={};for(const k in o){const id=old[k];if(id!=null&&n[id]!=null)r[n[id]]=o[k]}return r};
+  const mo=o=>{const r={};for(const k in o){if(k==="gen"){r[k]=o[k];continue}const id=old[k];if(id!=null&&n[id]!=null)r[n[id]]=o[k]}return r};
   st.act=mo(st.act);st.skip=mo(st.skip);st.ext=mo(st.ext);st.takes=mo(st.takes);
   if(st.cur){const id=old[st.cur.i];st.cur=n[id]!=null?{...st.cur,i:n[id]}:(P.blocks.length?{...st.cur,i:Math.min(st.cur.i,P.blocks.length-1)}:null)}
-  if(st.sw){const id=old[st.sw.i];st.sw=n[id]!=null?{...st.sw,i:n[id]}:null}
-  save();saveP();applyProject();
+  if(st.sw&&st.sw.i!=="gen"){const id=old[st.sw.i];st.sw=n[id]!=null?{...st.sw,i:n[id]}:null}
+  save();saveP();applyProject();mpPushTakes(null);
 }
 
 /* képek a készüléken (IndexedDB) */
@@ -2327,7 +2393,9 @@ function prSkript(){
       <div class="proj">${esc(D.title||"")}<br>Szkript ${n+1} / ${sh.length}</div></div>
       ${ex.length?`<div class="sk-ex">${prLines(ex)}</div>`:""}
       <table><thead><tr><th style="width:12mm">Take</th><th style="width:16mm">Idő</th><th style="width:14mm">Hossz</th><th style="width:12mm">Jó?</th><th>Megjegyzés (játék, szöveg, technika)</th></tr></thead>
-      <tbody>${Array.from({length:rows},(_,i)=>`<tr><td class="num">${i+1}</td><td></td><td></td><td style="text-align:center">☐</td><td></td></tr>`).join("")}</tbody></table>
+      <tbody>${(()=>{const tk=st.takes[b.i]||[];return Array.from({length:Math.max(rows,tk.length+3)},(_,i)=>{const x=tk[i];
+        return x?`<tr><td class="num">${i+1}</td><td class="num">${x.at!=null?hm(x.at):""}</td><td class="num">${mmss(x.d)}</td><td style="text-align:center">${x.ok?"★":"☐"}</td><td>${esc(x.note||"")}</td></tr>`
+          :`<tr><td class="num">${i+1}</td><td></td><td></td><td style="text-align:center">☐</td><td></td></tr>`}).join("")})()}</tbody></table>
       <div class="two"><div class="box"><small>Kontinuitás: ruha, kellék, pozíció, irány</small>${s.props&&s.props.length?`<div style="font-size:8pt;color:#555;margin-top:2pt">${s.props.map(esc).join(" · ")}</div>`:""}<div class="lines"></div></div>
         <div class="box"><small>Optika · hang · egyéb</small><div class="lines"></div></div></div>
     </div>`}).join("")}</div>`;
@@ -2427,7 +2495,7 @@ let view="most";
 function route(scroll){
   renderTabs();
   const h=location.hash.slice(1),vs=tabList();view=vs.some(v=>v[0]===h)?h:vs[0][0];
-  document.body.classList.toggle("ro",RO()&&!tour);if(h&&h!==view)history.replaceState(null,"","#"+view);
+  document.body.classList.toggle("ro",RO()&&!tour);document.body.classList.toggle("cantake",canTake()&&!tour);if(h&&h!==view)history.replaceState(null,"","#"+view);
   $$("[data-view]").forEach(s=>s.hidden=s.dataset.view!==view);
   $$(".tabs a").forEach(a=>{if(a.getAttribute("href")==="#"+view)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
   placeInd();
@@ -2456,7 +2524,7 @@ const TOUR_F=()=>[
   extra:`<div class="legend"><div><i style="background:var(--ok);color:var(--ok)"></i>Zöld: terv szerint haladtok</div><div><i style="background:var(--warn);color:var(--warn)"></i>Narancs: késés, de belefér a tartalékba</div><div><i style="background:var(--late);color:var(--late)"></i>Piros: a wrap ${hm(TARGET)} utánra csúszik</div></div>`},
  {state:"shoot",sel:"#go",title:"Kész: ezt nyomod a legtöbbször",html:"Amikor egy blokk véget ér, nyomd meg a <b>Kész</b> gombot. Az app rögzíti az időt, és elindítja a következő blokkot. A gomb alján mindig látod, mi jön."},
  {state:"shoot",sel:"#dock",title:"Vissza és +5 perc",html:"<b>‹</b>&nbsp; Mellényomtál? Visszalép az előző blokkra. Minden lépés után pár másodpercig egy Visszavonás gomb is megjelenik.<br><b>+5′</b>&nbsp; Több idő kell? Öt percet ad a mostani blokkhoz, a várható wrap azonnal frissül."},
- {state:"shoot",sel:".rec",title:"Take-ek",html:"A piros gomb indítja és megállítja a take stopperét. A take-ek sorban megjelennek alatta, a <b>csillaggal</b> megjelölöd a jót."},
+ {state:"shoot",sel:".rec",title:"Take-ek",html:"A piros gomb indítja és megállítja a take stopperét. A take-ek sorban megjelennek alatta: a <b>csillaggal</b> megjelölöd a jót, mellé pedig <b>jegyzetet</b> írhatsz (pl. szöveghiba, fókusz, rendező kedvence). Az Időrendben minden shotnál visszanézheted. Közös munkában a <b>szkriptes</b> is mérheti a take-eket, akkor is, ha a napot nem ő vezérli."},
  {state:"shoot",sel:"#detailcard",title:"Minden, ami a shothoz kell",html:"Fent a shot <b>storyboard-rajza és világítási terve</b>: koppintásra teljes minőségben nyílnak meg, csíptetéssel nagyíthatók. <b>Setre · kellék:</b> kit kell hívni, mi legyen a képben. <b>Forgatókönyv:</b> a szövegrész, amit most veszünk."},
  {state:"shoot",sel:"#formcard",title:"Mi jön utána",html:"Már forgatás közben látod a következő beállítást: mennyi idő az átállás, <b>változik-e a fény</b>, és kit kell majd a setre hívni. Így időben szólhatsz a részlegeknek."},
  {state:"move",sel:HERO,title:"Átállás",html:"Átálláskor a kártya azt mutatja, <b>mire álltok át</b>. Alatta ott a fényváltás, a kellékek, a storyboard és a vilkó. Öt perccel a vége előtt az app jelez: <b>Színészeket a setre!</b>"},
@@ -2466,7 +2534,7 @@ const TOUR_F=()=>[
  {state:"move",view:"terv",sec:"idorend",sel:"#tourblock .eb-drag",title:"Átrendezés húzással",html:"A kártya bal szélén lévő <b>⋮⋮ fogantyút</b> megfogva fel-le húzhatod a blokkot. Húzás közben a többi kártya félrecsúszik, és az időpontok már az új sorrendet mutatják. Elengedés után a nap újraszámolódik, és egy koppintással <b>visszavonható</b>. Ha két átállás kerül egymás mellé, az app <b>sárgán jelzi</b>, de engedi."},
  {state:"move",view:"terv",sec:"szkript",sel:".scr-tools",title:"Forgatókönyv jelölése",html:"A <b>Forgatókönyv</b> részen bemásolod a szöveget, aztán fent kiválasztasz egy beállítást (pl. <b>1/2</b>), és <b>a sorokra koppintva</b> jelölöd, melyik részt veszi. A jelenet címére koppintva az egész jelenet ki-be kapcsol, Tartomány módban az első és az utolsó sorral jelölsz. Forgatás közben a <b>Most</b> nézetben így a teljes jelenet olvasható, a vett rész kiemelve."},
  {state:"move",view:"terv",sec:"idorend",sel:'[data-view="terv"] .esec',title:"A terv többi része",html:"<b>Shotlist:</b> a shotok a sztori sorrendjében (plán, optika, mozgás, leírás, storyboard); egy gombbal kerülnek az időrendbe. <b>Projekt:</b> cím, dátum, crew call, wrap-határ, fontos tudnivalók és a fénybeállítások kódjai. <b>Emberek:</b> szereplők és stáb, érkezéssel, telefonnal. <b>Forgatókönyv:</b> másold be a szöveget, az app szétszedi; utána kiválasztasz egy beállítást, és a sorokra koppintva jelölöd, melyik részt veszi. Forgatás közben így a Most nézetben a teljes jelenet olvasható, a vett rész kiemelve. Minden azonnal mentődik ezen az eszközön."},
- {state:"move",view:"terv",sec:"csapat",sel:"#teamcard",title:"Közös munka a stábbal",html:"A <b>Csapat</b> részen megoszthatod a napot: minden pozíció (2nd AD, operatőr, szkriptes, kellékes, színész…) kap egy <b>belépőkódot</b>. Aki beírja (Kezdés → <b>Csatlakozás kóddal</b>), a saját telefonján élőben látja, mi megy most és mennyit csúsztunk. Pozíciónként te döntöd el, <b>ki mit lát</b> (pl. telefonszámok, forgatókönyv), és ki <b>vezérelheti</b> a napot. A kitiltás és az új kód egy koppintás."},
+ {state:"move",view:"terv",sec:"csapat",sel:"#teamcard",title:"Közös munka a stábbal",html:"A <b>Csapat</b> részen megoszthatod a napot: minden pozíció (2nd AD, operatőr, szkriptes, kellékes, színész…) kap egy <b>belépőkódot</b>. Aki beírja (Kezdés → <b>Csatlakozás kóddal</b>), a saját telefonján élőben látja, mi megy most és mennyit csúsztunk. Pozíciónként te döntöd el, <b>ki mit lát</b> (pl. telefonszámok, forgatókönyv), és ki <b>vezérelheti</b> a napot. A <b>szkriptes</b> alapból <b>Take-napló</b> jogot kap: mérheti a take-eket, csillagozhat és jegyzetelhet, de a napot nem lépteti. A kitiltás és az új kód egy koppintás."},
  {state:"move",view:"terv",sec:"fajl",sel:'[data-do="projexport"]',title:"Mentés és biztonság",html:"Minden módosítás <b>azonnal mentődik</b> ezen az eszközön, és az app percenként biztonsági pillanatképet is készít, ami a Fájl részen visszaállítható. Ha kész a terv, a <b>Projekt exportálása</b> egyetlen fájlba ment mindent (képekkel, jelölésekkel, a nap állásával), ami bármelyik APERATION-ben visszatölthető. Excelbe is mentheted, gépen javítani."},
  {state:"move",title:"Ennyi az egész",html:()=>tour&&tour.tmpP?"Kezdd a <b>Terv</b> fülön: tölts be egy Excel-táblázatot, nyisd meg a mintát, vagy írd be a napot. Ezt a bemutatót az Info fülön bármikor újranézheted.":"Forgatás előtt érdemes egyszer végigmenni a napon <b>próba módban</b>, gyorsított órával. Ezt a bemutatót az Info fülön bármikor újranézheted."}
 ];
@@ -2476,7 +2544,7 @@ function tourState(kind){
   for(const b of B)if(b.i<sb.i)s.act[b.i]={s:b.s,e:b.e};
   const mv=B[sb.i+1];
   if(kind==="move"&&mv){s.act[sb.i]={s:sb.s+2,e:sb.e+2};s.sim={on:true,start:mv.s+5,speed:1,base:now};s.cur={i:mv.i,at:mv.s+2}}
-  else{s.sim={on:true,start:sb.s+11,speed:1,base:now};s.cur={i:sb.i,at:sb.s+2};s.takes[sb.i]=[{d:47,ok:false},{d:52,ok:true}]}
+  else{s.sim={on:true,start:sb.s+11,speed:1,base:now};s.cur={i:sb.i,at:sb.s+2};s.takes[sb.i]=[{d:47,ok:false,note:"Anna elvétette a szöveget"},{d:52,ok:true,note:"Ez az! Rendező kedvence"}]}
   st=s;detailSeg="setre";
 }
 function tourStart(){

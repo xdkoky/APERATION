@@ -16,5 +16,5 @@
 .perm.ctl.on{background:color-mix(in srgb,var(--warn) 20%,transparent);border-color:color-mix(in srgb,var(--warn) 60%,transparent)}
 .role-act{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 /* csak nézők: a vezérlők rejtve */
-body.ro #dock,body.ro .rec,body.ro .tl-x,body.ro [data-skipnow],body.ro [data-unskip],body.ro #extclr,body.ro #demo{display:none!important}
+body.ro #dock,body.ro:not(.cantake) .rec,body.ro .tl-x,body.ro [data-skipnow],body.ro [data-unskip],body.ro #extclr,body.ro #demo{display:none!important}
 body.ro .chk{pointer-events:none;opacity:.55}

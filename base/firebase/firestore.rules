@@ -15,6 +15,7 @@ service cloud.firestore {
     function isAdmin(p) { return isOwner(p) || (isMem(p) && mem(p).roleId == '__admin'); }
     function role(p) { return get(/databases/$(db)/documents/projects/$(p)/roles/$(mem(p).roleId)).data; }
     function canCtl(p) { return isAdmin(p) || (isMem(p) && role(p).perm.control == true); }
+    function canTake(p) { return canCtl(p) || (isMem(p) && role(p).perm.get('takes', false) == true); }
     function code(c) { return get(/databases/$(db)/documents/codes/$(c)).data; }
 
     // Belépőkódok: csak pontos kóddal kérhetők le, listázni nem lehet őket.
@@ -57,10 +58,11 @@ service cloud.firestore {
         allow write: if isAdmin(p);
       }
 
-      // A nap állása (melyik blokk megy, kész blokkok, take-ek, érkezések).
+      // A nap állása (melyik blokk megy, kész blokkok, érkezések) és a take-napló (live/takes).
+      // A take-naplót a „Take-napló” jogú pozíció (pl. szkriptes) is írhatja, a nap állását csak a vezérlő.
       match /live/{d} {
         allow read: if isMem(p) || isAdmin(p);
-        allow write: if canCtl(p);
+        allow write: if canCtl(p) || (d == 'takes' && canTake(p));
       }
     }
   }

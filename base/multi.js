@@ -9,13 +9,13 @@ const FBC=FB_EMU?{apiKey:"demo-key",projectId:"demo-diszpo",authDomain:"localhos
 const MP_AVAIL=!!(FB_SRC&&FBC);
 const PAGES_URL="https://xdkoky.github.io/APERATION/base/";
 const MPKEY="diszpo-app-multi-v1",LOCALP="diszpo-app-project-local",LOCALS="diszpo-app-state-local";
-const LIVEKEYS=["cur","act","skip","ext","takes","sw","checkin"];
-const PERMS=[["most","Most"],["idorend","Időrend"],["szkript","Forgatókönyv"],["stab","Stáb"],["phones","Telefonszámok"],["images","Képek"],["props","Kellékek"],["notes","Megjegyzések"],["lights","Fények"],["control","Vezérlés"]];
-const PERM_HELP={most:"a Most nézet",idorend:"a napi időrend",szkript:"a forgatókönyv szövege és a sztori",stab:"a stáblista",phones:"a telefonszámok",images:"storyboard és vilkó",props:"kellékek, kontinuitás",notes:"megjegyzések, fontos tudnivalók",lights:"a fények leírása",control:"Kész, Vissza, +5′, take, érkezés"};
+const LIVEKEYS=["cur","act","skip","ext","checkin"];
+const PERMS=[["most","Most"],["idorend","Időrend"],["szkript","Forgatókönyv"],["stab","Stáb"],["phones","Telefonszámok"],["images","Képek"],["props","Kellékek"],["notes","Megjegyzések"],["lights","Fények"],["takes","Take-napló"],["control","Vezérlés"]];
+const PERM_HELP={most:"a Most nézet",idorend:"a napi időrend",szkript:"a forgatókönyv szövege és a sztori",stab:"a stáblista",phones:"a telefonszámok",images:"storyboard és vilkó",props:"kellékek, kontinuitás",notes:"megjegyzések, fontos tudnivalók",lights:"a fények leírása",takes:"take stopper, jó take csillag, jegyzet minden take-hez (a napot nem vezérli)",control:"Kész, Vissza, +5′, take, érkezés"};
 const permOf=s=>Object.fromEntries(PERMS.map(([k])=>[k,s.split(" ").includes(k)]));
 const ALLPERM=permOf(PERMS.map(p=>p[0]).join(" "));
-const PRESETS=[["2nd AD","most idorend szkript stab phones images props notes lights control"],["Rendező","most idorend szkript stab phones images props notes lights"],
-  ["Operatőr","most idorend szkript stab phones images props notes lights"],["Szkriptes","most idorend szkript stab images props notes"],
+const PRESETS=[["2nd AD","most idorend szkript stab phones images props notes lights takes control"],["Rendező","most idorend szkript stab phones images props notes lights"],
+  ["Operatőr","most idorend szkript stab phones images props notes lights"],["Szkriptes","most idorend szkript stab images props notes takes"],
   ["Világítás","most idorend stab images notes lights"],["Berendező, kellékes","most idorend stab images props notes"],["Smink, jelmez","most idorend stab notes"],
   ["Hang","most idorend szkript stab notes"],["Színész","most idorend szkript"],["Stáb (általános)","most idorend"]];
 const RAND=(n,al="ABCDEFGHJKLMNPQRSTUVWXYZ23456789")=>{const a=new Uint32Array(n);crypto.getRandomValues(a);return[...a].map(x=>al[x%al.length]).join("")};
@@ -31,6 +31,8 @@ const isMember=()=>MP.on&&MP.mode==="member";
 const isMpAdmin=()=>MP.on&&MP.mode==="admin";
 const canCtl=()=>!MP.on||MP.mode==="admin"||!!(MP.perm&&MP.perm.control);
 const RO=()=>!canCtl();
+/* take-napló: a szkriptes vezérlés nélkül is mérhet, csillagozhat, jegyzetelhet */
+const canTake=()=>canCtl()||!!(MP.perm&&MP.perm.takes);
 let mpApplying=false;
 
 /* Firebase betöltése (helyi fájlokból, offline gyorsítótárral) */
@@ -85,8 +87,31 @@ function mpOnLive(s){
   MP.liveTs=d.ts;let x;try{x=JSON.parse(d.s)}catch(e){return}
   LIVEKEYS.forEach(k=>{st[k]=x[k]??fresh()[k]});
   mpApplying=true;save();mpApplying=false;lastHero=null;
-  if(view==="terv"&&document.activeElement&&document.activeElement.closest('[data-view="terv"]'))tick(true);else renderAll();
+  if(document.activeElement&&document.activeElement.matches(".tk-note")){takesHold=true;tick(true)}
+  else if(view==="terv"&&document.activeElement&&document.activeElement.closest('[data-view="terv"]'))tick(true);else renderAll();
 }
+/* take-ek külön dokumentumban (live/takes), blokkonként összefésülve, hogy a szkriptes és az AD ne írja felül egymást */
+let takesT=null,takesDirty=new Set(),takesAll=false;
+function mpPushTakes(keys){
+  if(!MP.on||!MP.ready||mpApplying||tour||st.sim.on||!canTake())return;
+  if(keys==null)takesAll=true;else[].concat(keys).forEach(k=>takesDirty.add(String(k)));
+  clearTimeout(takesT);takesT=setTimeout(()=>{const ts=Date.now();MP.takesTs=ts;const t={};
+    const ks=takesAll?Object.keys(st.takes):[...takesDirty];ks.forEach(k=>t[k]=JSON.stringify(st.takes[k]||[]));
+    const all=takesAll;takesAll=false;takesDirty.clear();
+    pref().collection("live").doc("takes").set({t,sw:st.sw?JSON.stringify(st.sw):"",ts,by:UID},all?{}:{merge:true}).catch(mpErr)},200);
+}
+let takesHold=false;
+function mpOnTakes(s){
+  if(!s.exists)return;const d=s.data();if(d.by===UID&&d.ts<=(MP.takesTs||0))return;
+  if(tour){MP.pendTakes=s;return}
+  const t={};for(const k in d.t||{}){try{const a=JSON.parse(d.t[k]);if(a&&a.length)t[k]=a}catch(e){}}
+  st.takes=t;try{st.sw=d.sw?JSON.parse(d.sw):null}catch(e){st.sw=null}
+  mpApplying=true;save();mpApplying=false;
+  // jegyzetírás közben nem rajzolunk újra (elveszne a fókusz); a mező elhagyásakor frissül
+  if(document.activeElement&&document.activeElement.matches(".tk-note")){takesHold=true;return}
+  takesRedraw();
+}
+function takesRedraw(){takesHold=false;if(view==="most")renderMost();else if(view==="idorend")renderTimeline()}
 function mpOnView(s){
   if(!s.exists){if(isMember())mpLost();return}
   const d=s.data();
@@ -98,19 +123,23 @@ function mpOnView(s){
   mpApplying=true;P=normP(p);saveP();applyProject();mpApplying=false;
   tabKey="";if(view==="terv"&&document.activeElement&&document.activeElement.closest('[data-view="terv"]'))tick(true);else renderAll();
 }
-function mpFlush(){const v=MP.pendView,l=MP.pendLive;MP.pendView=MP.pendLive=null;if(v)mpOnView(v);if(l)mpOnLive(l)}
+function mpFlush(){const v=MP.pendView,l=MP.pendLive,tk=MP.pendTakes;MP.pendView=MP.pendLive=MP.pendTakes=null;if(v)mpOnView(v);if(l)mpOnLive(l);if(tk)mpOnTakes(tk)}
 let unsubs=[];
 function mpStop(){unsubs.forEach(u=>{try{u()}catch(e){}});unsubs=[];MP.ready=false}
 function mpListen(){
   mpStop();const r0=pref(),vid=isMpAdmin()?"__admin":MP.roleId;
   unsubs.push(r0.collection("views").doc(vid).onSnapshot(mpOnView,e=>e.code==="permission-denied"&&isMember()?mpLost():mpErr(e)));
   unsubs.push(r0.collection("live").doc("state").onSnapshot(mpOnLive,e=>e.code==="permission-denied"&&isMember()?mpLost():mpErr(e)));
+  unsubs.push(r0.collection("live").doc("takes").onSnapshot(mpOnTakes,e=>e.code==="permission-denied"&&isMember()?mpLost():mpErr(e)));
   // ha a szerkesztő kitilt, a saját tagsági dokumentum eltűnik
   if(MP.roleId!=="__owner")unsubs.push(r0.collection("members").doc(UID).onSnapshot(s=>{if(!s.exists&&!s.metadata.hasPendingWrites&&!s.metadata.fromCache)mpLost()},e=>{if(e.code==="permission-denied")mpLost()}));
   if(isMpAdmin()){
     unsubs.push(r0.collection("roles").onSnapshot(q=>{
       MP.roles=q.docs.filter(d=>d.id!=="__admin").map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.order||0)-(b.order||0));
-      const a=q.docs.find(d=>d.id==="__admin");MP.adminCode=a?a.data().code:"";mpTeamRefresh()},mpErr));
+      const a=q.docs.find(d=>d.id==="__admin");MP.adminCode=a?a.data().code:"";
+      // régebbi projektek: a szkriptes és a 2nd AD megkapja a take-naplót
+      MP.roles.forEach(r=>{if(r.perm&&r.perm.takes===undefined){r.perm.takes=/szkript|2nd ad/i.test(r.name||"");mpRoleSave(r)}});
+      mpTeamRefresh()},mpErr));
     unsubs.push(r0.collection("members").onSnapshot(q=>{MP.members=q.docs.map(d=>({uid:d.id,...d.data()}));mpTeamRefresh()},mpErr));
   }
   MP.ready=true;
@@ -130,7 +159,7 @@ async function mpCreate(btn){
     PRESETS.forEach(([name,s],k)=>{const id=RID(12),code=RAND(8),perm=permOf(s);MP.roles.push({id,name,perm,code,order:k});
       b.set(r0.collection("roles").doc(id),{name,perm,code,order:k});b.set(fdb.collection("codes").doc(code),{pid,roleId:id})});
     b.set(r0.collection("roles").doc("__admin"),{name:"Szerkesztő (társ-AD)",admin:true,code:acode,order:-1});b.set(fdb.collection("codes").doc(acode),{pid,roleId:"__admin"});
-    await b.commit();MP.adminCode=acode;mpSaveLocal();mpListen();await mpPublish();mpPush();
+    await b.commit();MP.adminCode=acode;mpSaveLocal();mpListen();await mpPublish();mpPush();mpPushTakes(null);
     toast("Közös projekt kész. Oszd ki a kódokat a stábnak.",{tone:"ok"});
   }catch(e){mpErr(e);MP.on=false;mpSaveLocal()}
   renderAll();
