@@ -641,6 +641,12 @@ html.gated,html.gated body{overflow:hidden}
 .gate{position:fixed;inset:0;z-index:300;background:var(--bg);overflow:auto;-webkit-overflow-scrolling:touch;padding:calc(24px + env(safe-area-inset-top,0px)) 16px calc(24px + env(safe-area-inset-bottom,0px))}
 .gate-in{max-width:520px;margin:0 auto;display:grid;gap:16px}
 .gate .brand-logo{display:flex;justify-content:center}
+.authgate{position:fixed;inset:0;z-index:290;background:var(--bg);overflow:auto;-webkit-overflow-scrolling:touch;padding:calc(24px + env(safe-area-inset-top,0px)) 16px calc(24px + env(safe-area-inset-bottom,0px))}
+.authgate .brand-logo{display:flex;justify-content:center}
+.authgate .brand-logo svg{height:84px}
+.authgate h1.ag-hi{font-size:22px;font-weight:750;letter-spacing:-.02em;text-align:center;margin:0}
+.authgate .ag-sub{text-align:center;margin:-8px 0 0}
+html.authed-gate body{overflow:hidden}
 .gsteps{margin:4px 0 0;padding-left:22px;display:grid;gap:10px;line-height:1.5}
 .gsteps li::marker{color:var(--shoot);font-weight:800}
 .gbig{height:52px;font-size:16px}
@@ -906,7 +912,7 @@ const dEff=b=>b.d+(st.ext[b.i]||0);
 
 /* ---------- vetítés: mikor mi lesz, ha így haladunk ---------- */
 function project(){
-  const t=tod(),P=[];let x;
+  const t=tod(),P=[];let x;if(!B.length)return{P,wrap:t,t};
   if(!st.cur){x=live()?Math.max(t,B[0].s):B[0].s;
     for(const b of B){if(st.skip[b.i]){P[b.i]={skip:1};continue}P[b.i]={s:x,e:x+dEff(b)};x+=dEff(b)}
     return{P,wrap:x,t}}
@@ -1387,7 +1393,7 @@ const JOINKEY="aperation-join";
 const inviteURL=c=>PAGES_URL+"?join="+fmtCode(c);
 (()=>{const m=location.search.match(/[?&]join=([A-Za-z0-9-]{8,9})/);if(!m)return;
   try{localStorage.setItem(JOINKEY,m[1].toUpperCase().replace(/[^A-Z0-9]/g,""))}catch(e){}
-  try{history.replaceState(null,"",location.pathname+location.hash)}catch(e){}})();
+  try{const q=location.search.replace(/([?&])join=[^&]*&?/,"$1").replace(/[?&]$/,"");history.replaceState(null,"",location.pathname+q+location.hash)}catch(e){}})();
 const pendingJoin=()=>{try{return localStorage.getItem(JOINKEY)||""}catch(e){return""}};
 async function mpInvite(code,role){
   const url=inviteURL(code),text=`Meghívó${P.title?` a(z) „${P.title}” diszpóhoz`:" egy közös diszpóhoz"} (APERATION, ${role}). Kód: ${fmtCode(code)}`;
@@ -1598,7 +1604,7 @@ function mpOnTakes(s){
   if(document.activeElement&&document.activeElement.matches(".tk-note")){takesHold=true;return}
   takesRedraw();
 }
-function takesRedraw(){takesHold=false;if(view==="most")renderMost();else if(view==="idorend")renderTimeline()}
+function takesRedraw(){takesHold=false;if(!B.length)return;if(view==="most")renderMost();else if(view==="idorend")renderTimeline()}
 function mpOnView(s){
   if(!s.exists){if(isMember())mpLost();return}
   const d=s.data();
@@ -1673,6 +1679,9 @@ async function mpJoin(raw,name){
     await fbInit();const cd=await fdb.collection("codes").doc(c).get();
     if(!cd.exists){toast("Nincs ilyen kód. Ellenőrizd, vagy kérj újat a szerkesztőtől.",{tone:"late"});return false}
     const {pid,roleId}=cd.data();
+    // társszerkesztőnek fiók kell; stábpozícióra fiók nélkül is lehet csatlakozni
+    if(roleId==="__admin"&&AUTH_REQ&&!accLoad()){try{localStorage.setItem(JOINKEY,c);localStorage.setItem(JOINNAME,name.trim())}catch(e){}
+      authForce="Ez társszerkesztői meghívó: a diszpó szerkesztéséhez előbb lépj be, vagy hozz létre fiókot. Utána automatikusan csatlakozol.";authMode=accLoad()?"in":"reg";authShow(true);return false}
     await fdb.collection("projects").doc(pid).collection("members").doc(UID).set({code:c,roleId,name:name.trim(),joined:Date.now()});
     if(!MP.on){try{localStorage.setItem(LOCALP,JSON.stringify(P));localStorage.setItem(LOCALS,JSON.stringify(st))}catch(e){}}
     MP={...MP,base:null,on:true,mode:roleId==="__admin"?"admin":"member",pid,roleId,code:c,name:name.trim(),perm:roleId==="__admin"?ALLPERM:null,roleName:"",title:"",roles:[],members:[],lastPub:0,liveTs:0};
@@ -1893,7 +1902,7 @@ document.addEventListener("change",e=>{if(e.target&&e.target.id==="mynamelive"){
    A projektek listája: users/{uid}/projects/{pid}. */
 const ACCKEY="aperation-account";
 const accLoad=()=>{try{return JSON.parse(localStorage.getItem(ACCKEY)||"null")}catch(e){return null}};
-const accSave=a=>{try{a?localStorage.setItem(ACCKEY,J(a)):localStorage.removeItem(ACCKEY)}catch(e){}};
+const accSave=a=>{try{if(a){localStorage.setItem(ACCKEY,J(a));localStorage.setItem("aperation-had-acc","1")}else localStorage.removeItem(ACCKEY)}catch(e){}};
 let accList=null,accBusy=false;
 function myProjRec(){
   if(!fdb||!UID||!MP.on||!MP.pid||PV)return;
@@ -1971,7 +1980,7 @@ async function accOpen(pid){
 }
 async function accOut(btn){
   if(!sure(btn,"Biztos? Koppints újra"))return;
-  try{await fbInit();if(MP.on)await mpLeave(true);await fauth.signOut();UID=null;accSave(null);accList=null;toast("Kijelentkeztél ezen az eszközön.");renderAll()}catch(e){toast(accErr(e),{tone:"warn"})}
+  try{await fbInit();if(MP.on)await mpLeave(true);await fauth.signOut();UID=null;accSave(null);accList=null;authMode="in";authMsg="";toast("Kijelentkeztél ezen az eszközön.");renderAll()}catch(e){toast(accErr(e),{tone:"warn"})}
 }
 async function accReset(){
   const m=(($("#accmail")||{}).value||"").trim();if(!m){toast("Írd be fent az e-mail-címed, és koppints újra.");return}
@@ -1982,6 +1991,81 @@ document.addEventListener("click",e=>{const t=e.target.closest("[data-do],[data-
   if(d.do==="acclink")accLink(t);else if(d.do==="accin")accIn(t);else if(d.do==="accout")accOut(t);else if(d.do==="accreset")accReset();
   else if(d.do==="accprojs")accRefreshList();
   else if(d.do==="gotoacct"){location.hash="#info";setTimeout(()=>{const c=$("#acctcard");c&&c.scrollIntoView({block:"start",behavior:"smooth"})},200)}});
+
+/* ---------- belépés: az app a belépéssel fogad ----------
+   Szerkesztéshez (saját diszpó, társszerkesztés) fiók kell. Kivétel: aki egy stábpozícióra kapott meghívót
+   (link vagy kód), az fiók nélkül is csatlakozhat. Net nélkül az első indításkor tovább lehet lépni. */
+const AUTH_REQ=MP_AVAIL&&!(/^(localhost|127\.)/.test(location.hostname)&&!/[?&]auth\b/.test(location.search));
+const JOINNAME="aperation-join-name";
+let authMode=(()=>{try{return localStorage.getItem("aperation-had-acc")?"in":"reg"}catch(e){return"reg"}})(),authForce="",authMsg="";
+const authSkipped=()=>{try{return sessionStorage.getItem("aperation-authskip")==="1"}catch(e){return false}};
+function authNeeded(){
+  if(!AUTH_REQ||accLoad()||PV||tour)return false;
+  if(authForce)return true;
+  if(isMember()||pendingJoin()||authSkipped())return false;
+  return true;
+}
+function authHTML(){
+  const legacy=MP.on&&MP.roleId==="__owner";
+  if(legacy&&!authForce)authMode="reg";
+  const reg=authMode==="reg",off=!navigator.onLine;
+  return`<div class="gate-in"><div class="brand-logo">${LOGO_SVG}</div>
+    <h1 class="ag-hi">Üdv az APERATION-ben</h1><p class="muted ag-sub">${reg?"Hozz létre egy fiókot: a diszpóid és a közös projektjeid így bármelyik eszközön megmaradnak.":"Lépj be a fiókodba."}</p>
+    <section class="card"><div class="seg" role="group" aria-label="Belépés vagy új fiók"><button type="button" data-agmode="in" aria-pressed="${!reg}">Belépés</button><button type="button" data-agmode="reg" aria-pressed="${reg}">Új fiók</button></div>
+      ${authForce?`<p class="eb-warn sum">${ic("alert",16)}<span>${esc(authForce)}</span></p>`:legacy?`<p class="eb-warn sum">${ic("alert",16)}<span>Ezen az eszközön már van közös projekted. Hozz létre fiókot, így a tiéd marad, és más eszközön is eléred.</span></p>`:""}
+      <div class="eg">${reg?`<label class="fi span2"><span class="flab">A neved (ezt látják a többiek)</span><input id="agname" autocomplete="name" placeholder="pl. Tóth Tamás" value="${esc(MP.name||localStorage.getItem(JOINNAME)||"")}"></label>`:""}
+        <label class="fi"><span class="flab">E-mail</span><input id="agmail" type="email" autocomplete="email" inputmode="email" placeholder="nev@pelda.hu"></label>
+        <label class="fi"><span class="flab">Jelszó${reg?" (legalább 6 karakter)":""}</span><input id="agpw" type="password" autocomplete="${reg?"new-password":"current-password"}"></label></div>
+      <button class="btn solid big" type="button" data-do="agsubmit">${reg?ic("plus",18)+"Fiók létrehozása":ic("arrow",18)+"Belépés"}</button>
+      ${authMsg?`<p class="eb-warn sum" id="agmsg">${ic("alert",16)}<span>${esc(authMsg)}</span></p>`:""}
+      ${reg?"":`<p class="muted small" style="text-align:center"><button type="button" class="linkbtn" data-do="agreset">Elfelejtett jelszó</button></p>`}</section>
+    ${authForce?"":`<section class="card"><h2>Meghívót kaptál a stábtól?</h2><p class="muted small">Ha egy pozícióra hívtak meg (pl. rendező, AD, szkriptes, stáb), fiók nélkül is csatlakozhatsz a kóddal.</p>
+      <button class="btn" type="button" data-do="agjoin">${ic("users",16)}Csatlakozás kóddal</button><div id="agjoinbox" hidden>${joinHTML()}</div></section>`}
+    ${off?`<section class="card"><p class="muted small">Most nincs internet, ezért a belépés nem megy. Folytathatod fiók nélkül, és később beléphetsz (Info → Fiók).</p><button class="btn" type="button" data-do="agskip">Folytatás net nélkül</button></section>`:""}
+    ${creditLine()}</div>`;
+}
+function authShow(force){
+  let g=$("#authgate");
+  if(!g){g=document.createElement("div");g.className="authgate";g.id="authgate";g.setAttribute("role","dialog");g.setAttribute("aria-modal","true");g.setAttribute("aria-label","Belépés");document.body.append(g);force=true}
+  if(force){const keep={};g.querySelectorAll("input[id]").forEach(i=>{if(i.type!=="password"||authMsg)keep[i.id]=i.value});
+    g.innerHTML=authHTML();for(const [k,v] of Object.entries(keep)){const i=g.querySelector("#"+k);if(i&&v)i.value=v}
+    document.documentElement.classList.add("authed-gate")}
+}
+function authGate(){if(authNeeded())authShow(false);else{const g=$("#authgate");if(g){g.remove();document.documentElement.classList.remove("authed-gate")}}}
+async function authSubmit(btn){
+  const reg=authMode==="reg",m=(($("#agmail")||{}).value||"").trim(),pw=($("#agpw")||{}).value||"",nm=(($("#agname")||{}).value||"").trim();
+  if(!m||!pw||reg&&!nm){authMsg=reg?"Add meg a neved, az e-mailt és a jelszót.":"Add meg az e-mailt és a jelszót.";authShow(true);return}
+  if(accBusy)return;accBusy=true;btn.disabled=true;authMsg="";
+  try{await fbInit();
+    if(reg){const u=fauth.currentUser;
+      if(u&&u.isAnonymous)await u.linkWithCredential(firebase.auth.EmailAuthProvider.credential(m,pw));
+      else await fauth.createUserWithEmailAndPassword(m,pw);
+      try{await fauth.currentUser.updateProfile({displayName:nm})}catch(e){}
+      MP.name=nm;
+    }else{
+      if(MP.on)await mpLeave(true);
+      await fauth.signInWithEmailAndPassword(m,pw);
+      MP.name=fauth.currentUser.displayName||MP.name||"";
+    }
+    UID=fauth.currentUser.uid;accSave({email:m,name:MP.name});mpSaveLocal();if(MP.on)myProjRec();
+    authForce="";accBusy=false;authGate();
+    const pj=pendingJoin();
+    if(pj){const nn=localStorage.getItem(JOINNAME)||MP.name||m.split("@")[0];try{localStorage.removeItem(JOINNAME)}catch(e){}await mpJoin(pj,nn);return}
+    if(reg)toast(`Üdv, ${MP.name}! A fiókod kész.`,{tone:"ok"});
+    else{toast("Beléptél.",{tone:"ok"});await accRefreshList();if(accList&&accList.length&&!MP.on){location.hash="#info";setTimeout(()=>{const c=$("#acctcard");c&&c.scrollIntoView({block:"start"})},250)}}
+    renderAll();
+  }catch(e){authMsg=accErr(e);accBusy=false;btn.disabled=false;authShow(true)}
+  accBusy=false;
+}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-agmode],[data-do]");if(!t||!t.closest("#authgate"))return;const d=t.dataset;
+  if(d.agmode){authMode=d.agmode;authMsg="";authShow(true);return}
+  if(d.do==="agsubmit")authSubmit(t);
+  else if(d.do==="agreset"){const m=(($("#agmail")||{}).value||"").trim();if(!m){authMsg="Írd be fent az e-mail-címed, és koppints újra.";authShow(true);return}
+    fbInit().then(()=>fauth.sendPasswordResetEmail(m)).then(()=>toast("Elküldtük a jelszó-visszaállító e-mailt (nézd meg a spam mappát is).",{tone:"ok",ms:6000})).catch(e=>{authMsg=accErr(e);authShow(true)})}
+  else if(d.do==="agjoin"){const b=$("#agjoinbox");if(b){b.hidden=!b.hidden;b.hidden||b.querySelector("#jcode").focus()}}
+  else if(d.do==="agskip"){try{sessionStorage.setItem("aperation-authskip","1")}catch(e){}authGate()}});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.closest&&e.target.closest("#authgate")&&e.target.matches("#agpw,#agmail,#agname")){const b=$('#authgate [data-do="agsubmit"]');b&&b.click()}});
+addEventListener("online",()=>{if($("#authgate"))authShow(true)});addEventListener("offline",()=>{if($("#authgate"))authShow(true)});
 
 /* ---------- terv (projekt): betöltés, szerkesztés, Excel be/ki ---------- */
 const PKEY="diszpo-app-project-v1";
@@ -3042,6 +3126,7 @@ function route(scroll){
   if(!B.length&&view!=="terv"&&view!=="info")renderWelcome($(`[data-view="${view}"]`));
   else ({most:renderMost,idorend:renderTimeline,szkript:renderScript,stab:renderCrew,terv:renderEdit,info:renderInfo})[view]();
   if(view!=="most"||!B.length)tick(true);
+  authGate();
   if(scroll){window.scrollTo({top:0});
     if(view==="idorend"){const c=document.querySelector(".tl-row.cur");c&&c.scrollIntoView({block:"center"})}
     if(view==="szkript")scrollToHot()}

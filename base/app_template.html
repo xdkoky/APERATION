@@ -370,6 +370,12 @@ html.gated,html.gated body{overflow:hidden}
 .gate{position:fixed;inset:0;z-index:300;background:var(--bg);overflow:auto;-webkit-overflow-scrolling:touch;padding:calc(24px + env(safe-area-inset-top,0px)) 16px calc(24px + env(safe-area-inset-bottom,0px))}
 .gate-in{max-width:520px;margin:0 auto;display:grid;gap:16px}
 .gate .brand-logo{display:flex;justify-content:center}
+.authgate{position:fixed;inset:0;z-index:290;background:var(--bg);overflow:auto;-webkit-overflow-scrolling:touch;padding:calc(24px + env(safe-area-inset-top,0px)) 16px calc(24px + env(safe-area-inset-bottom,0px))}
+.authgate .brand-logo{display:flex;justify-content:center}
+.authgate .brand-logo svg{height:84px}
+.authgate h1.ag-hi{font-size:22px;font-weight:750;letter-spacing:-.02em;text-align:center;margin:0}
+.authgate .ag-sub{text-align:center;margin:-8px 0 0}
+html.authed-gate body{overflow:hidden}
 .gsteps{margin:4px 0 0;padding-left:22px;display:grid;gap:10px;line-height:1.5}
 .gsteps li::marker{color:var(--shoot);font-weight:800}
 .gbig{height:52px;font-size:16px}
@@ -494,7 +500,7 @@ const dEff=b=>b.d+(st.ext[b.i]||0);
 
 /* ---------- vetítés: mikor mi lesz, ha így haladunk ---------- */
 function project(){
-  const t=tod(),P=[];let x;
+  const t=tod(),P=[];let x;if(!B.length)return{P,wrap:t,t};
   if(!st.cur){x=live()?Math.max(t,B[0].s):B[0].s;
     for(const b of B){if(st.skip[b.i]){P[b.i]={skip:1};continue}P[b.i]={s:x,e:x+dEff(b)};x+=dEff(b)}
     return{P,wrap:x,t}}
@@ -1025,6 +1031,7 @@ function route(scroll){
   if(!B.length&&view!=="terv"&&view!=="info")renderWelcome($(`[data-view="${view}"]`));
   else ({most:renderMost,idorend:renderTimeline,szkript:renderScript,stab:renderCrew,terv:renderEdit,info:renderInfo})[view]();
   if(view!=="most"||!B.length)tick(true);
+  authGate();
   if(scroll){window.scrollTo({top:0});
     if(view==="idorend"){const c=document.querySelector(".tl-row.cur");c&&c.scrollIntoView({block:"center"})}
     if(view==="szkript")scrollToHot()}
