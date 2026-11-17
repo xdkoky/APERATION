@@ -369,6 +369,7 @@ function renderEdit(){
       <button class="btn" type="button" data-do="export" ${P.blocks.length?"":"disabled"}>${ic("down",16)}Terv mentése Excelbe</button>
       <button class="btn" type="button" data-do="sablon">${ic("down",16)}Üres sablon letöltése</button></div>
       <p class="muted small">Az elmentett Excel ugyanebben a formában van, mint a sablon: átküldheted, javíthatod gépen, és visszatöltheted.</p></section>
+    ${printCard()}
     <section class="card" id="projcard" style="scroll-margin-top:120px"><div class="card-head"><h2>Projektek</h2><button class="btn sm solid" type="button" data-do="newproj">${ic("plus",14)}Új projekt</button></div>
       ${projectsHTML()}<div class="wgrid"><button class="btn" type="button" data-do="minta">${ic("play",16)}Minta megnyitása</button></div></section>`;
   else if(editSec==="idorend")body=`<p class="muted small" id="edwrap">${wrapLine()}</p>${dupMoveCount()?`<p class="eb-warn sum">${ic("alert",16)}<span>${dupMoveCount()===1?"Egy helyen":dupMoveCount()+" helyen"} két átállás áll egymás után. Ez nem hiba, csak nézd át.</span></p>`:""}

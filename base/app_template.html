@@ -336,6 +336,16 @@ input[type=time],select,#simt{height:40px;border-radius:12px;border:1px solid va
 .tl-sb{float:right;display:flex;gap:4px;margin:1px 0 4px 10px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 /*__EDITOR_CSS__*/
+/*__PRINT_CSS_STYLE__*/
+#printroot{display:none}
+.linkbtn{border:0;background:none;padding:0;color:var(--shoot);font:inherit;text-decoration:underline;cursor:pointer}
+@media print{
+  @page{size:A4;margin:12mm}
+  :root{color-scheme:light!important}
+  html,body{background:#fff!important;color:#111!important;padding:0!important}
+  body::before,body>*:not(#printroot){display:none!important}
+  #printroot{display:block!important}
+}
 /* telepítési útmutató (telefonon, böngészőből megnyitva) */
 html.gated,html.gated body{overflow:hidden}
 .gate{position:fixed;inset:0;z-index:300;background:var(--bg);overflow:auto;-webkit-overflow-scrolling:touch;padding:calc(24px + env(safe-area-inset-top,0px)) 16px calc(24px + env(safe-area-inset-bottom,0px))}
@@ -861,6 +871,7 @@ function renderInfo(){
       ${confirmReset?`<p style="color:var(--late);font-weight:650">Biztosan nullázod? A lezárt blokkok, take-ek és érkezések törlődnek.</p><div class="field"><button class="btn danger" type="button" id="rsyes">Igen, nullázom</button><button class="btn" type="button" id="rsno">Mégse</button></div>`:`<div class="field"><button class="btn danger" type="button" id="rs">Nap nullázása</button></div>`}</section>`:""}
     </div><div class="stack">
     ${mpInfoCard()}
+    ${B.length?printCard():""}
     ${B.length?`<section class="card"><div class="card-head"><h2>${esc(D.title||"Forgatási nap")}</h2>${isMember()?"":`<a class="btn sm" href="#terv">${ic("edit",14)}Szerkesztés</a>`}</div><div class="rows">
       ${[["Dátum",HASDATE?SHOOT_DATE.toLocaleDateString("hu-HU",{year:"numeric",month:"long",day:"numeric",weekday:"long"}):""],["Crew call",hm(D.plan.call)],["Tervezett wrap",hm(PLAN_WRAP)],["Wrap-határ",hm(TARGET)],["Helyszín",D.location],["Parkolás",D.parking]].filter(x=>x[1]).map(([k,x])=>`<div class="row" style="grid-template-columns:110px minmax(0,1fr)"><small>${k}</small><b>${esc(x)}</b></div>`).join("")}</div></section>
     `:""}${D.notes.length?`<section class="card"><h2>Fontos</h2>${propList(D.notes)}</section>`:""}

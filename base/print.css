@@ -1,0 +1,56 @@
+/* nyomtatható változatok (diszpó, forgatókönyv, shotlist, szkriptlap): fehér papírra, A4 */
+.pr{font-family:"Inter",Arial,sans-serif;color:#111;background:#fff;font-size:10pt;line-height:1.35}
+.pr *{box-sizing:border-box}
+.pr-doc{padding:0}
+.pr-break{break-after:page;page-break-after:always;height:0}
+.pr-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12pt;border-bottom:2pt solid #111;padding-bottom:6pt;margin-bottom:10pt}
+.pr-head h1{font-size:18pt;margin:0;letter-spacing:-.01em;line-height:1.1}
+.pr-head .kind{font-size:9pt;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#555}
+.pr-head .meta{text-align:right;font-size:9pt;color:#333}
+.pr h2{font-size:11pt;margin:12pt 0 5pt;text-transform:uppercase;letter-spacing:.08em}
+.pr .facts{display:grid;grid-template-columns:repeat(4,1fr);gap:4pt 12pt;margin-bottom:6pt}
+.pr .facts div{border:1pt solid #bbb;border-radius:4pt;padding:4pt 6pt}
+.pr .facts small{display:block;font-size:7pt;text-transform:uppercase;letter-spacing:.08em;color:#666}
+.pr .facts b{font-size:11pt}
+.pr ul.notes{margin:0;padding-left:14pt}
+.pr ul.notes li{margin:1pt 0}
+.pr .warn{color:#b00020;font-weight:700}
+.pr table{width:100%;border-collapse:collapse;margin:0 0 6pt}
+.pr th{font-size:7.5pt;text-transform:uppercase;letter-spacing:.06em;text-align:left;color:#444;border-bottom:1.2pt solid #111;padding:3pt 4pt}
+.pr td{border-bottom:.6pt solid #ccc;padding:3pt 4pt;vertical-align:top}
+.pr tr{break-inside:avoid;page-break-inside:avoid}
+.pr tr.shoot td{font-weight:600}
+.pr tr.lunch td{background:#f1f1f1}
+.pr tr.move td{color:#444}
+.pr td.num,.pr th.num{white-space:nowrap;font-variant-numeric:tabular-nums}
+.pr .dept td{background:#eee;font-weight:800;text-transform:uppercase;font-size:8pt;letter-spacing:.06em}
+.pr .foot{margin-top:10pt;font-size:7.5pt;color:#777;text-align:center}
+/* forgatókönyv */
+.pr .scr{font-family:"Courier Prime","Courier New",monospace;font-size:11pt;line-height:1.25;max-width:150mm;margin:0 auto}
+.pr .scr .ln{display:grid;grid-template-columns:22mm minmax(0,1fr);gap:4mm;break-inside:avoid}
+.pr .scr .tag{font-family:"Inter",Arial,sans-serif;font-size:7pt;color:#555;padding-top:2pt;text-align:right}
+.pr .scr .sh{font-weight:700;text-transform:uppercase;margin:12pt 0 6pt}
+.pr .scr .ac{margin:0 0 8pt}
+.pr .scr .ch{margin:8pt 0 0 38mm;text-transform:uppercase}
+.pr .scr .pa{margin:0 0 0 30mm}
+.pr .scr .dl{margin:0 18mm 8pt 22mm}
+.pr .scr .end{text-align:right;font-weight:700;margin-top:12pt}
+/* shotlist */
+.pr .sl td.img{width:44mm}
+.pr .sl img{width:42mm;height:auto;max-height:32mm;object-fit:contain;border:.6pt solid #ccc;display:block;margin-bottom:2pt;background:#fff}
+.pr .sl .shot{font-size:12pt;font-weight:800}
+/* szkriptlap */
+.pr .sk{break-after:page;page-break-after:always}
+.pr .sk:last-child{break-after:auto;page-break-after:auto}
+.pr .sk-head{display:grid;grid-template-columns:auto 1fr auto;gap:10pt;align-items:end;border-bottom:2pt solid #111;padding-bottom:5pt;margin-bottom:6pt}
+.pr .sk-head .shot{font-size:24pt;font-weight:800;line-height:1}
+.pr .sk-head .info{font-size:9pt;color:#333}
+.pr .sk-head .proj{font-size:8pt;color:#666;text-align:right}
+.pr .sk-ex{font-family:"Courier Prime","Courier New",monospace;font-size:8.5pt;line-height:1.25;color:#333;border-left:2pt solid #bbb;padding:2pt 0 2pt 6pt;margin:0 0 6pt}
+.pr .sk-ex div{margin:0 0 2pt}
+.pr .sk table td{height:14mm;border-bottom:.8pt solid #999;border-right:.6pt solid #ddd}
+.pr .sk table td:last-child{border-right:0}
+.pr .sk .box{border:1pt solid #999;border-radius:3pt;padding:4pt 6pt;margin-top:6pt;min-height:34mm}
+.pr .sk .box small{font-size:7.5pt;text-transform:uppercase;letter-spacing:.08em;color:#555;font-weight:700}
+.pr .sk .two{display:grid;grid-template-columns:1fr 1fr;gap:6pt}
+.pr .sk .lines{background-image:repeating-linear-gradient(transparent 0 7.5mm,#ccc 7.5mm 7.8mm);min-height:30mm;margin-top:3pt}
