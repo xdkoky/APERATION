@@ -72,7 +72,8 @@ wb = Workbook()
 ws = wb.active; ws.title = "Útmutató"
 ws.column_dimensions["A"].width = 110
 lines = [
-    ("Forgatási sablon a Diszpó Apphoz", Font(bold=True, size=16)),
+    ("Forgatási sablon a Diszpó App™-hoz", Font(bold=True, size=16)),
+    ("© 2026 Tóth Tamás János · Diszpó App™. Minden jog fenntartva.", Font(italic=True, color="777777")),
     ("Töltsd ki a lapokat, mentsd el .xlsx-ként, és az appban: Terv → Fájl → Excel-táblázat betöltése (vagy húzd rá a fájlt).", None),
     ("A sárgás cellákba írsz, a szürkéket a táblázat számolja. A lapok és a fejlécek nevét ne írd át; sort nyugodtan szúrhatsz be vagy törölhetsz.", None),
     ("A kitöltött sorok csak minta (MINTA · Az utolsó busz): írd felül vagy töröld őket.", Font(italic=True, color="7A5B00")),
@@ -171,6 +172,7 @@ for r in ws.iter_rows(min_row=2, min_col=4, max_col=4):
 table("Fények", [("Kód", 8), ("Név", 26), ("Leírás", 70)], [(g["code"], g["name"], g["desc"]) for g in MINTA["groups"]], 20)
 table("Szkript", [("Típus", 13), ("Szöveg", 80), ("Shotok", 16)], [(ST[l["t"]], l["x"], ", ".join(l["ids"])) for l in MINTA["script"]], 300,
       valid=("A", ",".join(ST.values())))
+wb.properties.creator = "Tóth Tamás János"; wb.properties.title = "Forgatási sablon · Diszpó App"
 wb.active = 1
 SABLON = os.path.join(HERE, "Forgatasi_sablon.xlsx")
 wb.save(SABLON)

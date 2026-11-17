@@ -221,7 +221,7 @@ async function importFile(file){
 
 /* ---------- terv → Excel ---------- */
 function exportBook(p){
-  const wb=XLSX.utils.book_new(),add=(name,rows,w)=>{const ws=XLSX.utils.aoa_to_sheet(rows);ws["!cols"]=w.map(x=>({wch:x}));XLSX.utils.book_append_sheet(wb,ws,name)};
+  const wb=XLSX.utils.book_new();wb.Props={Title:p.title||"Forgatási terv",Author:AUTHOR,Company:"Diszpó App"};const add=(name,rows,w)=>{const ws=XLSX.utils.aoa_to_sheet(rows);ws["!cols"]=w.map(x=>({wch:x}));XLSX.utils.book_append_sheet(wb,ws,name)};
   const yn=b=>b?"igen":"";let t=p.call;
   add("Projekt",[["Mező","Érték"],["Cím",p.title],["Dátum",p.date],["Crew call",hhmm(p.call)],["Tervezett wrap",p.wrapTarget?hhmm(p.wrapTarget):""],["Helyszín",p.location],["Parkolás",p.parking],...(p.notes.length?p.notes:[""]).map(n=>["Fontos",n])],[18,60]);
   add("Időrend",[["Kezdés","Vége","Perc","Típus","Blokk / shot","Beállítás","Megjegyzés","Fény","Szereplők","Kellékek","Sztori","Kihagyható","Storyboard kép (URL)","Vilkó kép (URL)"],
@@ -269,6 +269,7 @@ function renderWelcome(v){
       <button class="btn" type="button" data-do="tour">${ic("play",16)}Bemutató · 2 perc</button>
     </div>
     <p class="muted small">A sablonnal működik a legbiztosabban, de a saját táblázatodat is megpróbálja felismerni: kell egy fejlécsor <b>Perc</b> (vagy Kezdés), <b>Típus</b> és <b>Blokk / shot</b> oszlopokkal. A terv csak ezen az eszközön tárolódik.</p>
+    ${creditLine()}
   </div>`;
 }
 

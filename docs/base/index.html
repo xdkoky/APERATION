@@ -13,6 +13,7 @@
 <link rel="icon" href="icon-192.png">
 <style>html{padding-top:env(safe-area-inset-top,0px)}[hidden]{display:none!important}img{max-width:100%}</style>
 </head><body>
+<meta name="author" content="Tóth Tamás János">
 <style>
 @font-face {
   font-family: 'Courier Prime';
@@ -462,6 +463,8 @@ body.dragging::after{content:"Engedd el: beolvasom a táblázatot";position:fixe
   .eb-top .grow{grid-column:1/-1;order:5}
 }
 
+.credit-line{margin:22px 0 6px;text-align:center;font-size:11.5px;letter-spacing:.02em;color:var(--fg-3)}
+.credit p+p{margin-top:2px}
 /* üveg: a lebegő elemek (fejléc, fülsor, akciósáv, értesítés, bemutató) áttetsző, fényes peremű lapok.
    Mindenhol: elmosás + telítés + belső fényél. Chromium alatt (html.refract) a perem a mögötte lévőt el is hajlítja. */
 :root{
@@ -553,6 +556,8 @@ const MINTA={"title": "MINTA · Az utolsó busz", "date": "", "call": 480, "wrap
 const XLSX_SRC="vendor/xlsx.full.min.js";
 const SABLON_URL="Forgatasi_sablon.xlsx";
 let D=null;
+const AUTHOR="Tóth Tamás János",COPY_YEAR=2026;
+const creditLine=()=>`<p class="credit-line">Diszpó App™ · © ${COPY_YEAR} ${AUTHOR}</p>`;
 // fénytörés az üveg peremén: csak Chromium tudja (backdrop-filter: url()), máshol sima üveg
 try{if(navigator.userAgentData&&navigator.userAgentData.brands.some(b=>/Chromium/.test(b.brand)))document.documentElement.classList.add("refract")}catch(e){}
 /* ---------- alapok ---------- */
@@ -1010,7 +1015,9 @@ function renderInfo(){
     ${D.vilko&&D.vilko.length?`<section class="card"><div class="card-head"><h2>Világítási tervek</h2><span class="chip neutral num">${D.vilko.length} db</span></div><div class="vkgrid" data-gallery>${D.vilko.map(x=>`<button type="button" data-full="${x.f}" data-thumb="${x.t}" data-cap="Vilkó · ${esc(x.id)}"><img src="${x.t}" alt="Vilkó ${esc(x.id)}" loading="lazy"><span>${esc(x.id)}</span></button>`).join("")}</div><p class="muted small">Koppints egyre: teljes minőségben nyílik meg, csíptetéssel nagyítható.</p></section>`:""}
     ${Object.keys(D.groups).length?`<section class="card"><h2>Fénybeállítások</h2><div class="rows">${Object.entries(D.groups).map(([k,g])=>`<div class="row" style="grid-template-columns:52px minmax(0,1fr);align-items:start"><b style="font-size:18px">${esc(k)}</b><div><b>${esc(g[0])}</b><small>${esc(g[1])}</small></div></div>`).join("")}</div></section>`:""}
     ${notes.length?`<section class="card"><h2>Ellenőrizd</h2><ul class="list">${notes.map(n=>`<li>${esc(n)}</li>`).join("")}</ul></section>`:""}
-    </div></div>`;
+    <section class="card credit"><h2>Névjegy</h2><p><b>Diszpó App™</b> · forgatási napvezérlő 1st AD-knek</p><p class="muted small">Tervezte és készítette: <b>${esc(AUTHOR)}</b><br>© ${COPY_YEAR} ${esc(AUTHOR)}. Minden jog fenntartva.</p></section>
+    </div></div>
+    ${creditLine()}`;
   const g=id=>v.querySelector(id);
   g("#tourgo").onclick=()=>tourStart();
   g("#simon").onclick=()=>{const[h,m]=g("#simt").value.split(":").map(Number);const keep=fresh();keep.sound=st.sound;keep.force=st.force;keep.sim={on:true,start:h*60+m,speed:+g("#simsp").value,base:Date.now()};st=keep;save();location.hash="#most";renderAll();toast(`Próba mód: ${g("#simt").value} · ${st.sim.speed}×`)};
@@ -1246,7 +1253,7 @@ async function importFile(file){
 
 /* ---------- terv → Excel ---------- */
 function exportBook(p){
-  const wb=XLSX.utils.book_new(),add=(name,rows,w)=>{const ws=XLSX.utils.aoa_to_sheet(rows);ws["!cols"]=w.map(x=>({wch:x}));XLSX.utils.book_append_sheet(wb,ws,name)};
+  const wb=XLSX.utils.book_new();wb.Props={Title:p.title||"Forgatási terv",Author:AUTHOR,Company:"Diszpó App"};const add=(name,rows,w)=>{const ws=XLSX.utils.aoa_to_sheet(rows);ws["!cols"]=w.map(x=>({wch:x}));XLSX.utils.book_append_sheet(wb,ws,name)};
   const yn=b=>b?"igen":"";let t=p.call;
   add("Projekt",[["Mező","Érték"],["Cím",p.title],["Dátum",p.date],["Crew call",hhmm(p.call)],["Tervezett wrap",p.wrapTarget?hhmm(p.wrapTarget):""],["Helyszín",p.location],["Parkolás",p.parking],...(p.notes.length?p.notes:[""]).map(n=>["Fontos",n])],[18,60]);
   add("Időrend",[["Kezdés","Vége","Perc","Típus","Blokk / shot","Beállítás","Megjegyzés","Fény","Szereplők","Kellékek","Sztori","Kihagyható","Storyboard kép (URL)","Vilkó kép (URL)"],
@@ -1294,6 +1301,7 @@ function renderWelcome(v){
       <button class="btn" type="button" data-do="tour">${ic("play",16)}Bemutató · 2 perc</button>
     </div>
     <p class="muted small">A sablonnal működik a legbiztosabban, de a saját táblázatodat is megpróbálja felismerni: kell egy fejlécsor <b>Perc</b> (vagy Kezdés), <b>Típus</b> és <b>Blokk / shot</b> oszlopokkal. A terv csak ezen az eszközön tárolódik.</p>
+    ${creditLine()}
   </div>`;
 }
 
@@ -1531,7 +1539,7 @@ const TOUR_KEY="diszpo-app-tour-v1";
 const HERO='[data-view="most"] .now';
 let TOUR=[];
 const TOUR_F=()=>[
- {title:"Két perc, és mindent tudsz",html:"Végigvezetlek az appon egy <b>mintanapon</b>: előbb azon, amit forgatás közben látsz, utána azon, hogyan viszed be a <b>saját napodat</b> Excelből vagy kézzel. A tervedhez és a mentett állapotodhoz ez nem nyúl."},
+ {title:"Két perc, és mindent tudsz",html:"Végigvezetlek az appon egy <b>mintanapon</b>: előbb azon, amit forgatás közben látsz, utána azon, hogyan viszed be a <b>saját napodat</b> Excelből vagy kézzel. A tervedhez és a mentett állapotodhoz ez nem nyúl.",extra:`<p class="credit-line" style="margin:0;text-align:left">Diszpó App™ · készítette ${AUTHOR}</p>`},
  {state:"shoot",sel:HERO,title:"Ez megy most",html:"Itt látod, <b>mit forgatunk éppen</b>, milyen beállítással, a táblázatból vett megjegyzéssel. Alul a terv, a tényleges kezdés és a blokk időkerete."},
  {state:"shoot",sel:"#ring",title:"Visszaszámláló",html:"A gyűrű a blokkra szánt időt számolja vissza. Ha lejár, <b>pirosra vált</b>, és azt mutatja, mennyivel csúsztál túl. <b>Koppints rá</b>, és teljes képernyős óra lesz belőle a stábnak."},
  {state:"shoot",sel:".hdr",title:"Hol tart a nap",html:"Balra a pontos idő, jobbra a <b>várható wrap</b>: az app abból számolja, ahol tényleg tartotok. A csík az egész nap, a fehér vonal a mostani pillanat.",
