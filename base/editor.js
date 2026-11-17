@@ -366,6 +366,7 @@ function blockCard(b,k){
       <label class="fi mins"><input data-f="d" type="number" inputmode="numeric" min="0" step="5" value="${b.d}" aria-label="Perc"><span>perc</span></label>
       ${fld("label",b.label,{ph:b.type==="shoot"?"Shot, pl. 1/1":TNAME[b.type],cls:"grow"})}
       <button type="button" class="ib" data-act="tog" aria-expanded="${open}" aria-label="Részletek">${ic(open?"up":"dn",18)}</button></div>
+    ${open?"":`<div class="eb-sum">${[b.setup,b.group?"fény "+b.group:"",b.talent,b.note].filter(Boolean).map(esc).join(" · ")}</div>`}
     ${dupMove(k)?`<div class="eb-warn">${ic("alert",16)}<span>${(P.blocks[k-1]||{}).type==="move"?"Előtte is átállás van.":"Utána is átállás jön."} Biztos kell mindkettő? Ha igen, maradhat így.</span></div>`:""}
     <div class="eb-more" ${open?"":"hidden"}>
       <div class="eg">${fld("setup",b.setup,{label:"Beállítás",ph:"pl. CU, 50 mm, sticks"})}${fld("group",b.group,{label:"Fény",ph:"kód, pl. A",list:"glist"})}</div>

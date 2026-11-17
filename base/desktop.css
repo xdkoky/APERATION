@@ -1,0 +1,59 @@
+/* ---------- gépes felület (széles képernyő) ----------
+   Bal oldalsáv: logó, függőleges menü, alul a nap vezérlése (Kész / Vissza / +5′). A tartalom kitölti a szélességet,
+   az értesítések jobb alul jelennek meg. Telefonon és tableten álló helyzetben ez nem érvényes. */
+.side-brand,.side-keys,.desk-only{display:none}
+@media (min-width:1100px){
+  :root{--side:252px}
+  .app{max-width:none;margin:0 0 0 var(--side);padding-left:36px;padding-right:36px;padding-block:0 56px}
+  .hdr{margin:0 -36px;padding:12px 36px}
+  [data-view]>*{max-width:1400px}
+  [data-view]{max-width:1400px;margin-inline:auto}
+  .grid{grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:20px}
+  .stack{gap:18px}
+  .card{padding:22px}
+  .vh{font-size:28px;margin:18px 0 18px}
+  .vh-row .vh{margin:0}
+  .vh-row{margin:18px 0 18px}
+
+  /* oldalsáv */
+  .bottom{top:0;bottom:0;left:0;right:auto;width:var(--side);display:flex;flex-direction:column;align-items:stretch;justify-items:initial;gap:14px;
+    padding:22px 16px 18px;background:rgba(9,12,17,.72);border-right:1px solid var(--hair);
+    -webkit-backdrop-filter:blur(20px) saturate(1.6);backdrop-filter:blur(20px) saturate(1.6);overflow-y:auto}
+  .bottom>*{width:auto}
+  .side-brand{display:block;order:0;padding:4px 8px 10px;line-height:0}
+  .side-brand svg{height:58px;width:auto;max-width:100%;display:block}
+  .side-brand small{display:block;margin-top:8px;line-height:1.3;font-size:11px;color:var(--fg-3);letter-spacing:.02em}
+  .tabs{order:1;display:grid;grid-auto-flow:row;grid-auto-columns:auto;gap:2px;padding:0;border:0;border-radius:0;background:none!important;box-shadow:none!important;
+    -webkit-backdrop-filter:none!important;backdrop-filter:none!important;touch-action:auto;max-width:none!important;margin:0}
+  .tabs a{display:flex;align-items:center;justify-items:start;gap:12px;padding:10px 12px;border-radius:12px;font-size:14.5px;font-weight:600;color:var(--fg-2)!important}
+  .tabs a:hover{background:var(--surface);color:var(--fg)!important}
+  .tabs a[aria-current="page"]{background:var(--surface-2)!important;color:var(--fg)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 3px 0 0 var(--shoot)}
+  .tabs a[aria-current="page"] .ic{color:var(--shoot)}
+  .tabs.few a{font-size:14.5px}
+  .tab-ind,.tab-hi{display:none!important}
+  .dock{order:3;margin-top:auto;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .dock.solo{grid-template-columns:1fr}
+  .dock .dk{height:46px;border-radius:14px}
+  .dock .dk.primary{order:-1;grid-column:1/-1;height:64px}
+  .dock .dk.primary .l1{font-size:19px}
+  .side-keys{display:block;order:4;font-size:11px;color:var(--fg-3);line-height:1.5;padding:0 6px}
+  .side-keys kbd{font:inherit;font-weight:700;color:var(--fg-2);border:1px solid var(--hair-2);border-radius:5px;padding:0 5px}
+  .toasts{position:fixed;right:24px;bottom:22px;width:400px;z-index:60}
+  .desk-only{display:revert}
+
+  /* nézetek */
+  .eblist{gap:10px}
+  .eb{padding:10px 12px 10px 14px}
+  .eb-top{grid-template-columns:24px 56px 170px 110px minmax(0,1fr) 36px}
+  .eb-sum{display:block;margin:-4px 0 0 92px;font-size:13px;color:var(--fg-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .eb-more{padding-left:92px}
+  .welcome{max-width:720px}
+  .esec{max-width:760px}
+  .er.sr{flex-wrap:nowrap}
+  .tour-card{width:min(440px,calc(100vw - 24px))}
+}
+@media (min-width:1600px){
+  .grid{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}
+}
+.eb-sum{display:none}
+@media (min-width:1100px){.eb-sum{display:block}.eb-sum:empty{display:none}}

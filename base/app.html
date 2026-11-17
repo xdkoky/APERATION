@@ -549,6 +549,66 @@ html.refract .tabs,html.refract .dk:not(.primary),html.refract .toast,html.refra
   .tabs,.dk:not(.primary),.toast,.tour-card,.hdr{background-color:rgba(16,20,28,.94)}
 }
 
+/* ---------- gépes felület (széles képernyő) ----------
+   Bal oldalsáv: logó, függőleges menü, alul a nap vezérlése (Kész / Vissza / +5′). A tartalom kitölti a szélességet,
+   az értesítések jobb alul jelennek meg. Telefonon és tableten álló helyzetben ez nem érvényes. */
+.side-brand,.side-keys,.desk-only{display:none}
+@media (min-width:1100px){
+  :root{--side:252px}
+  .app{max-width:none;margin:0 0 0 var(--side);padding-left:36px;padding-right:36px;padding-block:0 56px}
+  .hdr{margin:0 -36px;padding:12px 36px}
+  [data-view]>*{max-width:1400px}
+  [data-view]{max-width:1400px;margin-inline:auto}
+  .grid{grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:20px}
+  .stack{gap:18px}
+  .card{padding:22px}
+  .vh{font-size:28px;margin:18px 0 18px}
+  .vh-row .vh{margin:0}
+  .vh-row{margin:18px 0 18px}
+
+  /* oldalsáv */
+  .bottom{top:0;bottom:0;left:0;right:auto;width:var(--side);display:flex;flex-direction:column;align-items:stretch;justify-items:initial;gap:14px;
+    padding:22px 16px 18px;background:rgba(9,12,17,.72);border-right:1px solid var(--hair);
+    -webkit-backdrop-filter:blur(20px) saturate(1.6);backdrop-filter:blur(20px) saturate(1.6);overflow-y:auto}
+  .bottom>*{width:auto}
+  .side-brand{display:block;order:0;padding:4px 8px 10px;line-height:0}
+  .side-brand svg{height:58px;width:auto;max-width:100%;display:block}
+  .side-brand small{display:block;margin-top:8px;line-height:1.3;font-size:11px;color:var(--fg-3);letter-spacing:.02em}
+  .tabs{order:1;display:grid;grid-auto-flow:row;grid-auto-columns:auto;gap:2px;padding:0;border:0;border-radius:0;background:none!important;box-shadow:none!important;
+    -webkit-backdrop-filter:none!important;backdrop-filter:none!important;touch-action:auto;max-width:none!important;margin:0}
+  .tabs a{display:flex;align-items:center;justify-items:start;gap:12px;padding:10px 12px;border-radius:12px;font-size:14.5px;font-weight:600;color:var(--fg-2)!important}
+  .tabs a:hover{background:var(--surface);color:var(--fg)!important}
+  .tabs a[aria-current="page"]{background:var(--surface-2)!important;color:var(--fg)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 3px 0 0 var(--shoot)}
+  .tabs a[aria-current="page"] .ic{color:var(--shoot)}
+  .tabs.few a{font-size:14.5px}
+  .tab-ind,.tab-hi{display:none!important}
+  .dock{order:3;margin-top:auto;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .dock.solo{grid-template-columns:1fr}
+  .dock .dk{height:46px;border-radius:14px}
+  .dock .dk.primary{order:-1;grid-column:1/-1;height:64px}
+  .dock .dk.primary .l1{font-size:19px}
+  .side-keys{display:block;order:4;font-size:11px;color:var(--fg-3);line-height:1.5;padding:0 6px}
+  .side-keys kbd{font:inherit;font-weight:700;color:var(--fg-2);border:1px solid var(--hair-2);border-radius:5px;padding:0 5px}
+  .toasts{position:fixed;right:24px;bottom:22px;width:400px;z-index:60}
+  .desk-only{display:revert}
+
+  /* nézetek */
+  .eblist{gap:10px}
+  .eb{padding:10px 12px 10px 14px}
+  .eb-top{grid-template-columns:24px 56px 170px 110px minmax(0,1fr) 36px}
+  .eb-sum{display:block;margin:-4px 0 0 92px;font-size:13px;color:var(--fg-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .eb-more{padding-left:92px}
+  .welcome{max-width:720px}
+  .esec{max-width:760px}
+  .er.sr{flex-wrap:nowrap}
+  .tour-card{width:min(440px,calc(100vw - 24px))}
+}
+@media (min-width:1600px){
+  .grid{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}
+}
+.eb-sum{display:none}
+@media (min-width:1100px){.eb-sum{display:block}.eb-sum:empty{display:none}}
+
 </style>
 
 <div class="aura" aria-hidden="true"><i></i><i></i></div>
@@ -573,9 +633,11 @@ html.refract .tabs,html.refract .dk:not(.primary),html.refract .toast,html.refra
   </main>
 </div>
 <div class="bottom">
+  <div class="side-brand" id="sidebrand"></div>
   <div class="toasts" id="toasts" aria-live="polite"></div>
   <div class="dock" id="dock"></div>
   <nav class="tabs" id="tabs" aria-label="Nézetek"></nav>
+  <div class="side-keys" id="sidekeys"></div>
 </div>
 <div class="present" id="present" hidden>
   <div class="cap" id="p-type"></div>
@@ -1703,6 +1765,7 @@ function blockCard(b,k){
       <label class="fi mins"><input data-f="d" type="number" inputmode="numeric" min="0" step="5" value="${b.d}" aria-label="Perc"><span>perc</span></label>
       ${fld("label",b.label,{ph:b.type==="shoot"?"Shot, pl. 1/1":TNAME[b.type],cls:"grow"})}
       <button type="button" class="ib" data-act="tog" aria-expanded="${open}" aria-label="Részletek">${ic(open?"up":"dn",18)}</button></div>
+    ${open?"":`<div class="eb-sum">${[b.setup,b.group?"fény "+b.group:"",b.talent,b.note].filter(Boolean).map(esc).join(" · ")}</div>`}
     ${dupMove(k)?`<div class="eb-warn">${ic("alert",16)}<span>${(P.blocks[k-1]||{}).type==="move"?"Előtte is átállás van.":"Utána is átállás jön."} Biztos kell mindkettő? Ha igen, maradhat így.</span></div>`:""}
     <div class="eb-more" ${open?"":"hidden"}>
       <div class="eg">${fld("setup",b.setup,{label:"Beállítás",ph:"pl. CU, 50 mm, sticks"})}${fld("group",b.group,{label:"Fény",ph:"kód, pl. A",list:"glist"})}</div>
@@ -2002,6 +2065,7 @@ function renderTabs(){const vs=tabList(),k=vs.map(v=>v[1]).join();if(k===tabKey)
     +`<div class="tab-hi" aria-hidden="true">${vs.map(([k,l,i])=>`<span class="ta">${ic(i,21)}<span>${l}</span></span>`).join("")}</div>`;
   t.classList.toggle("few",!B.length)}
 /* fülsor: a buborék rugóval mozog (koppintásra átcsúszik, húzásra követi az ujjat), a kiemelt réteg a buborék alakjára van vágva */
+const DESK=matchMedia("(min-width:1100px)");
 const TB={init:false,drag:false,raf:0,last:0,x:0,w:0,sx:1,sy:1,vx:0,vw:0,vsx:0,vsy:0,tx:0,tw:0,tsx:1,tsy:1};
 function tbApply(){
   const t=$("#tabs"),ind=t.querySelector(".tab-ind"),hi=t.querySelector(".tab-hi");if(!ind||!hi)return;
@@ -2037,7 +2101,7 @@ addEventListener("resize",()=>placeInd(false));
   const follow=x=>{const ls=links();if(!ls.length)return;const w=ls[0].offsetWidth,lo=ls[0].offsetLeft,hi=ls[ls.length-1].offsetLeft;let left=x-w/2;
     if(left<lo)left=lo-(lo-left)*.25;if(left>hi)left=hi+(left-hi)*.25;   // gumiszalag a széleken
     TB.tx=left;const n=nearest(x);if(n!==drag.over){drag.over=n;try{navigator.vibrate&&navigator.vibrate(6)}catch(e){}}};
-  t.addEventListener("pointerdown",e=>{if(e.button>0||tour)return;drag={id:e.pointerId,x0:e.clientX,on:false,over:null}});
+  t.addEventListener("pointerdown",e=>{if(e.button>0||tour||DESK.matches)return;drag={id:e.pointerId,x0:e.clientX,on:false,over:null}});
   t.addEventListener("pointermove",e=>{if(!drag||e.pointerId!==drag.id)return;
     if(!drag.on){if(Math.abs(e.clientX-drag.x0)<8)return;drag.on=true;TB.drag=true;TB.tsx=1.14;TB.tsy=1.2;t.classList.add("drag");try{t.setPointerCapture(e.pointerId)}catch(_){}tbKick()}
     e.preventDefault();follow(tx(e))});
@@ -2134,7 +2198,7 @@ function tourGo(d){if(!tour)return;const n=tour.i+d;if(n<0)return;if(n>=TOUR.len
 function tourPlace(){
   if(!tour)return;
   const s=TOUR[tour.i],hole=$("#tourhole"),card=$("#tourcard"),vw=innerWidth,vh=innerHeight;
-  const hdr=$(".hdr").getBoundingClientRect(),safeT=Math.max(0,Math.min(hdr.top,60)),safeB=Math.max(0,vh-$("#tabs").getBoundingClientRect().bottom-8);
+  const hdr=$(".hdr").getBoundingClientRect(),safeT=Math.max(0,Math.min(hdr.top,60)),safeB=DESK.matches?0:Math.max(0,vh-$("#tabs").getBoundingClientRect().bottom-8);
   let r=null;const el=s.sel&&document.querySelector(s.sel);
   if(el){
     if(!el.closest(".bottom,.hdr")){const b=el.getBoundingClientRect(),free=vh-hdr.bottom,want=b.height>free*.55?hdr.bottom+12:hdr.bottom+Math.max(12,(free-b.height)*.3);
@@ -2222,6 +2286,19 @@ function gateShow(){
 addEventListener("beforeinstallprompt",e=>{if(!GATED)return;e.preventDefault();installEvt=e;dispatchEvent(new Event("gate-prompt"))});
 if(GATED)gateShow();
 
+/* gépes felület: oldalsáv logóval, billentyűk a nap vezérléséhez (→ Kész, ← Vissza, + öt perc) */
+$("#sidebrand").innerHTML=LOGO_SVG+'<small>forgatási napvezérlő</small>';
+$("#sidekeys").innerHTML='Billentyűk: <kbd>→</kbd> Kész · <kbd>←</kbd> Vissza · <kbd>+</kbd> 5 perc';
+// gépen az értesítések a jobb alsó sarokba kerülnek (az oldalsávon kívül), telefonon a Kész gomb fölött maradnak
+const placeToasts=()=>{const t=$("#toasts"),bt=$(".bottom");if(DESK.matches){if(t.parentElement!==document.body)document.body.append(t)}else if(t.parentElement!==bt)bt.insertBefore(t,$("#dock"))};
+placeToasts();try{DESK.addEventListener("change",placeToasts)}catch(e){}
+addEventListener("keydown",e=>{
+  if(tour||e.metaKey||e.ctrlKey||e.altKey||view!=="most"||!B.length||!$("#viewer").hidden)return;
+  const t=e.target;if(t&&t.closest&&t.closest("input,textarea,select,[contenteditable],button,a"))return;
+  const go=k=>{const b=$(k);if(b){e.preventDefault();b.click()}};
+  if(e.key==="ArrowRight")go("#go");else if(e.key==="ArrowLeft")go("#bk");else if(e.key==="+")go("#ext");
+});
+addEventListener("resize",()=>{tabKey="";renderTabs();placeInd(false)});
 route(false);
 setInterval(()=>tick(false),250);
 setTimeout(()=>{let seen=true;try{seen=!!localStorage.getItem(TOUR_KEY)}catch(e){}if(!seen&&!GATED&&!(isShootDay()&&st.cur))tourStart()},600);
