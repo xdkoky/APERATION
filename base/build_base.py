@@ -250,6 +250,12 @@ def icon(size):
     m = mark.resize((round(mark.width * k), round(mark.height * k)), Image.LANCZOS)
     im.alpha_composite(m, ((size - m.width) // 2, (size - m.height) // 2))
     return im.convert("RGB")
+# a repó főcímére (docs/) is az APERATION ikonja kerül: a Safari ott a korábbi (Kapaszkodni) ikont tárolta el
+DOCS = os.path.dirname(PAGES)
+for s in (180, 192, 512):
+    icon(s).save(os.path.join(DOCS, f"icon-{s}.png"))
+icon(180).save(os.path.join(DOCS, "apple-touch-icon.png"))
+icon(180).save(os.path.join(DOCS, "apple-touch-icon-precomposed.png"))
 for s in (180, 192, 512):
     icon(s).save(os.path.join(PAGES, f"icon-{s}.png"))
 json.dump({"name": "APERATION", "short_name": "APERATION", "start_url": "./", "scope": "./", "display": "standalone", "orientation": "any",
@@ -269,9 +275,9 @@ head = """<!doctype html>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="APERATION">
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-180.png">
-<link rel="icon" href="brand/aperation-icon.svg" type="image/svg+xml">
-<link rel="icon" href="icon-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="icon-180.png?v=aperation">
+<link rel="icon" href="brand/aperation-icon.svg?v=aperation" type="image/svg+xml">
+<link rel="icon" href="icon-192.png?v=aperation" sizes="192x192">
 <style>html{padding-top:env(safe-area-inset-top,0px)}[hidden]{display:none!important}img{max-width:100%}</style>
 </head><body>
 """
