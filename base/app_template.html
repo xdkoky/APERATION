@@ -479,7 +479,7 @@ let SHOOT_DATE=new Date(2000,0,1),HASDATE=false;
 
 /* ---------- állapot ---------- */
 const KEY="diszpo-app-state-v1";
-const fresh=()=>({v:1,cur:null,act:{},skip:{},ext:{},takes:{},sw:null,checkin:{},sim:{on:false,start:505,speed:1,base:0},force:false,sound:true,upd:0});
+const fresh=()=>({v:1,cur:null,act:{},skip:{},ext:{},takes:{},sw:null,checkin:{},rnote:"",sim:{on:false,start:505,speed:1,base:0},force:false,sound:true,upd:0});
 let st=fresh();
 try{const x=JSON.parse(localStorage.getItem(KEY)||"null");if(x&&x.v===1)st=Object.assign(fresh(),x)}catch(e){}
 let tour=null;
@@ -698,6 +698,7 @@ function renderMost(){
     hero=`<section class="now ${enter?"enter":""}" data-type="pres"><div class="now-head"><div class="chips"><span class="chip" style="--c:var(--ok)">${ic("check",15)}Wrap</span></div><h1>Forgatás vége</h1>
       <p class="note">Bontás, pakolás, napi riport.</p></div>${ringHTML()}
       <dl class="meta"><div><dt>Terv</dt><dd>${hm(PLAN_WRAP)}</dd></div><div><dt>Eltérés</dt><dd><span class="drift ${driftCls(d)}">${signMin(d)}</span></dd></div><div><dt>Shot</dt><dd>${shots}</dd></div><div><dt>Take</dt><dd>${takes}</dd></div></dl></section>`;
+    left=riportCard();
   }else{
     const n=nextShoot(b.i),isMove=b.type==="move",title=isMove&&n?n.label:b.label,ext=st.ext[b.i]||0,dr=st.cur.at-b.s;
     const setup=isMove?[/^(átállás|optikacsere)$/i.test(b.label)?"":b.label,b.setup].filter(Boolean).join(" · "):b.setup;
@@ -717,6 +718,7 @@ function bindMost(v){
   on("#ring",()=>present(true));on("#tourbtn",()=>tourStart());on("#extclr",()=>extend(-(st.ext[st.cur.i]||0)));
   on("#swgo",()=>st.sw?stopSW():startSW());
   bindTakes(v,renderMost);
+  const rn=v.querySelector("#rnote");if(rn)rn.onchange=()=>{if(RO())return;st.rnote=rn.value.trim();save()};
   on("[data-seg]",x=>{detailSeg=x.dataset.seg;renderMost()});
   on("[data-unskip]",x=>toggleSkip(+x.dataset.unskip));
 }
@@ -730,6 +732,12 @@ function renderDock(){
   const g=id=>d.querySelector(id);
   g("#go")&&(g("#go").onclick=advance);g("#bk")&&(g("#bk").onclick=back);g("#ext")&&(g("#ext").onclick=()=>extend(5));
   g("#demo")&&(g("#demo").onclick=()=>{st.sim={on:true,start:D.plan.call-3,speed:10,base:Date.now()};save();renderAll();toast("Próba mód: 10× sebesség. Az Info fülön állítható.")});
+}
+function riportCard(){
+  const ro=RO();
+  return`<section class="card" id="riportcard"><h2>Napi riport</h2><p class="muted small">Automatikusan készül a nap tényleges menetéből: tervezett és tényleges idők, csúszások, kihagyott shotok, take-ek a szkriptes jegyzeteivel, érkezések. PDF-be mentheted a nyomtatás ablakában.</p>
+    <label class="fi"><span class="flab">Megjegyzés a riportba (csúszás oka, baleset, eszközhiba…)</span><textarea id="rnote" rows="3" ${ro?"readonly":""} placeholder="${ro?"":"pl. 1/3: eső miatt 25 perc állás"}">${esc(st.rnote||"")}</textarea></label>
+    <div class="wgrid"><button class="btn solid" type="button" data-print="riport">${ic("doc",16)}Napi riport</button>${typeof IS_IOS!=="undefined"&&(IS_IOS||IS_ANDROID)?`<button class="btn" type="button" data-printsave="riport">${ic("upload",16)}Megosztás</button>`:""}</div></section>`;
 }
 function recCard(b){
   const k=String(b.i),tk=st.takes[k]||[],run=!!st.sw;

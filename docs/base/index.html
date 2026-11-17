@@ -593,6 +593,15 @@ body.eb-dragging{-webkit-user-select:none;user-select:none;cursor:grabbing}
 .pr .sk .two{display:grid;grid-template-columns:1fr 1fr;gap:6pt}
 .pr .sk .lines{background-image:repeating-linear-gradient(transparent 0 7.5mm,#ccc 7.5mm 7.8mm);min-height:30mm;margin-top:3pt}
 
+/* napi riport */
+.pr .rp b.late{color:#b00020} .pr .rp b.early{color:#0a7a3a}
+.pr .rp tr.skip td{color:#999;text-decoration:line-through}
+.pr .rp .rnote{border:1pt solid #bbb;border-radius:4pt;padding:5pt 7pt;white-space:normal}
+.pr .rp .rlines{height:28mm;background:repeating-linear-gradient(transparent 0 6.5mm,#ccc 6.5mm 6.8mm)}
+.pr .rp .sign{display:grid;grid-template-columns:1fr 1fr;gap:20mm;margin-top:14mm}
+.pr .rp .sign div{border-top:.8pt solid #111;padding-top:3pt;font-size:8pt;color:#555;text-align:center}
+.pr .rp .facts{grid-template-columns:repeat(4,1fr)}
+
 /* forgatókönyv-jelölés (Terv) és olvasás (Most) */
 .scr-tools{position:sticky;top:calc(var(--hdr-h,104px) + 6px);z-index:5;padding:10px 12px;gap:8px;background-color:rgba(16,20,28,.88);-webkit-backdrop-filter:blur(18px) saturate(1.6);backdrop-filter:blur(18px) saturate(1.6)}
 .scr-help{gap:8px}
@@ -882,7 +891,7 @@ let SHOOT_DATE=new Date(2000,0,1),HASDATE=false;
 
 /* ---------- állapot ---------- */
 const KEY="diszpo-app-state-v1";
-const fresh=()=>({v:1,cur:null,act:{},skip:{},ext:{},takes:{},sw:null,checkin:{},sim:{on:false,start:505,speed:1,base:0},force:false,sound:true,upd:0});
+const fresh=()=>({v:1,cur:null,act:{},skip:{},ext:{},takes:{},sw:null,checkin:{},rnote:"",sim:{on:false,start:505,speed:1,base:0},force:false,sound:true,upd:0});
 let st=fresh();
 try{const x=JSON.parse(localStorage.getItem(KEY)||"null");if(x&&x.v===1)st=Object.assign(fresh(),x)}catch(e){}
 let tour=null;
@@ -1101,6 +1110,7 @@ function renderMost(){
     hero=`<section class="now ${enter?"enter":""}" data-type="pres"><div class="now-head"><div class="chips"><span class="chip" style="--c:var(--ok)">${ic("check",15)}Wrap</span></div><h1>Forgatás vége</h1>
       <p class="note">Bontás, pakolás, napi riport.</p></div>${ringHTML()}
       <dl class="meta"><div><dt>Terv</dt><dd>${hm(PLAN_WRAP)}</dd></div><div><dt>Eltérés</dt><dd><span class="drift ${driftCls(d)}">${signMin(d)}</span></dd></div><div><dt>Shot</dt><dd>${shots}</dd></div><div><dt>Take</dt><dd>${takes}</dd></div></dl></section>`;
+    left=riportCard();
   }else{
     const n=nextShoot(b.i),isMove=b.type==="move",title=isMove&&n?n.label:b.label,ext=st.ext[b.i]||0,dr=st.cur.at-b.s;
     const setup=isMove?[/^(átállás|optikacsere)$/i.test(b.label)?"":b.label,b.setup].filter(Boolean).join(" · "):b.setup;
@@ -1120,6 +1130,7 @@ function bindMost(v){
   on("#ring",()=>present(true));on("#tourbtn",()=>tourStart());on("#extclr",()=>extend(-(st.ext[st.cur.i]||0)));
   on("#swgo",()=>st.sw?stopSW():startSW());
   bindTakes(v,renderMost);
+  const rn=v.querySelector("#rnote");if(rn)rn.onchange=()=>{if(RO())return;st.rnote=rn.value.trim();save()};
   on("[data-seg]",x=>{detailSeg=x.dataset.seg;renderMost()});
   on("[data-unskip]",x=>toggleSkip(+x.dataset.unskip));
 }
@@ -1133,6 +1144,12 @@ function renderDock(){
   const g=id=>d.querySelector(id);
   g("#go")&&(g("#go").onclick=advance);g("#bk")&&(g("#bk").onclick=back);g("#ext")&&(g("#ext").onclick=()=>extend(5));
   g("#demo")&&(g("#demo").onclick=()=>{st.sim={on:true,start:D.plan.call-3,speed:10,base:Date.now()};save();renderAll();toast("Próba mód: 10× sebesség. Az Info fülön állítható.")});
+}
+function riportCard(){
+  const ro=RO();
+  return`<section class="card" id="riportcard"><h2>Napi riport</h2><p class="muted small">Automatikusan készül a nap tényleges menetéből: tervezett és tényleges idők, csúszások, kihagyott shotok, take-ek a szkriptes jegyzeteivel, érkezések. PDF-be mentheted a nyomtatás ablakában.</p>
+    <label class="fi"><span class="flab">Megjegyzés a riportba (csúszás oka, baleset, eszközhiba…)</span><textarea id="rnote" rows="3" ${ro?"readonly":""} placeholder="${ro?"":"pl. 1/3: eső miatt 25 perc állás"}">${esc(st.rnote||"")}</textarea></label>
+    <div class="wgrid"><button class="btn solid" type="button" data-print="riport">${ic("doc",16)}Napi riport</button>${typeof IS_IOS!=="undefined"&&(IS_IOS||IS_ANDROID)?`<button class="btn" type="button" data-printsave="riport">${ic("upload",16)}Megosztás</button>`:""}</div></section>`;
 }
 function recCard(b){
   const k=String(b.i),tk=st.takes[k]||[],run=!!st.sw;
@@ -1356,7 +1373,7 @@ const FBC=FB_EMU?{apiKey:"demo-key",projectId:"demo-diszpo",authDomain:"localhos
 const MP_AVAIL=!!(FB_SRC&&FBC);
 const PAGES_URL="https://xdkoky.github.io/APERATION/base/";
 const MPKEY="diszpo-app-multi-v1",LOCALP="diszpo-app-project-local",LOCALS="diszpo-app-state-local";
-const LIVEKEYS=["cur","act","skip","ext","checkin"];
+const LIVEKEYS=["cur","act","skip","ext","checkin","rnote"];
 const PERMS=[["most","Most"],["idorend","Időrend"],["szkript","Forgatókönyv"],["stab","Stáb"],["phones","Telefonszámok"],["images","Képek"],["props","Kellékek"],["notes","Megjegyzések"],["lights","Fények"],["takes","Take-napló"],["control","Vezérlés"]];
 const PERM_HELP={most:"a Most nézet",idorend:"a napi időrend",szkript:"a forgatókönyv szövege és a sztori",stab:"a stáblista",phones:"a telefonszámok",images:"storyboard és vilkó",props:"kellékek, kontinuitás",notes:"megjegyzések, fontos tudnivalók",lights:"a fények leírása",takes:"take stopper, jó take csillag, jegyzet minden take-hez (a napot nem vezérli)",control:"Kész, Vissza, +5′, take, érkezés"};
 const permOf=s=>Object.fromEntries(PERMS.map(([k])=>[k,s.split(" ").includes(k)]));
@@ -2716,7 +2733,7 @@ function exportCard(){
 /* ---------- nyomtatható változatok ----------
    Diszpó, forgatókönyv (a sztori), shotlist, szkript (a szkriptes lapja) az aktuális tervből. Nyomtatás (vagy PDF-mentés) a böngésző
    nyomtatási ablakával; ha az nem érhető el, a dokumentum HTML-fájlként menthető és onnan nyomtatható. */
-const PRINT_CSS="/* nyomtatható változatok (diszpó, forgatókönyv, shotlist, szkriptlap): fehér papírra, A4 */\n.pr{font-family:\"Inter\",Arial,sans-serif;color:#111;background:#fff;font-size:10pt;line-height:1.35}\n.pr *{box-sizing:border-box}\n.pr-doc{padding:0}\n.pr-break{break-after:page;page-break-after:always;height:0}\n.pr-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12pt;border-bottom:2pt solid #111;padding-bottom:6pt;margin-bottom:10pt}\n.pr-head h1{font-size:18pt;margin:0;letter-spacing:-.01em;line-height:1.1}\n.pr-head .kind{font-size:9pt;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#555}\n.pr-head .meta{text-align:right;font-size:9pt;color:#333}\n.pr h2{font-size:11pt;margin:12pt 0 5pt;text-transform:uppercase;letter-spacing:.08em}\n.pr .facts{display:grid;grid-template-columns:repeat(4,1fr);gap:4pt 12pt;margin-bottom:6pt}\n.pr .facts div{border:1pt solid #bbb;border-radius:4pt;padding:4pt 6pt}\n.pr .facts small{display:block;font-size:7pt;text-transform:uppercase;letter-spacing:.08em;color:#666}\n.pr .facts b{font-size:11pt}\n.pr ul.notes{margin:0;padding-left:14pt}\n.pr ul.notes li{margin:1pt 0}\n.pr .warn{color:#b00020;font-weight:700}\n.pr table{width:100%;border-collapse:collapse;margin:0 0 6pt}\n.pr th{font-size:7.5pt;text-transform:uppercase;letter-spacing:.06em;text-align:left;color:#444;border-bottom:1.2pt solid #111;padding:3pt 4pt}\n.pr td{border-bottom:.6pt solid #ccc;padding:3pt 4pt;vertical-align:top}\n.pr tr{break-inside:avoid;page-break-inside:avoid}\n.pr tr.shoot td{font-weight:600}\n.pr tr.lunch td{background:#f1f1f1}\n.pr tr.move td{color:#444}\n.pr td.num,.pr th.num{white-space:nowrap;font-variant-numeric:tabular-nums}\n.pr .dept td{background:#eee;font-weight:800;text-transform:uppercase;font-size:8pt;letter-spacing:.06em}\n.pr .foot{margin-top:10pt;font-size:7.5pt;color:#777;text-align:center}\n/* forgatókönyv */\n.pr .scr{font-family:\"Courier Prime\",\"Courier New\",monospace;font-size:11pt;line-height:1.25;max-width:150mm;margin:0 auto}\n.pr .scr .ln{display:grid;grid-template-columns:22mm minmax(0,1fr);gap:4mm;break-inside:avoid}\n.pr .scr .tag{font-family:\"Inter\",Arial,sans-serif;font-size:7pt;color:#555;padding-top:2pt;text-align:right}\n.pr .scr .sh{font-weight:700;text-transform:uppercase;margin:12pt 0 6pt}\n.pr .scr .ac{margin:0 0 8pt}\n.pr .scr .ch{margin:8pt 0 0 38mm;text-transform:uppercase}\n.pr .scr .pa{margin:0 0 0 30mm}\n.pr .scr .dl{margin:0 18mm 8pt 22mm}\n.pr .scr .end{text-align:right;font-weight:700;margin-top:12pt}\n/* shotlist */\n.pr .sl td.img{width:44mm}\n.pr .sl img{width:42mm;height:auto;max-height:32mm;object-fit:contain;border:.6pt solid #ccc;display:block;margin-bottom:2pt;background:#fff}\n.pr .sl .shot{font-size:12pt;font-weight:800}\n/* szkriptlap */\n.pr .sk{break-after:page;page-break-after:always}\n.pr .sk:last-child{break-after:auto;page-break-after:auto}\n.pr .sk-head{display:grid;grid-template-columns:auto 1fr auto;gap:10pt;align-items:end;border-bottom:2pt solid #111;padding-bottom:5pt;margin-bottom:6pt}\n.pr .sk-head .shot{font-size:24pt;font-weight:800;line-height:1}\n.pr .sk-head .info{font-size:9pt;color:#333}\n.pr .sk-head .proj{font-size:8pt;color:#666;text-align:right}\n.pr .sk-ex{font-family:\"Courier Prime\",\"Courier New\",monospace;font-size:8.5pt;line-height:1.25;color:#333;border-left:2pt solid #bbb;padding:2pt 0 2pt 6pt;margin:0 0 6pt}\n.pr .sk-ex div{margin:0 0 2pt}\n.pr .sk table td{height:14mm;border-bottom:.8pt solid #999;border-right:.6pt solid #ddd}\n.pr .sk table td:last-child{border-right:0}\n.pr .sk .box{border:1pt solid #999;border-radius:3pt;padding:4pt 6pt;margin-top:6pt;min-height:34mm}\n.pr .sk .box small{font-size:7.5pt;text-transform:uppercase;letter-spacing:.08em;color:#555;font-weight:700}\n.pr .sk .two{display:grid;grid-template-columns:1fr 1fr;gap:6pt}\n.pr .sk .lines{background-image:repeating-linear-gradient(transparent 0 7.5mm,#ccc 7.5mm 7.8mm);min-height:30mm;margin-top:3pt}\n";
+const PRINT_CSS="/* nyomtatható változatok (diszpó, forgatókönyv, shotlist, szkriptlap): fehér papírra, A4 */\n.pr{font-family:\"Inter\",Arial,sans-serif;color:#111;background:#fff;font-size:10pt;line-height:1.35}\n.pr *{box-sizing:border-box}\n.pr-doc{padding:0}\n.pr-break{break-after:page;page-break-after:always;height:0}\n.pr-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12pt;border-bottom:2pt solid #111;padding-bottom:6pt;margin-bottom:10pt}\n.pr-head h1{font-size:18pt;margin:0;letter-spacing:-.01em;line-height:1.1}\n.pr-head .kind{font-size:9pt;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#555}\n.pr-head .meta{text-align:right;font-size:9pt;color:#333}\n.pr h2{font-size:11pt;margin:12pt 0 5pt;text-transform:uppercase;letter-spacing:.08em}\n.pr .facts{display:grid;grid-template-columns:repeat(4,1fr);gap:4pt 12pt;margin-bottom:6pt}\n.pr .facts div{border:1pt solid #bbb;border-radius:4pt;padding:4pt 6pt}\n.pr .facts small{display:block;font-size:7pt;text-transform:uppercase;letter-spacing:.08em;color:#666}\n.pr .facts b{font-size:11pt}\n.pr ul.notes{margin:0;padding-left:14pt}\n.pr ul.notes li{margin:1pt 0}\n.pr .warn{color:#b00020;font-weight:700}\n.pr table{width:100%;border-collapse:collapse;margin:0 0 6pt}\n.pr th{font-size:7.5pt;text-transform:uppercase;letter-spacing:.06em;text-align:left;color:#444;border-bottom:1.2pt solid #111;padding:3pt 4pt}\n.pr td{border-bottom:.6pt solid #ccc;padding:3pt 4pt;vertical-align:top}\n.pr tr{break-inside:avoid;page-break-inside:avoid}\n.pr tr.shoot td{font-weight:600}\n.pr tr.lunch td{background:#f1f1f1}\n.pr tr.move td{color:#444}\n.pr td.num,.pr th.num{white-space:nowrap;font-variant-numeric:tabular-nums}\n.pr .dept td{background:#eee;font-weight:800;text-transform:uppercase;font-size:8pt;letter-spacing:.06em}\n.pr .foot{margin-top:10pt;font-size:7.5pt;color:#777;text-align:center}\n/* forgatókönyv */\n.pr .scr{font-family:\"Courier Prime\",\"Courier New\",monospace;font-size:11pt;line-height:1.25;max-width:150mm;margin:0 auto}\n.pr .scr .ln{display:grid;grid-template-columns:22mm minmax(0,1fr);gap:4mm;break-inside:avoid}\n.pr .scr .tag{font-family:\"Inter\",Arial,sans-serif;font-size:7pt;color:#555;padding-top:2pt;text-align:right}\n.pr .scr .sh{font-weight:700;text-transform:uppercase;margin:12pt 0 6pt}\n.pr .scr .ac{margin:0 0 8pt}\n.pr .scr .ch{margin:8pt 0 0 38mm;text-transform:uppercase}\n.pr .scr .pa{margin:0 0 0 30mm}\n.pr .scr .dl{margin:0 18mm 8pt 22mm}\n.pr .scr .end{text-align:right;font-weight:700;margin-top:12pt}\n/* shotlist */\n.pr .sl td.img{width:44mm}\n.pr .sl img{width:42mm;height:auto;max-height:32mm;object-fit:contain;border:.6pt solid #ccc;display:block;margin-bottom:2pt;background:#fff}\n.pr .sl .shot{font-size:12pt;font-weight:800}\n/* szkriptlap */\n.pr .sk{break-after:page;page-break-after:always}\n.pr .sk:last-child{break-after:auto;page-break-after:auto}\n.pr .sk-head{display:grid;grid-template-columns:auto 1fr auto;gap:10pt;align-items:end;border-bottom:2pt solid #111;padding-bottom:5pt;margin-bottom:6pt}\n.pr .sk-head .shot{font-size:24pt;font-weight:800;line-height:1}\n.pr .sk-head .info{font-size:9pt;color:#333}\n.pr .sk-head .proj{font-size:8pt;color:#666;text-align:right}\n.pr .sk-ex{font-family:\"Courier Prime\",\"Courier New\",monospace;font-size:8.5pt;line-height:1.25;color:#333;border-left:2pt solid #bbb;padding:2pt 0 2pt 6pt;margin:0 0 6pt}\n.pr .sk-ex div{margin:0 0 2pt}\n.pr .sk table td{height:14mm;border-bottom:.8pt solid #999;border-right:.6pt solid #ddd}\n.pr .sk table td:last-child{border-right:0}\n.pr .sk .box{border:1pt solid #999;border-radius:3pt;padding:4pt 6pt;margin-top:6pt;min-height:34mm}\n.pr .sk .box small{font-size:7.5pt;text-transform:uppercase;letter-spacing:.08em;color:#555;font-weight:700}\n.pr .sk .two{display:grid;grid-template-columns:1fr 1fr;gap:6pt}\n.pr .sk .lines{background-image:repeating-linear-gradient(transparent 0 7.5mm,#ccc 7.5mm 7.8mm);min-height:30mm;margin-top:3pt}\n\n/* napi riport */\n.pr .rp b.late{color:#b00020} .pr .rp b.early{color:#0a7a3a}\n.pr .rp tr.skip td{color:#999;text-decoration:line-through}\n.pr .rp .rnote{border:1pt solid #bbb;border-radius:4pt;padding:5pt 7pt;white-space:normal}\n.pr .rp .rlines{height:28mm;background:repeating-linear-gradient(transparent 0 6.5mm,#ccc 6.5mm 6.8mm)}\n.pr .rp .sign{display:grid;grid-template-columns:1fr 1fr;gap:20mm;margin-top:14mm}\n.pr .rp .sign div{border-top:.8pt solid #111;padding-top:3pt;font-size:8pt;color:#555;text-align:center}\n.pr .rp .facts{grid-template-columns:repeat(4,1fr)}\n";
 const PR_KINDS=[["diszpo","Diszpó"],["forgatokonyv","Forgatókönyv"],["shotlist","Shotlist"],["szkriptlap","Szkript"]];
 const prDate=()=>HASDATE?SHOOT_DATE.toLocaleDateString("hu-HU",{year:"numeric",month:"long",day:"numeric",weekday:"long"}):"";
 const prHead=(kind)=>`<div class="pr-head"><div><div class="kind">${kind}</div><h1>${esc(D.title||"Forgatási nap")}</h1></div><div class="meta">${esc(prDate())}${D.location?`<br>${esc(D.location)}`:""}</div></div>`;
@@ -2790,7 +2807,37 @@ function prSkript(){
         <div class="box"><small>Optika · hang · egyéb</small><div class="lines"></div></div></div>
     </div>`}).join("")}</div>`;
 }
-const PRINT={diszpo:prDiszpo,forgatokonyv:prScript,shotlist:prShotlist,szkriptlap:prSkript};
+/* napi riport: a tényleges napból (a Kész gombok idejéből, take-ekből, érkezésekből) automatikusan */
+function prRiport(){
+  const {P:pp,wrap}=project(),ended=st.cur&&st.cur.i>=B.length,started=!!st.cur;
+  const actS=Object.values(st.act).map(a=>a.s),first=actS.length?Math.min(...actS):started?st.cur.at:null;
+  const sh=B.filter(b=>b.type==="shoot"),shDone=sh.filter(b=>st.act[b.i]),shSkip=sh.filter(b=>st.skip[b.i]);
+  const fs=sh.find(b=>st.act[b.i]||(st.cur&&st.cur.i===b.i)),lunch=B.find(b=>b.type==="lunch"),la=lunch&&(pp[lunch.i]||{});
+  const tk=Object.values(st.takes).flat(),good=tk.filter(x=>x.ok).length,extSum=Object.values(st.ext).reduce((a,x)=>a+x,0);
+  const wrapT=ended?st.cur.at:wrap,drift=Math.round(wrapT-PLAN_WRAP);
+  const all=[...D.cast,...D.crew],usedChk=Object.values(st.checkin).some(Boolean),missing=all.filter(c=>c.name&&!st.checkin[c.name]);
+  const facts=[["Crew call",`${hm(D.plan.call)}${first!=null?` · tény ${hm(first)}`:""}`],["Első forgatás",`${sh[0]?hm(sh[0].s):"–"}${fs&&pp[fs.i]&&pp[fs.i].s!=null?` · tény ${hm(pp[fs.i].s)}`:""}`],
+    ["Ebéd",lunch?(la.done||la.cur?`${hm(la.s)}–${la.done?hm(la.e):"…"}`:la.skip?"kihagyva":`terv ${hm(lunch.s)}`):"–"],
+    ["Wrap",`terv ${hm(PLAN_WRAP)} · ${ended?"tény":"várható"} ${hm(wrapT)}`],["Eltérés",signMin(drift)],
+    ["Shotok",`${shDone.length} / ${sh.length} kész${shSkip.length?` · ${shSkip.length} kihagyva`:""}`],["Take-ek",`${tk.length} · ebből jó ${good}`],["Hosszabbítás",extSum?`+${extSum}′`:"nem volt"]];
+  const st8=(b,p)=>p.done?"kész":p.skip?"kihagyva":p.cur?"folyamatban":"nem kezdődött";
+  const rows=B.map(b=>{const p=pp[b.i]||{},ad=p.done?Math.round(p.e-p.s):null,diff=ad!=null?ad-b.d:null,t=st.takes[b.i]||[];
+    return`<tr class="${b.type}${p.skip?" skip":""}"><td class="num">${hm(b.s)}</td><td class="num">${p.done||p.cur?hm(p.s):"–"}</td><td class="num">${b.d}′</td><td class="num">${ad!=null?ad+"′":"–"}</td>
+      <td class="num">${diff!=null&&diff!==0?`<b class="${diff>0?"late":"early"}">${signMin(diff)}</b>`:diff===0?"±0′":""}</td><td>${esc(b.label)}${b.setup?`<br><small>${esc(b.setup)}</small>`:""}</td><td>${st8(b,p)}${st.ext[b.i]?`<br><small>+${st.ext[b.i]}′ hossz.</small>`:""}</td>
+      <td class="num">${t.length?`${t.length}${t.some(x=>x.ok)?` · ★ ${t.map((x,n)=>x.ok?"T"+(n+1):"").filter(Boolean).join(", ")}`:""}`:""}</td></tr>`}).join("");
+  const tnotes=B.filter(b=>(st.takes[b.i]||[]).length).map(b=>`<tr class="dept"><td colspan="4">${esc(b.label)}${b.setup?` · ${esc(b.setup)}`:""}</td></tr>${st.takes[b.i].map((x,n)=>`<tr><td class="num">T${n+1}</td><td class="num">${x.at!=null?hm(x.at):""}</td><td class="num">${mmss(x.d)}${x.ok?" ★":""}</td><td>${esc(x.note||"")}</td></tr>`).join("")}`).join("");
+  return`<div class="pr-doc rp">${prHead("Napi riport")}
+    ${started?"":`<p class="warn">A nap még nem indult: a riport a Kész gombok idejéből készül.</p>`}${started&&!ended?`<p class="warn">A nap még tart (${hm(tod())}): ez közbenső állapot.</p>`:""}
+    <div class="facts">${facts.map(([k,v])=>`<div><small>${k}</small><b>${esc(v)}</b></div>`).join("")}</div>
+    <h2>Időrend: terv és tény</h2><table><thead><tr><th class="num">Terv</th><th class="num">Tény</th><th class="num">Terv perc</th><th class="num">Tény perc</th><th class="num">Eltérés</th><th>Blokk / shot</th><th>Állapot</th><th class="num">Take</th></tr></thead><tbody>${rows}</tbody></table>
+    ${shSkip.length?`<h2>Elmaradt shotok</h2><p>${shSkip.map(b=>esc(b.label)+(b.setup?` (${esc(b.setup)})`:"")).join(" · ")}</p>`:""}
+    ${tnotes?`<h2>Take-napló</h2><table><thead><tr><th class="num">Take</th><th class="num">Kezdés</th><th class="num">Hossz</th><th>Jegyzet</th></tr></thead><tbody>${tnotes}</tbody></table>`:""}
+    ${usedChk?`<h2>Érkezések</h2><p>Megérkezett: ${all.length-missing.length} / ${all.length}${missing.length?` · nem jelölve: ${missing.map(c=>esc(c.name)).join(", ")}`:""}</p>`:""}
+    <h2>Megjegyzések</h2>${st.rnote?`<p class="rnote">${esc(st.rnote).replace(/\n/g,"<br>")}</p>`:""}<div class="rlines"></div>
+    <div class="sign"><div>1st AD</div><div>Gyártásvezető</div></div>${prFoot()}</div>`;
+}
+const PRINT={diszpo:prDiszpo,forgatokonyv:prScript,shotlist:prShotlist,szkriptlap:prSkript,riport:prRiport};
+const PR_ALL=PR_KINDS.map(x=>x[0]);
 function prBuild(kinds){return`<div class="pr">${kinds.map(k=>PRINT[k]()).join('<div class="pr-break"></div>')}</div>`}
 function prName(kinds){const t=(D.title||"terv").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_|_$/g,"").slice(0,40)||"terv";
   return`${t}_${kinds.length>1?"nyomtatvanyok":kinds[0]}${P.date?"_"+P.date:""}`}
@@ -2810,13 +2857,15 @@ function printCard(){
     <p class="muted small">A mostani tervből készül, A4-re. A nyomtatás ablakában <b>PDF-be is mentheted</b> (iPhone-on: Nyomtatás → Megosztás → Mentés a Fájlokba). A <b>Szkript</b> a szkriptes lapja: shotonként egy oldal, sok hellyel a jegyzeteknek.</p>
     <div class="wgrid">${PR_KINDS.map(([k,l])=>`<button class="btn" type="button" data-print="${k}" ${B.length?"":"disabled"}>${ic("doc",16)}${l}</button>`).join("")}</div>
     <div class="wgrid"><button class="btn solid" type="button" data-print="all" ${B.length?"":"disabled"}>${ic("doc",16)}Mind a négy egyben</button></div>
+    <div class="wgrid"><button class="btn" type="button" data-print="riport" ${st.cur?"":"disabled"}>${ic("check",16)}Napi riport</button>${typeof IS_IOS!=="undefined"&&(IS_IOS||IS_ANDROID)?`<button class="btn" type="button" data-printsave="riport" ${st.cur?"":"disabled"}>${ic("upload",16)}Riport megosztása</button>`:""}</div>
+    <p class="muted small"><b>Napi riport:</b> a forgatás tényleges menetéből készül (Kész gombok ideje, csúszások, kihagyott shotok, take-ek a szkriptes jegyzeteivel, érkezések). ${st.cur?"":"A nap indítása után érhető el."}</p>
     ${typeof IS_IOS!=="undefined"&&(IS_IOS||IS_ANDROID)
       ?`<div class="wgrid"><button class="btn" type="button" data-printsave="all" ${B.length?"":"disabled"}>${ic("upload",16)}Megosztás / mentés fájlként</button></div>
         <p class="muted small">Ha a nyomtatás nem nyílik meg: a Megosztással mentsd a Fájlokba vagy küldd el magadnak, és onnan nyomtasd.</p>`
       :`<p class="muted small">Ha a nyomtatás nem nyílik meg: <button type="button" class="linkbtn" data-printsave="all" ${B.length?"":"disabled"}>mentés fájlba</button>, és onnan nyomtatható.</p>`}</section>`;
 }
 document.addEventListener("click",e=>{const t=e.target.closest("[data-print],[data-printsave]");if(!t)return;
-  const v=t.dataset.print||t.dataset.printsave,kinds=v==="all"?PR_KINDS.map(x=>x[0]):[v];
+  const v=t.dataset.print||t.dataset.printsave,kinds=v==="all"?PR_ALL:[v];
   if(t.dataset.printsave)prSave(kinds);else doPrint(kinds)});
 
 /* ---------- útvonal ---------- */

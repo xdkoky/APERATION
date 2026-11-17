@@ -75,7 +75,37 @@ function prSkript(){
         <div class="box"><small>Optika · hang · egyéb</small><div class="lines"></div></div></div>
     </div>`}).join("")}</div>`;
 }
-const PRINT={diszpo:prDiszpo,forgatokonyv:prScript,shotlist:prShotlist,szkriptlap:prSkript};
+/* napi riport: a tényleges napból (a Kész gombok idejéből, take-ekből, érkezésekből) automatikusan */
+function prRiport(){
+  const {P:pp,wrap}=project(),ended=st.cur&&st.cur.i>=B.length,started=!!st.cur;
+  const actS=Object.values(st.act).map(a=>a.s),first=actS.length?Math.min(...actS):started?st.cur.at:null;
+  const sh=B.filter(b=>b.type==="shoot"),shDone=sh.filter(b=>st.act[b.i]),shSkip=sh.filter(b=>st.skip[b.i]);
+  const fs=sh.find(b=>st.act[b.i]||(st.cur&&st.cur.i===b.i)),lunch=B.find(b=>b.type==="lunch"),la=lunch&&(pp[lunch.i]||{});
+  const tk=Object.values(st.takes).flat(),good=tk.filter(x=>x.ok).length,extSum=Object.values(st.ext).reduce((a,x)=>a+x,0);
+  const wrapT=ended?st.cur.at:wrap,drift=Math.round(wrapT-PLAN_WRAP);
+  const all=[...D.cast,...D.crew],usedChk=Object.values(st.checkin).some(Boolean),missing=all.filter(c=>c.name&&!st.checkin[c.name]);
+  const facts=[["Crew call",`${hm(D.plan.call)}${first!=null?` · tény ${hm(first)}`:""}`],["Első forgatás",`${sh[0]?hm(sh[0].s):"–"}${fs&&pp[fs.i]&&pp[fs.i].s!=null?` · tény ${hm(pp[fs.i].s)}`:""}`],
+    ["Ebéd",lunch?(la.done||la.cur?`${hm(la.s)}–${la.done?hm(la.e):"…"}`:la.skip?"kihagyva":`terv ${hm(lunch.s)}`):"–"],
+    ["Wrap",`terv ${hm(PLAN_WRAP)} · ${ended?"tény":"várható"} ${hm(wrapT)}`],["Eltérés",signMin(drift)],
+    ["Shotok",`${shDone.length} / ${sh.length} kész${shSkip.length?` · ${shSkip.length} kihagyva`:""}`],["Take-ek",`${tk.length} · ebből jó ${good}`],["Hosszabbítás",extSum?`+${extSum}′`:"nem volt"]];
+  const st8=(b,p)=>p.done?"kész":p.skip?"kihagyva":p.cur?"folyamatban":"nem kezdődött";
+  const rows=B.map(b=>{const p=pp[b.i]||{},ad=p.done?Math.round(p.e-p.s):null,diff=ad!=null?ad-b.d:null,t=st.takes[b.i]||[];
+    return`<tr class="${b.type}${p.skip?" skip":""}"><td class="num">${hm(b.s)}</td><td class="num">${p.done||p.cur?hm(p.s):"–"}</td><td class="num">${b.d}′</td><td class="num">${ad!=null?ad+"′":"–"}</td>
+      <td class="num">${diff!=null&&diff!==0?`<b class="${diff>0?"late":"early"}">${signMin(diff)}</b>`:diff===0?"±0′":""}</td><td>${esc(b.label)}${b.setup?`<br><small>${esc(b.setup)}</small>`:""}</td><td>${st8(b,p)}${st.ext[b.i]?`<br><small>+${st.ext[b.i]}′ hossz.</small>`:""}</td>
+      <td class="num">${t.length?`${t.length}${t.some(x=>x.ok)?` · ★ ${t.map((x,n)=>x.ok?"T"+(n+1):"").filter(Boolean).join(", ")}`:""}`:""}</td></tr>`}).join("");
+  const tnotes=B.filter(b=>(st.takes[b.i]||[]).length).map(b=>`<tr class="dept"><td colspan="4">${esc(b.label)}${b.setup?` · ${esc(b.setup)}`:""}</td></tr>${st.takes[b.i].map((x,n)=>`<tr><td class="num">T${n+1}</td><td class="num">${x.at!=null?hm(x.at):""}</td><td class="num">${mmss(x.d)}${x.ok?" ★":""}</td><td>${esc(x.note||"")}</td></tr>`).join("")}`).join("");
+  return`<div class="pr-doc rp">${prHead("Napi riport")}
+    ${started?"":`<p class="warn">A nap még nem indult: a riport a Kész gombok idejéből készül.</p>`}${started&&!ended?`<p class="warn">A nap még tart (${hm(tod())}): ez közbenső állapot.</p>`:""}
+    <div class="facts">${facts.map(([k,v])=>`<div><small>${k}</small><b>${esc(v)}</b></div>`).join("")}</div>
+    <h2>Időrend: terv és tény</h2><table><thead><tr><th class="num">Terv</th><th class="num">Tény</th><th class="num">Terv perc</th><th class="num">Tény perc</th><th class="num">Eltérés</th><th>Blokk / shot</th><th>Állapot</th><th class="num">Take</th></tr></thead><tbody>${rows}</tbody></table>
+    ${shSkip.length?`<h2>Elmaradt shotok</h2><p>${shSkip.map(b=>esc(b.label)+(b.setup?` (${esc(b.setup)})`:"")).join(" · ")}</p>`:""}
+    ${tnotes?`<h2>Take-napló</h2><table><thead><tr><th class="num">Take</th><th class="num">Kezdés</th><th class="num">Hossz</th><th>Jegyzet</th></tr></thead><tbody>${tnotes}</tbody></table>`:""}
+    ${usedChk?`<h2>Érkezések</h2><p>Megérkezett: ${all.length-missing.length} / ${all.length}${missing.length?` · nem jelölve: ${missing.map(c=>esc(c.name)).join(", ")}`:""}</p>`:""}
+    <h2>Megjegyzések</h2>${st.rnote?`<p class="rnote">${esc(st.rnote).replace(/\n/g,"<br>")}</p>`:""}<div class="rlines"></div>
+    <div class="sign"><div>1st AD</div><div>Gyártásvezető</div></div>${prFoot()}</div>`;
+}
+const PRINT={diszpo:prDiszpo,forgatokonyv:prScript,shotlist:prShotlist,szkriptlap:prSkript,riport:prRiport};
+const PR_ALL=PR_KINDS.map(x=>x[0]);
 function prBuild(kinds){return`<div class="pr">${kinds.map(k=>PRINT[k]()).join('<div class="pr-break"></div>')}</div>`}
 function prName(kinds){const t=(D.title||"terv").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Za-z0-9]+/g,"_").replace(/^_|_$/g,"").slice(0,40)||"terv";
   return`${t}_${kinds.length>1?"nyomtatvanyok":kinds[0]}${P.date?"_"+P.date:""}`}
@@ -95,11 +125,13 @@ function printCard(){
     <p class="muted small">A mostani tervből készül, A4-re. A nyomtatás ablakában <b>PDF-be is mentheted</b> (iPhone-on: Nyomtatás → Megosztás → Mentés a Fájlokba). A <b>Szkript</b> a szkriptes lapja: shotonként egy oldal, sok hellyel a jegyzeteknek.</p>
     <div class="wgrid">${PR_KINDS.map(([k,l])=>`<button class="btn" type="button" data-print="${k}" ${B.length?"":"disabled"}>${ic("doc",16)}${l}</button>`).join("")}</div>
     <div class="wgrid"><button class="btn solid" type="button" data-print="all" ${B.length?"":"disabled"}>${ic("doc",16)}Mind a négy egyben</button></div>
+    <div class="wgrid"><button class="btn" type="button" data-print="riport" ${st.cur?"":"disabled"}>${ic("check",16)}Napi riport</button>${typeof IS_IOS!=="undefined"&&(IS_IOS||IS_ANDROID)?`<button class="btn" type="button" data-printsave="riport" ${st.cur?"":"disabled"}>${ic("upload",16)}Riport megosztása</button>`:""}</div>
+    <p class="muted small"><b>Napi riport:</b> a forgatás tényleges menetéből készül (Kész gombok ideje, csúszások, kihagyott shotok, take-ek a szkriptes jegyzeteivel, érkezések). ${st.cur?"":"A nap indítása után érhető el."}</p>
     ${typeof IS_IOS!=="undefined"&&(IS_IOS||IS_ANDROID)
       ?`<div class="wgrid"><button class="btn" type="button" data-printsave="all" ${B.length?"":"disabled"}>${ic("upload",16)}Megosztás / mentés fájlként</button></div>
         <p class="muted small">Ha a nyomtatás nem nyílik meg: a Megosztással mentsd a Fájlokba vagy küldd el magadnak, és onnan nyomtasd.</p>`
       :`<p class="muted small">Ha a nyomtatás nem nyílik meg: <button type="button" class="linkbtn" data-printsave="all" ${B.length?"":"disabled"}>mentés fájlba</button>, és onnan nyomtatható.</p>`}</section>`;
 }
 document.addEventListener("click",e=>{const t=e.target.closest("[data-print],[data-printsave]");if(!t)return;
-  const v=t.dataset.print||t.dataset.printsave,kinds=v==="all"?PR_KINDS.map(x=>x[0]):[v];
+  const v=t.dataset.print||t.dataset.printsave,kinds=v==="all"?PR_ALL:[v];
   if(t.dataset.printsave)prSave(kinds);else doPrint(kinds)});

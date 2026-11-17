@@ -54,3 +54,12 @@
 .pr .sk .box small{font-size:7.5pt;text-transform:uppercase;letter-spacing:.08em;color:#555;font-weight:700}
 .pr .sk .two{display:grid;grid-template-columns:1fr 1fr;gap:6pt}
 .pr .sk .lines{background-image:repeating-linear-gradient(transparent 0 7.5mm,#ccc 7.5mm 7.8mm);min-height:30mm;margin-top:3pt}
+
+/* napi riport */
+.pr .rp b.late{color:#b00020} .pr .rp b.early{color:#0a7a3a}
+.pr .rp tr.skip td{color:#999;text-decoration:line-through}
+.pr .rp .rnote{border:1pt solid #bbb;border-radius:4pt;padding:5pt 7pt;white-space:normal}
+.pr .rp .rlines{height:28mm;background:repeating-linear-gradient(transparent 0 6.5mm,#ccc 6.5mm 6.8mm)}
+.pr .rp .sign{display:grid;grid-template-columns:1fr 1fr;gap:20mm;margin-top:14mm}
+.pr .rp .sign div{border-top:.8pt solid #111;padding-top:3pt;font-size:8pt;color:#555;text-align:center}
+.pr .rp .facts{grid-template-columns:repeat(4,1fr)}

@@ -9,7 +9,7 @@ const FBC=FB_EMU?{apiKey:"demo-key",projectId:"demo-diszpo",authDomain:"localhos
 const MP_AVAIL=!!(FB_SRC&&FBC);
 const PAGES_URL="https://xdkoky.github.io/APERATION/base/";
 const MPKEY="diszpo-app-multi-v1",LOCALP="diszpo-app-project-local",LOCALS="diszpo-app-state-local";
-const LIVEKEYS=["cur","act","skip","ext","checkin"];
+const LIVEKEYS=["cur","act","skip","ext","checkin","rnote"];
 const PERMS=[["most","Most"],["idorend","Időrend"],["szkript","Forgatókönyv"],["stab","Stáb"],["phones","Telefonszámok"],["images","Képek"],["props","Kellékek"],["notes","Megjegyzések"],["lights","Fények"],["takes","Take-napló"],["control","Vezérlés"]];
 const PERM_HELP={most:"a Most nézet",idorend:"a napi időrend",szkript:"a forgatókönyv szövege és a sztori",stab:"a stáblista",phones:"a telefonszámok",images:"storyboard és vilkó",props:"kellékek, kontinuitás",notes:"megjegyzések, fontos tudnivalók",lights:"a fények leírása",takes:"take stopper, jó take csillag, jegyzet minden take-hez (a napot nem vezérli)",control:"Kész, Vissza, +5′, take, érkezés"};
 const permOf=s=>Object.fromEntries(PERMS.map(([k])=>[k,s.split(" ").includes(k)]));
