@@ -2,7 +2,7 @@
 
 Forgatási napvezérlő 1st AD-knek. Telefonon fut, net nélkül is.
 
-**App:** https://xdkoky.github.io/ANDRIS--LLOYD/base/ – telefonon a főképernyőre kell tenni (Megosztás → Főképernyőhöz adás).
+**App:** https://xdkoky.github.io/APERATION/base/ – telefonon a főképernyőre kell tenni (Megosztás → Főképernyőhöz adás).
 
 ## Mit tud
 

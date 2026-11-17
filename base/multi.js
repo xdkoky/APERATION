@@ -7,7 +7,7 @@ const FB_SRC=/*__FBSRC__*/null;
 const FB_EMU=/^(localhost|127\.)/.test(location.hostname)&&/[?&]emu\b/.test(location.search);
 const FBC=FB_EMU?{apiKey:"demo-key",projectId:"demo-diszpo",authDomain:"localhost"}:FBCFG;
 const MP_AVAIL=!!(FB_SRC&&FBC);
-const PAGES_URL="https://xdkoky.github.io/ANDRIS--LLOYD/base/";
+const PAGES_URL="https://xdkoky.github.io/APERATION/base/";
 const MPKEY="diszpo-app-multi-v1",LOCALP="diszpo-app-project-local",LOCALS="diszpo-app-state-local";
 const LIVEKEYS=["cur","act","skip","ext","takes","sw","checkin"];
 const PERMS=[["most","Most"],["idorend","Időrend"],["szkript","Szkript"],["stab","Stáb"],["phones","Telefonszámok"],["images","Képek"],["props","Kellékek"],["notes","Megjegyzések"],["lights","Fények"],["control","Vezérlés"]];
