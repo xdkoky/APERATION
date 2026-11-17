@@ -27,3 +27,14 @@ cd base/firebase && npx firebase-tools emulators:start --only firestore,auth --p
 # másik terminálban: cd docs && python3 -m http.server 8765
 # böngészőben: http://localhost:8765/base/?emu
 ```
+
+## Képek automatikus törlése (30 nap)
+
+A közös projektbe feltöltött képek (`imgmeta`, `imgdata`) `expireAt` mezőt kapnak: az utolsó használat után 30 nappal járnak le.
+Amíg egy kép benne van a tervben, a szerkesztő appja naponta egyszer meghosszabbítja.
+
+Szerveroldali törlés (ajánlott): Firebase konzol → Firestore Database → **TTL** (Time-to-live) fül → **Create policy**:
+- Collection group: `imgmeta`, Timestamp field: `expireAt`
+- Collection group: `imgdata`, Timestamp field: `expireAt`
+
+Ha ez nincs beállítva, a szerkesztő appja is kitakarítja a lejárt képeket, amikor megnyitja a projektet (naponta egyszer).
