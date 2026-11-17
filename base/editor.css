@@ -53,3 +53,4 @@ body.dragging::after{content:"Engedd el: beolvasom a táblázatot";position:fixe
 .vh-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 0 14px}
 .vh-row .vh{margin:0}
 .ib.del.armed{width:auto;padding:0 10px;font-size:12px;font-weight:700}
+.vh-act{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}

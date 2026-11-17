@@ -466,6 +466,7 @@ body.dragging::after{content:"Engedd el: beolvasom a táblázatot";position:fixe
 .vh-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 0 14px}
 .vh-row .vh{margin:0}
 .ib.del.armed{width:auto;padding:0 10px;font-size:12px;font-weight:700}
+.vh-act{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 
 /* telepítési útmutató (telefonon, böngészőből megnyitva) */
 html.gated,html.gated body{overflow:hidden}
@@ -1407,8 +1408,10 @@ function openProject(id){
 }
 function delProject(id){const l=plLoad().filter(x=>x.id!==id);plSave(l);renderAll()}
 function projectsHTML(){
-  const l=plLoad();if(!l.length)return`<p class="muted small">Még nincs korábbi projekt. Ha új projektet kezdesz vagy másikat töltesz be, az előző ide kerül.</p>`;
-  return`<div class="rows">${l.map(x=>{const n=(x.P.blocks||[]).length,dt=x.P.date?x.P.date.replace(/-/g,".")+".":"";
+  const l=plLoad();
+  const cur=hasContent()?`<div class="row" style="grid-template-columns:minmax(0,1fr) auto"><div><b>${esc(P.title||"Névtelen projekt")}</b><small>${[P.date?P.date.replace(/-/g,".")+".":"",P.blocks.length+" blokk"].filter(Boolean).join(" · ")}</small></div><span class="chip" style="--c:var(--ok)">${ic("check",14)}Most nyitva</span></div>`:"";
+  if(!l.length)return`${cur?`<div class="rows">${cur}</div>`:""}<p class="muted small">Még nincs másik projekt ezen az eszközön. Ha új projektet kezdesz vagy másikat töltesz be, a mostani ide kerül, és innen visszanyitható.</p>`;
+  return`<div class="rows">${cur}${l.map(x=>{const n=(x.P.blocks||[]).length,dt=x.P.date?x.P.date.replace(/-/g,".")+".":"";
     return`<div class="row" style="grid-template-columns:minmax(0,1fr) auto auto"><div><b>${esc(x.P.title||"Névtelen projekt")}</b><small>${[dt,n+" blokk","mentve "+new Date(x.saved).toLocaleDateString("hu-HU",{month:"short",day:"numeric"})].filter(Boolean).join(" · ")}</small></div>
       <button type="button" class="btn sm" data-popen="${x.id}">Megnyitás</button><button type="button" class="ib del" data-pdel="${x.id}" aria-label="Törlés">${ic("x",16)}</button></div>`}).join("")}</div>`;
 }
@@ -1689,7 +1692,7 @@ function renderEdit(){
       <button class="btn" type="button" data-do="export" ${P.blocks.length?"":"disabled"}>${ic("down",16)}Terv mentése Excelbe</button>
       <button class="btn" type="button" data-do="sablon">${ic("down",16)}Üres sablon letöltése</button></div>
       <p class="muted small">Az elmentett Excel ugyanebben a formában van, mint a sablon: átküldheted, javíthatod gépen, és visszatöltheted.</p></section>
-    <section class="card"><div class="card-head"><h2>Projektek</h2><button class="btn sm solid" type="button" data-do="newproj">${ic("plus",14)}Új projekt</button></div>
+    <section class="card" id="projcard" style="scroll-margin-top:120px"><div class="card-head"><h2>Projektek</h2><button class="btn sm solid" type="button" data-do="newproj">${ic("plus",14)}Új projekt</button></div>
       ${projectsHTML()}<div class="wgrid"><button class="btn" type="button" data-do="minta">${ic("play",16)}Minta megnyitása</button></div></section>`;
   else if(editSec==="idorend")body=`<p class="muted small" id="edwrap">${wrapLine()}</p>
     <datalist id="glist">${P.groups.filter(g=>g.code).map(g=>`<option value="${esc(g.code)}">${esc(g.name)}</option>`).join("")}</datalist>
@@ -1715,7 +1718,7 @@ function renderEdit(){
         ${fld("x",l.x,{label:"Szöveg",area:1,cls:"span2"})}${fld("ids",(l.ids||[]).join(", "),{label:"Shotok",ph:"1/1, 1/2",cls:"w2"})}<button type="button" class="ib del" data-act="rowdel" aria-label="Sor törlése">${ic("x",16)}</button></div>`).join("")}</div>
       <button type="button" class="btn sm" data-act="rowadd" data-list="script">${ic("plus",14)}Új sor</button></section>`;
   renderTabs();$$(".tabs a").forEach(a=>{if(a.getAttribute("href")==="#terv")a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});placeInd();
-  v.innerHTML=`<div class="vh-row"><div class="vh">Terv</div><button class="btn sm" type="button" data-do="newproj">${ic("plus",14)}Új projekt</button></div><div class="seg esec" role="group" aria-label="Szakasz">${secs.map(([k,l])=>`<button type="button" data-sec="${k}" aria-pressed="${editSec===k}">${l}</button>`).join("")}</div><div class="stack">${body}</div>`;
+  v.innerHTML=`<div class="vh-row"><div class="vh">Terv</div><span class="vh-act"><button class="btn sm" type="button" data-do="projlist">${ic("list",14)}Projektek</button><button class="btn sm" type="button" data-do="newproj">${ic("plus",14)}Új projekt</button></span></div><div class="seg esec" role="group" aria-label="Szakasz">${secs.map(([k,l])=>`<button type="button" data-sec="${k}" aria-pressed="${editSec===k}">${l}</button>`).join("")}</div><div class="stack">${body}</div>`;
 }
 /* események (egyszer, delegálva) */
 function sure(btn,msg){if(btn.dataset.armed)return true;const h=btn.innerHTML;btn.dataset.armed="1";btn.classList.add("armed");btn.textContent=msg;
@@ -1754,6 +1757,7 @@ document.addEventListener("click",async e=>{
     else if(d.do==="ures"){if(P.blocks.length&&!sure(t,"Biztos? A mostani terv törlődik"))return;
       setProject({title:"",call:480,blocks:[{type:"prep",d:30,label:"Érkezés, setup"},{type:"shoot",d:30,label:"1/1"}]},{reset:true});editSec="idorend";openEB=P.blocks[1]._id;location.hash="#terv";renderEdit()}
     else if(d.do==="newproj")newProject(t);
+    else if(d.do==="projlist"){editSec="fajl";renderEdit();const c=document.getElementById("projcard");c&&c.scrollIntoView({block:"start",behavior:"smooth"})}
     else if(d.do==="sablon")downloadSablon();
     else if(d.do==="tour")tourStart();
     else if(d.do==="export")exportNow();
