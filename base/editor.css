@@ -85,3 +85,22 @@ body.eb-dragging{-webkit-user-select:none;user-select:none;cursor:grabbing}
   .eb.sl .eb-top .grow{grid-column:1/-1;order:5}
 }
 @media (min-width:1100px){.eb.sl .eb-top{grid-template-columns:24px 90px 150px minmax(0,1fr) 36px}.eb.sl .eb-more{padding-left:30px}}
+
+/* kezdőlap: diszpó készítése az appban */
+.startcard{display:grid;gap:12px;border-color:color-mix(in srgb,var(--shoot) 45%,var(--hair))}
+.startcard h2{margin:0}
+.startcard p{margin:0}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:8px;counter-reset:st}
+.steps li{counter-increment:st;display:grid;grid-template-columns:28px minmax(0,1fr);column-gap:10px;align-items:baseline}
+.steps li::before{content:counter(st);grid-row:1/3;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:750;background:color-mix(in srgb,var(--shoot) 18%,transparent);color:var(--shoot);align-self:start}
+.steps li b{font-size:15px} .steps li span{font-size:13px;color:var(--fg-3)}
+.btn.big{min-height:54px;font-size:17px}
+.card.xlcard{padding:0!important;display:block}
+.xlcard summary{list-style:none;cursor:pointer;display:grid;gap:2px;padding:16px 44px 16px 18px;position:relative}
+.xlcard summary::-webkit-details-marker{display:none}
+.xlcard summary::after{content:"";position:absolute;right:20px;top:50%;width:9px;height:9px;border-right:2px solid var(--fg-3);border-bottom:2px solid var(--fg-3);transform:translateY(-70%) rotate(45deg);transition:transform .2s}
+.xlcard[open] summary::after{transform:translateY(-30%) rotate(-135deg)}
+.card.xlcard[open]{padding:0 0 16px!important}
+.xlcard>:not(summary){margin:0 18px 10px}
+.drop.sm{padding:18px 14px}
+.nextsec{display:flex;justify-content:flex-end;margin-top:14px}

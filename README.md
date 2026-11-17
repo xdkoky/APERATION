@@ -9,7 +9,7 @@ Forgatási napvezérlő 1st AD-knek. Telefonon fut, net nélkül is.
 - **Most:** óra, visszaszámláló, várható wrap, Kész / Vissza / +5′, take-stopper, a következő beállítás és fényváltás.
 - **Take-napló:** take-stopper, jó take csillag és jegyzet minden take-hez; az Időrendben shotonként visszanézhető, és a nyomtatott szkriptlapra is rákerül. Közös munkában a szkriptes vezérlési jog nélkül is vezetheti.
 - **Szerepek kipróbálása:** Terv → Csapat: egyedül, egy eszközön átválthatsz bármelyik pozíció nézetére (mit lát, mit tehet); próba közben semmi nem mentődik.
-- **Terv:** Excel betöltése (a `base/Forgatasi_sablon.xlsx` sablonnal a legbiztosabb) vagy beírás az appban, blokkok húzással átrendezve, mentés Excelbe, korábbi projektek.
+- **Terv:** a diszpót az appban írod meg lépésről lépésre (Projekt → Shotlist → Időrend → Emberek → Forgatókönyv → Csapat), a blokkokat húzással rendezed. Ha a nap már megvan táblázatban, Excelből is betölthető (a `base/Forgatasi_sablon.xlsx` sablonnal a legbiztosabb), és Excelbe menthető. Korábbi projektek.
 - **Közös munka:** pozíciónkénti belépőkód, beállítható, ki mit lát, és ki vezérelheti a napot (Firebase).
 - **Nyomtatás:** diszpó, forgatókönyv (a sztori), shotlist, szkript (a szkriptes lapja, sok jegyzethellyel) – A4, PDF-be is.
 

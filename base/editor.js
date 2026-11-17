@@ -73,7 +73,7 @@ async function newProject(btn){
   setProject({title:"",call:480,blocks:[]},{reset:true});
   editSec="projekt";openEB=null;location.hash="#terv";renderEdit();
   setTimeout(()=>{const t=document.querySelector('[data-view="terv"] [data-f="title"]');t&&t.focus()},60);
-  toast(had?"Új projekt. Az előzőt elmentettem a Projektek közé (Terv → Fájl).":"Új projekt. Add meg a címét és a crew callt.");
+  toast(had?"Új diszpó. Az előzőt elmentettem a Projektek közé (Terv → Fájl).":"Új diszpó. Kezdd a címmel és a crew callal, aztán Tovább.");
 }
 function openProject(id){
   if(isMember()||MP.on){toast("Közös projekt közben nem válthatsz. Előbb válaszd le (Terv → Csapat).");return}
@@ -350,17 +350,21 @@ function renderWelcome(v){
     <button type="button" class="btn danger" data-do="mpleave">Kilépés a közös projektből</button></section>${creditLine()}</div>`;return}
   v.innerHTML=`<div class="welcome">
     <h1 class="brand-logo">${LOGO_SVG}</h1>
-    <p class="muted">Egy forgatási nap vezérlője: óra, visszaszámláló, várható wrap, shotonként a beállítás, a fény, a kellék és a forgatókönyv. Kezdd egy Excel-táblázattal, vagy írd be itt a napot.</p>
-    <label class="drop" id="drop">${ic("upload",28)}<b>Excel-táblázat betöltése</b><span class="muted small">Koppints, vagy húzd ide a fájlt (Excel vagy APERATION-projektfájl)</span><input type="file" accept=".xlsx,.xls,.xlsm,.ods,.csv,.json" data-import hidden></label>
+    <p class="muted">Egy forgatási nap vezérlője: óra, visszaszámláló, várható wrap, shotonként a beállítás, a fény, a kellék és a forgatókönyv.</p>
+    <section class="card startcard"><h2>Diszpó készítése</h2>
+      <p class="muted">Írd meg a napot itt az appban, lépésről lépésre. Minden azonnal mentődik.</p>
+      <ol class="steps"><li><b>Projekt</b><span>cím, dátum, crew call, helyszín</span></li><li><b>Shotlist</b><span>jelenetek, shotok, plán, optika</span></li><li><b>Időrend</b><span>a nap blokkjai, húzással rendezve</span></li><li><b>Emberek, forgatókönyv</b><span>szereplők, stáb, a sztori jelölése</span></li></ol>
+      <button class="btn solid big" type="button" data-do="newproj">${ic("plus",18)}Új diszpó</button></section>
     <div class="wgrid">
       <button class="btn" type="button" data-do="minta">${ic("play",16)}Minta megnyitása</button>
-      <button class="btn" type="button" data-do="newproj">${ic("plus",16)}Új projekt</button>
-      <button class="btn" type="button" data-do="sablon">${ic("down",16)}Sablon letöltése</button>
       <button class="btn" type="button" data-do="tour">${ic("play",16)}Bemutató · 2 perc</button>
     </div>
     ${MP_AVAIL?`<section class="card joincard"><div class="card-head"><h2>Kódot kaptál a stábtól?</h2><button class="btn sm solid" type="button" data-do="joinform">${ic("users",14)}Csatlakozás kóddal</button></div><div id="joinbox" hidden>${joinHTML()}</div></section>`:""}
-    <p class="muted small">A sablonnal működik a legbiztosabban, de a saját táblázatodat is megpróbálja felismerni: kell egy fejlécsor <b>Perc</b> (vagy Kezdés), <b>Típus</b> és <b>Blokk / shot</b> oszlopokkal. A terv csak ezen az eszközön tárolódik.</p>
     ${plLoad().length?`<section class="card"><h2>Korábbi projektek</h2>${projectsHTML()}</section>`:""}
+    <details class="card xlcard"><summary><b>Már megvan Excelben vagy fájlban?</b><span class="muted small">Táblázat vagy APERATION-projektfájl betöltése</span></summary>
+      <label class="drop sm" id="drop">${ic("upload",22)}<b>Fájl betöltése</b><span class="muted small">Koppints, vagy húzd ide (Excel vagy APERATION-projektfájl)</span><input type="file" accept=".xlsx,.xls,.xlsm,.ods,.csv,.json" data-import hidden></label>
+      <p class="muted small">A <b>Forgatási sablon</b>nal működik a legbiztosabban, de a saját táblázatodat is megpróbálja felismerni: kell egy fejlécsor <b>Perc</b> (vagy Kezdés), <b>Típus</b> és <b>Blokk / shot</b> oszlopokkal.</p>
+      <button class="btn sm" type="button" data-do="sablon">${ic("down",14)}Üres Excel-sablon letöltése</button></details>
     ${creditLine()}
   </div>`;
 }
@@ -415,20 +419,20 @@ function importPreview(){
 }
 function renderEdit(){
   const v=$('[data-view="terv"]');
-  const secs=[["fajl","Fájl"],["shotlist","Shotlist"],["idorend","Időrend"],["projekt","Projekt"],["emberek","Emberek"],["szkript","Forgatókönyv"],["csapat","Csapat"]];
+  const secs=[["projekt","Projekt"],["shotlist","Shotlist"],["idorend","Időrend"],["emberek","Emberek"],["szkript","Forgatókönyv"],["csapat","Csapat"],["fajl","Fájl"]];
   let body="";
   if(editSec==="fajl")body=`${pending?importPreview():""}
-    <section class="card"><h2>Excel-táblázat betöltése</h2>
+    <section class="card" id="projcard" style="scroll-margin-top:120px"><div class="card-head"><h2>Projektek</h2><button class="btn sm solid" type="button" data-do="newproj">${ic("plus",14)}Új projekt</button></div>
+      ${projectsHTML()}<div class="wgrid"><button class="btn" type="button" data-do="minta">${ic("play",16)}Minta megnyitása</button></div></section>
+    ${printCard()}
+    ${exportCard()}
+    <section class="card"><h2>Excel-táblázat betöltése</h2><p class="muted small">Ha a nap már megvan táblázatban, innen betöltheted; utána itt az appban szerkeszted tovább.</p>
       <label class="drop" id="drop">${ic("upload",26)}<b>Fájl kiválasztása</b><span class="muted small">vagy húzd ide (Excel vagy APERATION-projektfájl)</span><input type="file" accept=".xlsx,.xls,.xlsm,.ods,.csv,.json" data-import hidden></label>
       <p class="muted small">A <b>Forgatási sablon</b> lapjait (Projekt, Időrend, Szereplők, Stáb, Fények, Forgatókönyv) pontosan ismeri. Más táblázatból a fejlécsorok alapján dolgozik: időrendhez kell <b>Perc</b> vagy <b>Kezdés</b>, <b>Típus</b> és <b>Blokk / shot</b> oszlop.</p></section>
     <section class="card"><h2>Mentés és sablon</h2><div class="wgrid">
       <button class="btn" type="button" data-do="export" ${P.blocks.length?"":"disabled"}>${ic("down",16)}Terv mentése Excelbe</button>
       <button class="btn" type="button" data-do="sablon">${ic("down",16)}Üres sablon letöltése</button></div>
-      <p class="muted small">Az elmentett Excel ugyanebben a formában van, mint a sablon: átküldheted, javíthatod gépen, és visszatöltheted.</p></section>
-    ${exportCard()}
-    ${printCard()}
-    <section class="card" id="projcard" style="scroll-margin-top:120px"><div class="card-head"><h2>Projektek</h2><button class="btn sm solid" type="button" data-do="newproj">${ic("plus",14)}Új projekt</button></div>
-      ${projectsHTML()}<div class="wgrid"><button class="btn" type="button" data-do="minta">${ic("play",16)}Minta megnyitása</button></div></section>`;
+      <p class="muted small">Az elmentett Excel ugyanebben a formában van, mint a sablon: átküldheted, javíthatod gépen, és visszatöltheted.</p></section>`;
   else if(editSec==="idorend")body=`<p class="muted small" id="edwrap">${wrapLine()}</p>${dupMoveCount()?`<p class="eb-warn sum">${ic("alert",16)}<span>${dupMoveCount()===1?"Egy helyen":dupMoveCount()+" helyen"} két átállás áll egymás után. Ez nem hiba, csak nézd át.</span></p>`:""}
     <datalist id="glist">${P.groups.filter(g=>g.code).map(g=>`<option value="${esc(g.code)}">${esc(g.name)}</option>`).join("")}</datalist>
     ${P.blocks.length?"":`<section class="card empty"><h2>Üres a terv</h2><p class="muted">Add hozzá az első blokkot az alábbi gombokkal, sorban, ahogy a nap megy: érkezés, előkészület, forgatás, átállás, ebéd… A crew callt és a dátumot a <b>Projekt</b> részen állítod. Ha Excelben már megvan a nap, töltsd be a <b>Fájl</b> részen.</p></section>`}
@@ -449,6 +453,7 @@ function renderEdit(){
   else body=scriptEditHTML();
   document.documentElement.style.setProperty("--hdr-h",($(".hdr")?$(".hdr").offsetHeight:96)+"px");
   renderTabs();$$(".tabs a").forEach(a=>{if(a.getAttribute("href")==="#terv")a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});placeInd();
+  {const ord=secs.filter(x=>x[0]!=="fajl"),ix=ord.findIndex(x=>x[0]===editSec);if(ix>=0&&ix<ord.length-1&&!pending)body+=`<div class="nextsec"><button class="btn" type="button" data-sec="${ord[ix+1][0]}">Tovább: ${ord[ix+1][1]}${ic("chev",16)}</button></div>`}
   v.innerHTML=`<div class="vh-row"><div class="vh">Terv</div><span class="vh-act"><span class="savedind" id="savedind" aria-live="polite">${savedText()}</span><button class="btn sm" type="button" data-do="projlist">${ic("list",14)}Projektek</button><button class="btn sm" type="button" data-do="newproj">${ic("plus",14)}Új projekt</button></span></div><div class="seg esec" role="group" aria-label="Szakasz">${secs.map(([k,l])=>`<button type="button" data-sec="${k}" aria-pressed="${editSec===k}">${l}</button>`).join("")}</div><div class="stack">${body}</div>`;
   if(editSec==="fajl")backupListFill();
 }
@@ -532,7 +537,7 @@ async function addImages(el,files){
 }
 document.addEventListener("click",async e=>{
   const t=e.target.closest("button,[data-do]");if(!t||!t.closest('[data-view]'))return;const d=t.dataset;
-  if(d.sec){editSec=d.sec;renderEdit();return}
+  if(d.sec){editSec=d.sec;renderEdit();if(t.closest(".nextsec")){const h=document.querySelector('[data-view="terv"] .esec');h&&h.scrollIntoView({block:"start",behavior:"smooth"})}return}
   if(d.popen){openProject(d.popen);return}
   if(d.pdel){if(sure(t,"Törlöd?"))delProject(d.pdel);return}
   if(d.do){
