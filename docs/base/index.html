@@ -1930,5 +1930,12 @@ setInterval(()=>tick(false),250);
 setTimeout(()=>{let seen=true;try{seen=!!localStorage.getItem(TOUR_KEY)}catch(e){}if(!seen&&!(isShootDay()&&st.cur))tourStart()},600);
 </script>
 
-<script>if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});</script>
+<script>
+// Offline működés. Ha új változat érkezik, az oldal egyszer magától újratölt, hogy azonnal az új fusson.
+if("serviceWorker" in navigator){
+  const had=!!navigator.serviceWorker.controller;let done=false;
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{if(had&&!done){done=true;location.reload()}});
+  navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).then(r=>r.update()).catch(()=>{});
+}
+</script>
 </body></html>
