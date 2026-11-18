@@ -28,6 +28,7 @@ function slCard(s,k){
       ${fld("desc",s.desc,{ph:"Mit látunk? (pl. Anna arca, Bence válla felett)",cls:"grow"})}
       <button type="button" class="ib" data-act="sltog" aria-expanded="${open}" aria-label="Részletek">${ic(open?"up":"dn",18)}</button></div>
     <div class="eb-sum sl-sum">${[s.lens,s.move,s.talent].filter(Boolean).map(esc).join(" · ")}</div>
+    ${(()=>{const vk=(D&&D.vkByShot&&D.vkByShot[code])||[];return vk.length?`<div class="sl-vk" data-gallery>${vk.map(x=>`<button type="button" class="vkt" data-full="${esc(x.f)}" data-thumb="${esc(x.t)}" data-cap="Vilkó · ${esc(x.id)}" aria-label="Vilkó megnyitása: ${esc(x.id)}"><img src="${esc(x.t)}" alt=""></button>`).join("")}<span>${ic("img",13)}Vilkó${vk.length>1?` (${vk.length})`:""}: ${esc([...new Set(vk.map(x=>x.g?x.g+" · "+x.id:x.id))].join(", "))}</span></div>`:""})()}
     <div class="sl-status">${status}${code&&!sch.length?`<button type="button" class="btn sm" data-act="sltoplan">${ic("plus",14)}Időrendbe</button>`:""}</div>
     <div class="eb-more" ${open?"":"hidden"}>
       <div class="eg">${fld("lens",s.lens,{label:"Optika",ph:"pl. 50 mm"})}${fld("move",s.move,{label:"Mozgás",ph:"pl. Dolly",list:"slmoves"})}${fld("talent",s.talent,{label:"Szereplők (vesszővel)",ph:"Anna, Bence"})}</div>

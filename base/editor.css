@@ -104,3 +104,10 @@ body.eb-dragging{-webkit-user-select:none;user-select:none;cursor:grabbing}
 .xlcard>:not(summary){margin:0 18px 10px}
 .drop.sm{padding:18px 14px}
 .nextsec{display:flex;justify-content:flex-end;margin-top:14px}
+
+/* vilkó a shot mellett (shotlist) */
+.sl-vk{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-2px 0 0 30px}
+.sl-vk .vkt{flex:none;width:58px;aspect-ratio:4/3;padding:0;border:1px solid var(--hair-2);border-radius:8px;overflow:hidden;background:#000;cursor:zoom-in}
+.sl-vk .vkt img{display:block;width:100%;height:100%;object-fit:cover;object-position:22% 38%}
+.sl-vk span{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:var(--lunch)}
+.vkmatch{display:flex;flex-wrap:wrap;gap:6px 12px;margin:0}

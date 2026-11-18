@@ -21,6 +21,8 @@ function normP(p){
   p.script=p.script.map(l=>({t:STYPES.some(s=>s[0]===l.t)?l.t:"ac",x:l.x||"",ids:Array.isArray(l.ids)?l.ids:splitList(l.ids)}));
   return p;
 }
+// egy fénybeállítás mely shotokhoz tartozik: a Név és a Kód shotszámai (pl. „1/3”, „1/6a”, „1/3, 1/4”)
+function groupShotIds(g){const out=new Set();[g.name,g.code].forEach(v=>{const s=String(v||"");const m=s.match(/\d+\s*\/\s*\d+[A-Za-z]*/g);(m||[]).forEach(x=>out.add(x.replace(/\s/g,"")))});return[...out]}
 function applyProject(){
   const p=P;let t=p.call;
   const SL={};p.shots.forEach(s=>{const c=String(s.code||"").replace(/\s/g,"");if(c&&!SL[c])SL[c]=s});
@@ -31,19 +33,25 @@ function applyProject(){
   const cast=p.cast.filter(c=>c.name||c.role).map((c,k)=>({...c,k}));
   const crew=p.crew.filter(c=>c.name||c.pos).map(c=>({...c,dept:c.dept||"Stáb"}));
   const shots={},boards=[],vilko=[];
+  // vilkó a shothoz: ha egy fénybeállítás Neve (vagy Kódja) egy shot száma a shotlistből (pl. „1/3”, vagy több: „1/3, 1/4”),
+  // a vilkója annak a shotnak a mellé kerül (shotlist, Most nézet, nyomtatott shotlist)
+  const VKBY={};
+  p.groups.forEach(g=>{const imgs=(g.images||[]).map(x=>x.url||IMG[x.idb]).filter(Boolean);if(!imgs.length)return;
+    groupShotIds(g).forEach(k=>{if(!SL[k])return;const a=VKBY[k]=VKBY[k]||[];imgs.forEach(u=>{if(!a.some(y=>y.f===u))a.push({id:(g.name||g.code||k).trim(),t:u,f:u,g:(g.code||"").trim()})})})});
   p.blocks.forEach((b,i)=>{
     if(b.type!=="shoot")return;const lab=blocks[i].label;if(shots[lab])return;
     const ids=shotIds(lab);
     const ss=slOf(b),simgs=ss.flatMap(s=>(s.images||[]).map(x=>({...x,kind:x.kind||"sb"})));
     const img=k=>[...(b.images||[]),...simgs].filter(x=>x.kind===k).map(x=>{const u=x.url||IMG[x.idb];return u?{id:lab,t:u,f:u}:null}).filter(Boolean);
-    const sb=img("sb"),vk=img("vk");boards.push(...sb);vilko.push(...vk);
+    const sb=img("sb"),vk=img("vk");ids.forEach(i=>(VKBY[i]||[]).forEach(x=>{if(!vk.some(y=>y.f===x.f))vk.push(x)}));
+    boards.push(...sb);vk.forEach(x=>{if(!vilko.some(y=>y.f===x.f))vilko.push(x)});
     const segs=[];let cur=null,head="";
     p.script.forEach(l=>{if(l.t==="sh"&&!(l.ids||[]).length){head=l.x;cur=null;return}
       if((l.ids||[]).some(x=>ids.includes(x))){if(!cur){cur={lab:head,lines:[]};segs.push(cur)}cur.lines.push(l)}else cur=null});
     shots[lab]={ids,talent:splitList(b.talent).length?splitList(b.talent):uniq(ss.flatMap(s=>splitList(s.talent))),offcam:[],props:uniq([...splitLines(b.props),...ss.flatMap(s=>splitLines(s.props))]),
       story:b.story||ss.map(s=>s.story||s.desc).filter(Boolean).join(" "),desc:ss.map(s=>s.desc).filter(Boolean).join(" "),sb,vk,segs};
   });
-  D={title:p.title,src:p.src||"saját terv",plan:{call:p.call,targetWrap:p.wrapTarget},blocks,shots,groups,cast,crew,boards,vilko,
+  D={title:p.title,src:p.src||"saját terv",plan:{call:p.call,targetWrap:p.wrapTarget},blocks,shots,groups,cast,crew,boards,vilko,vkByShot:VKBY,
     script:p.script.filter(l=>l.x).map(l=>({t:l.t,x:l.x,cov:(l.ids||[]).length?[{ids:l.ids}]:[]})),
     contacts:[...p.crew,...p.cast].filter(c=>c.name&&c.phone).map(c=>({role:c.pos||c.role,name:c.name,phone:c.phone})),
     location:p.location,parking:p.parking,notes:p.notes.filter(Boolean)};
@@ -412,6 +420,9 @@ function imgEditor(r,kinds){
     <div class="eimg">${kinds.map(([k,l])=>`<label class="btn sm">${ic("plus",14)}${l}<input type="file" accept="image/*" data-addimg="${k}" multiple hidden></label>`).join("")}
     <input type="url" placeholder="vagy kép-link (https://…)" data-imgurl aria-label="Kép linkje">${kinds.length>1?`<select data-imgkind aria-label="Kép fajtája">${kinds.map(([k,l])=>`<option value="${k}">${l}</option>`).join("")}</select>`:`<input type="hidden" data-imgkind value="${kinds[0][0]}">`}<button type="button" class="btn sm" data-act="imgurl">Hozzáad</button></div></div>`;
 }
+function vkMatchNote(g){const ids=groupShotIds(g);if(!ids.length)return"";
+  const codes=new Set(P.shots.map(s=>String(s.code||"").replace(/\s/g,""))),ok=ids.filter(i=>codes.has(i)),miss=ids.filter(i=>!codes.has(i));
+  return`<p class="vkmatch span2">${ok.length?`<span class="slst ok">${ic("check",13)}A shotlistben: ${ok.map(esc).join(", ")} mellett${(g.images||[]).length?"":" (még nincs feltöltve vilkó)"}</span>`:""}${miss.length?`<span class="slst">Nincs ilyen shot a shotlistben: ${miss.map(esc).join(", ")}</span>`:""}</p>`}
 function rowsTable(list,cols,addLabel,extra){
   return`<div class="etab">${P[list].map((r,k)=>`<div class="er" data-list="${list}" data-k="${k}" data-id="${r._id||""}">${cols.map(([f,l,o])=>fld(f,r[f]||"",Object.assign({label:l},o||{}))).join("")}${extra?extra(r,k):""}<button type="button" class="ib del" data-act="rowdel" aria-label="Sor törlése">${ic("x",16)}</button></div>`).join("")}</div>
     <button type="button" class="btn sm" data-act="rowadd" data-list="${list}">${ic("plus",14)}${addLabel}</button>`;
@@ -451,8 +462,9 @@ function renderEdit(){
       ${fld("wrapTarget",P.wrapTarget?hhmm(P.wrapTarget):"",{label:"Wrap-határ (eddig kell végezni)",type:"time"})}${fld("location",P.location,{label:"Helyszín"})}${fld("parking",P.parking,{label:"Parkolás",cls:"span2"})}</div>
       ${fld("notes",P.notes.join("\n"),{label:"Fontos (soronként; a BIZTONSÁG kezdetű sor pirosan látszik)",area:1,rows:4})}
       <p class="muted small">A megadott napon az app magától élesben indul. Dátum nélkül az Info fülön kapcsold be: „Ma forgatunk”.</p></section>
-    <section class="card"><h2>Fénybeállítások</h2><p class="muted small">A kódot írd az Időrendben a blokk Fény mezőjébe; az app így jelzi, mikor változik a fény.</p>
-      ${rowsTable("groups",[["code","Kód",{cls:"w1"}],["name","Név"],["desc","Leírás",{cls:"span2"}]],"Új fény",r=>imgEditor(r,[["vk","Vilkó / fényterv"]]))}</section>`;
+    <section class="card"><h2>Fénybeállítások és vilkók</h2><p class="muted small">A kódot írd az Időrendben a blokk Fény mezőjébe; az app így jelzi, mikor változik a fény.</p>
+      <p class="muted small"><b>Vilkó egy shothoz:</b> ha a <b>Név</b> egy shot száma a shotlistből (pl. <b>1/3</b>, vagy több: <b>1/3, 1/4</b>), a vilkó a shotlistben és forgatás közben annak a shotnak a mellé kerül.</p>
+      ${rowsTable("groups",[["code","Kód",{cls:"w1"}],["name","Név",{ph:"pl. Nappal, vagy egy shot: 1/3"}],["desc","Leírás",{cls:"span2"}]],"Új fény / vilkó",r=>vkMatchNote(r)+imgEditor(r,[["vk","Vilkó / fényterv"]]))}</section>`;
   else if(editSec==="emberek")body=`<section class="card"><h2>Szereplők</h2><p class="muted small">A Szerep (pl. Anna) ugyanaz legyen, amit az Időrendben a Szereplők mezőbe írsz.</p>
       ${rowsTable("cast",[["role","Szerep"],["name","Színész"],["arr","Érkezés",{ph:"8:00",cls:"w1",im:"numeric"}],["ruha","Ruha",{cls:"w1"}],["smink","Smink",{cls:"w1"}],["haj","Haj",{cls:"w1"}],["onset","Setre",{cls:"w1"}],["phone","Telefon",{type:"tel"}]],"Új szereplő")}</section>
     <section class="card"><h2>Stáb</h2>${rowsTable("crew",[["dept","Részleg"],["pos","Pozíció"],["name","Név"],["arr","Érkezés",{ph:"8:00",cls:"w1"}],["phone","Telefon",{type:"tel"}]],"Új stábtag")}</section>`;

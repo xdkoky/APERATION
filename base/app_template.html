@@ -68,7 +68,10 @@ body.over .vig{opacity:1;animation:alarm 1.6s ease-in-out infinite}
 .hdr-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px}
 .clock{display:flex;align-items:baseline;gap:1px;font-weight:700;font-size:26px;letter-spacing:-.03em;line-height:1}
 .clock span{font-size:15px;color:var(--fg-3);font-weight:600;letter-spacing:0}
-.simchip{margin-left:8px;align-self:center;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-decoration:none;color:var(--move);border:1px solid color-mix(in srgb,var(--move) 50%,transparent);border-radius:999px;padding:3px 7px;white-space:nowrap}
+.simchip .sq{width:7px;height:7px;border-radius:1.5px;background:currentColor;flex:none}
+.simchip:hover{background:color-mix(in srgb,var(--move) 14%,transparent)}
+.simchip{display:inline-flex;align-items:center;gap:5px;cursor:pointer;background:none;font-family:inherit;line-height:1.2;
+  min-height:24px;margin-left:8px;align-self:center;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-decoration:none;color:var(--move);border:1px solid color-mix(in srgb,var(--move) 50%,transparent);border-radius:999px;padding:3px 7px;white-space:nowrap}
 .pill{justify-self:center;display:inline-flex;align-items:center;gap:7px;max-width:100%;height:28px;padding:0 12px 0 10px;border-radius:999px;font-size:12.5px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--state);background:color-mix(in srgb,var(--state) 13%,transparent);border:1px solid color-mix(in srgb,var(--state) 32%,transparent)}
 .pill i{flex:none;width:7px;height:7px;border-radius:50%;background:var(--state);box-shadow:0 0 10px var(--state)}
 .pill.idle{color:var(--fg-2);background:var(--surface-2);border-color:var(--hair)} .pill.idle i{background:var(--fg-3);box-shadow:none}
@@ -604,7 +607,7 @@ html.boot-in .app,html.boot-in .bottom{transition:transform 1.25s cubic-bezier(.
 <div class="app">
   <header class="hdr">
     <div class="hdr-row">
-      <div class="clock num"><b id="clk">--:--</b><span id="clks">:--</span><a class="simchip" id="simchip" href="#info" hidden></a></div>
+      <div class="clock num"><b id="clk">--:--</b><span id="clks">:--</span><button type="button" class="simchip" id="simchip" hidden title="Próba leállítása" aria-label="Próba leállítása"></button></div>
       <div class="pill idle" id="pill"><i></i><span id="pilltx">A nap még nem indult</span></div>
       <div class="wrapbox"><span class="cap">Wrap</span><b class="num" id="wrapv">--:--</b></div>
     </div>
@@ -760,6 +763,9 @@ function toggleSkip(j,quiet){
 function extend(m){if(RO())return;const b=curBlock();if(!b)return;st.ext[b.i]=Math.max(0,(st.ext[b.i]||0)+m);if(!st.ext[b.i])delete st.ext[b.i];lastAlert="";save();renderAll();
   toast(m>0?`+${m} perc erre a blokkra · várható wrap ${hm(project().wrap)}`:"Hosszabbítás törölve",m>0?{action:"Visszavonás",fn:()=>extend(-m)}:{})}
 function takesSaved(k){save();mpPushTakes(k)}
+/* próba leállítása (fejléc ■ gombja vagy Info): a nap nullázódik, de egy ideig visszavonható */
+function simStop(){if(!st.sim.on||tour)return;const prev=JSON.stringify(st),keep=fresh();keep.sound=st.sound;keep.force=st.force;st=keep;save();renderAll();
+  toast("Próba leállítva, a nap nullázva.",{tone:"ok",action:"Visszavonás",fn:()=>{st=Object.assign(fresh(),JSON.parse(prev));save();renderAll()}})}
 function startSW(){if(st.sw||!canTake())return;st.sw={at:tod(),i:st.cur?st.cur.i:"gen"};takesSaved([]);renderMost()}
 function stopSW(silent){if(!st.sw)return;const d=(tod()-st.sw.at)*60,k=st.sw.i;(st.takes[k]=st.takes[k]||[]).push({d,ok:false,at:st.sw.at,note:""});st.sw=null;takesSaved(k);if(!silent)renderMost()}
 /* take-lista: idő, jó take csillag, jegyzet – a Most nézetben és az Időrendben is */
@@ -1015,7 +1021,7 @@ function tick(force){
   document.body.dataset.state=started||live()?s:"ok";
   document.documentElement.dataset.type=b?b.type:"prep";
   $("#clk").textContent=hm(Math.floor(t));$("#clks").textContent=":"+String(Math.floor((t*60)%60)).padStart(2,"0");
-  const sc=$("#simchip");sc.hidden=!st.sim.on;if(st.sim.on)sc.textContent=`PRÓBA ${st.sim.speed}×`;
+  const sc=$("#simchip");sc.hidden=!st.sim.on||!!tour;if(st.sim.on){const tx=`<i class="sq" aria-hidden="true"></i>PRÓBA ${st.sim.speed}×`;if(sc.innerHTML!==tx)sc.innerHTML=tx}
   $("#wrapv").textContent=hm(wrap);
   const pill=$("#pill");pill.classList.toggle("idle",!started);
   $("#pilltx").textContent=!started?(live()?"A nap még nem indult":"Nem forgatási nap"):!b?"Wrap":wr<PLAN_WRAP?`${PLAN_WRAP-wr}′ előny`:wr===PLAN_WRAP?"Terv szerint":`+${wr-PLAN_WRAP}′ késés`;
@@ -1123,6 +1129,7 @@ function renderCrew(){
 /* ---------- INFO ---------- */
 let confirmReset=false;
 document.addEventListener("change",e=>{if(e.target&&e.target.id==="bootsnd"){try{localStorage.setItem("aperation-boot-sound",e.target.checked?"1":"0")}catch(x){}toast(e.target.checked?"Indulóhang bekapcsolva.":"Indulóhang kikapcsolva.")}});
+document.addEventListener("click",e=>{if(e.target.closest("#simchip"))simStop()});
 function renderInfo(){
   const v=$('[data-view="info"]'),notes=[];
   v.innerHTML=`<div class="vh">Info</div><div class="grid"><div class="stack">
@@ -1157,7 +1164,7 @@ function renderInfo(){
   g("#tourgo").onclick=()=>tourStart();
   g("#simon")&&(g("#simon").onclick=()=>{const s0=tmin(g("#simt").value);if(s0==null){toast("Az időpontot így írd: 8:25");g("#simt").focus();return}
     const keep=fresh();keep.sound=st.sound;keep.force=st.force;keep.sim={on:true,start:s0,speed:+g("#simsp").value,base:Date.now()};st=keep;save();location.hash="#most";renderAll();toast(`Próba mód: ${hm(s0)}-tól · ${st.sim.speed}×`)});
-  g("#simoff")&&(g("#simoff").onclick=()=>{const keep=fresh();keep.sound=st.sound;keep.force=st.force;st=keep;save();renderAll();toast("Próba befejezve, a nap nullázva",{tone:"ok"})});
+  g("#simoff")&&(g("#simoff").onclick=simStop);
   g("#snd").onchange=e=>{st.sound=e.target.checked;save()};
   g("#force").onchange=e=>{st.force=e.target.checked;save();renderAll()};
   g("#sndtest").onclick=()=>{const was=st.sound;st.sound=true;cue(2,740,[120,80,120]);st.sound=was};

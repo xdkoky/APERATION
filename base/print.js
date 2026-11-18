@@ -40,7 +40,7 @@ function prShotlist(){
     let prev=null;
     return`<div class="pr-doc">${prHead("Shotlist")}<table class="sl"><thead><tr><th>Shot</th><th>Plán · optika · mozgás</th><th>Leírás · sztori</th><th>Szereplők · kellék</th><th class="num">Időrend</th><th>Storyboard</th></tr></thead><tbody>
       ${P.shots.map(s=>{const code=String(s.code||"").replace(/\s/g,""),sc=(code.match(/^(\d+)/)||[])[1]||"",h=sc!==prev?`<tr class="dept"><td colspan="6">${sc?sc+". jelenet":"Jelenet nélkül"}</td></tr>`:"";prev=sc;
-        const imgs=(s.images||[]).map(x=>x.url||IMG[x.idb]).filter(Boolean).slice(0,2);
+        const imgs=[...(s.images||[]).map(x=>x.url||IMG[x.idb]).filter(Boolean).slice(0,2),...((D.vkByShot||{})[code]||[]).map(x=>x.f).slice(0,1)];
         return h+`<tr><td><span class="shot">${esc(code)}</span></td><td>${esc([s.size,s.lens,s.move].filter(Boolean).join(" · "))}</td>
           <td>${esc(s.desc)}${s.story?`<br><small>${esc(s.story)}</small>`:""}${s.note?`<br><small><i>${esc(s.note)}</i></small>`:""}</td>
           <td>${esc(s.talent)}${s.props?`<br><small>${splitLines(s.props).map(esc).join(" · ")}</small>`:""}</td>

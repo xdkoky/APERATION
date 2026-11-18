@@ -68,7 +68,10 @@ body.over .vig{opacity:1;animation:alarm 1.6s ease-in-out infinite}
 .hdr-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px}
 .clock{display:flex;align-items:baseline;gap:1px;font-weight:700;font-size:26px;letter-spacing:-.03em;line-height:1}
 .clock span{font-size:15px;color:var(--fg-3);font-weight:600;letter-spacing:0}
-.simchip{margin-left:8px;align-self:center;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-decoration:none;color:var(--move);border:1px solid color-mix(in srgb,var(--move) 50%,transparent);border-radius:999px;padding:3px 7px;white-space:nowrap}
+.simchip .sq{width:7px;height:7px;border-radius:1.5px;background:currentColor;flex:none}
+.simchip:hover{background:color-mix(in srgb,var(--move) 14%,transparent)}
+.simchip{display:inline-flex;align-items:center;gap:5px;cursor:pointer;background:none;font-family:inherit;line-height:1.2;
+  min-height:24px;margin-left:8px;align-self:center;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-decoration:none;color:var(--move);border:1px solid color-mix(in srgb,var(--move) 50%,transparent);border-radius:999px;padding:3px 7px;white-space:nowrap}
 .pill{justify-self:center;display:inline-flex;align-items:center;gap:7px;max-width:100%;height:28px;padding:0 12px 0 10px;border-radius:999px;font-size:12.5px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--state);background:color-mix(in srgb,var(--state) 13%,transparent);border:1px solid color-mix(in srgb,var(--state) 32%,transparent)}
 .pill i{flex:none;width:7px;height:7px;border-radius:50%;background:var(--state);box-shadow:0 0 10px var(--state)}
 .pill.idle{color:var(--fg-2);background:var(--surface-2);border-color:var(--hair)} .pill.idle i{background:var(--fg-3);box-shadow:none}
@@ -470,6 +473,13 @@ body.eb-dragging{-webkit-user-select:none;user-select:none;cursor:grabbing}
 .xlcard>:not(summary){margin:0 18px 10px}
 .drop.sm{padding:18px 14px}
 .nextsec{display:flex;justify-content:flex-end;margin-top:14px}
+
+/* vilkó a shot mellett (shotlist) */
+.sl-vk{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-2px 0 0 30px}
+.sl-vk .vkt{flex:none;width:58px;aspect-ratio:4/3;padding:0;border:1px solid var(--hair-2);border-radius:8px;overflow:hidden;background:#000;cursor:zoom-in}
+.sl-vk .vkt img{display:block;width:100%;height:100%;object-fit:cover;object-position:22% 38%}
+.sl-vk span{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:var(--lunch)}
+.vkmatch{display:flex;flex-wrap:wrap;gap:6px 12px;margin:0}
 
 /* nyomtatható változatok (diszpó, forgatókönyv, shotlist, szkriptlap): fehér papírra, A4 */
 .pr{font-family:"Inter",Arial,sans-serif;color:#111;background:#fff;font-size:10pt;line-height:1.35}
@@ -940,7 +950,7 @@ html.boot-in .app,html.boot-in .bottom{transition:transform 1.25s cubic-bezier(.
 <div class="app">
   <header class="hdr">
     <div class="hdr-row">
-      <div class="clock num"><b id="clk">--:--</b><span id="clks">:--</span><a class="simchip" id="simchip" href="#info" hidden></a></div>
+      <div class="clock num"><b id="clk">--:--</b><span id="clks">:--</span><button type="button" class="simchip" id="simchip" hidden title="Próba leállítása" aria-label="Próba leállítása"></button></div>
       <div class="pill idle" id="pill"><i></i><span id="pilltx">A nap még nem indult</span></div>
       <div class="wrapbox"><span class="cap">Wrap</span><b class="num" id="wrapv">--:--</b></div>
     </div>
@@ -1096,6 +1106,9 @@ function toggleSkip(j,quiet){
 function extend(m){if(RO())return;const b=curBlock();if(!b)return;st.ext[b.i]=Math.max(0,(st.ext[b.i]||0)+m);if(!st.ext[b.i])delete st.ext[b.i];lastAlert="";save();renderAll();
   toast(m>0?`+${m} perc erre a blokkra · várható wrap ${hm(project().wrap)}`:"Hosszabbítás törölve",m>0?{action:"Visszavonás",fn:()=>extend(-m)}:{})}
 function takesSaved(k){save();mpPushTakes(k)}
+/* próba leállítása (fejléc ■ gombja vagy Info): a nap nullázódik, de egy ideig visszavonható */
+function simStop(){if(!st.sim.on||tour)return;const prev=JSON.stringify(st),keep=fresh();keep.sound=st.sound;keep.force=st.force;st=keep;save();renderAll();
+  toast("Próba leállítva, a nap nullázva.",{tone:"ok",action:"Visszavonás",fn:()=>{st=Object.assign(fresh(),JSON.parse(prev));save();renderAll()}})}
 function startSW(){if(st.sw||!canTake())return;st.sw={at:tod(),i:st.cur?st.cur.i:"gen"};takesSaved([]);renderMost()}
 function stopSW(silent){if(!st.sw)return;const d=(tod()-st.sw.at)*60,k=st.sw.i;(st.takes[k]=st.takes[k]||[]).push({d,ok:false,at:st.sw.at,note:""});st.sw=null;takesSaved(k);if(!silent)renderMost()}
 /* take-lista: idő, jó take csillag, jegyzet – a Most nézetben és az Időrendben is */
@@ -1351,7 +1364,7 @@ function tick(force){
   document.body.dataset.state=started||live()?s:"ok";
   document.documentElement.dataset.type=b?b.type:"prep";
   $("#clk").textContent=hm(Math.floor(t));$("#clks").textContent=":"+String(Math.floor((t*60)%60)).padStart(2,"0");
-  const sc=$("#simchip");sc.hidden=!st.sim.on;if(st.sim.on)sc.textContent=`PRÓBA ${st.sim.speed}×`;
+  const sc=$("#simchip");sc.hidden=!st.sim.on||!!tour;if(st.sim.on){const tx=`<i class="sq" aria-hidden="true"></i>PRÓBA ${st.sim.speed}×`;if(sc.innerHTML!==tx)sc.innerHTML=tx}
   $("#wrapv").textContent=hm(wrap);
   const pill=$("#pill");pill.classList.toggle("idle",!started);
   $("#pilltx").textContent=!started?(live()?"A nap még nem indult":"Nem forgatási nap"):!b?"Wrap":wr<PLAN_WRAP?`${PLAN_WRAP-wr}′ előny`:wr===PLAN_WRAP?"Terv szerint":`+${wr-PLAN_WRAP}′ késés`;
@@ -1459,6 +1472,7 @@ function renderCrew(){
 /* ---------- INFO ---------- */
 let confirmReset=false;
 document.addEventListener("change",e=>{if(e.target&&e.target.id==="bootsnd"){try{localStorage.setItem("aperation-boot-sound",e.target.checked?"1":"0")}catch(x){}toast(e.target.checked?"Indulóhang bekapcsolva.":"Indulóhang kikapcsolva.")}});
+document.addEventListener("click",e=>{if(e.target.closest("#simchip"))simStop()});
 function renderInfo(){
   const v=$('[data-view="info"]'),notes=[];
   v.innerHTML=`<div class="vh">Info</div><div class="grid"><div class="stack">
@@ -1493,7 +1507,7 @@ function renderInfo(){
   g("#tourgo").onclick=()=>tourStart();
   g("#simon")&&(g("#simon").onclick=()=>{const s0=tmin(g("#simt").value);if(s0==null){toast("Az időpontot így írd: 8:25");g("#simt").focus();return}
     const keep=fresh();keep.sound=st.sound;keep.force=st.force;keep.sim={on:true,start:s0,speed:+g("#simsp").value,base:Date.now()};st=keep;save();location.hash="#most";renderAll();toast(`Próba mód: ${hm(s0)}-tól · ${st.sim.speed}×`)});
-  g("#simoff")&&(g("#simoff").onclick=()=>{const keep=fresh();keep.sound=st.sound;keep.force=st.force;st=keep;save();renderAll();toast("Próba befejezve, a nap nullázva",{tone:"ok"})});
+  g("#simoff")&&(g("#simoff").onclick=simStop);
   g("#snd").onchange=e=>{st.sound=e.target.checked;save()};
   g("#force").onchange=e=>{st.force=e.target.checked;save();renderAll()};
   g("#sndtest").onclick=()=>{const was=st.sound;st.sound=true;cue(2,740,[120,80,120]);st.sound=was};
@@ -2227,6 +2241,8 @@ function normP(p){
   p.script=p.script.map(l=>({t:STYPES.some(s=>s[0]===l.t)?l.t:"ac",x:l.x||"",ids:Array.isArray(l.ids)?l.ids:splitList(l.ids)}));
   return p;
 }
+// egy fénybeállítás mely shotokhoz tartozik: a Név és a Kód shotszámai (pl. „1/3”, „1/6a”, „1/3, 1/4”)
+function groupShotIds(g){const out=new Set();[g.name,g.code].forEach(v=>{const s=String(v||"");const m=s.match(/\d+\s*\/\s*\d+[A-Za-z]*/g);(m||[]).forEach(x=>out.add(x.replace(/\s/g,"")))});return[...out]}
 function applyProject(){
   const p=P;let t=p.call;
   const SL={};p.shots.forEach(s=>{const c=String(s.code||"").replace(/\s/g,"");if(c&&!SL[c])SL[c]=s});
@@ -2237,19 +2253,25 @@ function applyProject(){
   const cast=p.cast.filter(c=>c.name||c.role).map((c,k)=>({...c,k}));
   const crew=p.crew.filter(c=>c.name||c.pos).map(c=>({...c,dept:c.dept||"Stáb"}));
   const shots={},boards=[],vilko=[];
+  // vilkó a shothoz: ha egy fénybeállítás Neve (vagy Kódja) egy shot száma a shotlistből (pl. „1/3”, vagy több: „1/3, 1/4”),
+  // a vilkója annak a shotnak a mellé kerül (shotlist, Most nézet, nyomtatott shotlist)
+  const VKBY={};
+  p.groups.forEach(g=>{const imgs=(g.images||[]).map(x=>x.url||IMG[x.idb]).filter(Boolean);if(!imgs.length)return;
+    groupShotIds(g).forEach(k=>{if(!SL[k])return;const a=VKBY[k]=VKBY[k]||[];imgs.forEach(u=>{if(!a.some(y=>y.f===u))a.push({id:(g.name||g.code||k).trim(),t:u,f:u,g:(g.code||"").trim()})})})});
   p.blocks.forEach((b,i)=>{
     if(b.type!=="shoot")return;const lab=blocks[i].label;if(shots[lab])return;
     const ids=shotIds(lab);
     const ss=slOf(b),simgs=ss.flatMap(s=>(s.images||[]).map(x=>({...x,kind:x.kind||"sb"})));
     const img=k=>[...(b.images||[]),...simgs].filter(x=>x.kind===k).map(x=>{const u=x.url||IMG[x.idb];return u?{id:lab,t:u,f:u}:null}).filter(Boolean);
-    const sb=img("sb"),vk=img("vk");boards.push(...sb);vilko.push(...vk);
+    const sb=img("sb"),vk=img("vk");ids.forEach(i=>(VKBY[i]||[]).forEach(x=>{if(!vk.some(y=>y.f===x.f))vk.push(x)}));
+    boards.push(...sb);vk.forEach(x=>{if(!vilko.some(y=>y.f===x.f))vilko.push(x)});
     const segs=[];let cur=null,head="";
     p.script.forEach(l=>{if(l.t==="sh"&&!(l.ids||[]).length){head=l.x;cur=null;return}
       if((l.ids||[]).some(x=>ids.includes(x))){if(!cur){cur={lab:head,lines:[]};segs.push(cur)}cur.lines.push(l)}else cur=null});
     shots[lab]={ids,talent:splitList(b.talent).length?splitList(b.talent):uniq(ss.flatMap(s=>splitList(s.talent))),offcam:[],props:uniq([...splitLines(b.props),...ss.flatMap(s=>splitLines(s.props))]),
       story:b.story||ss.map(s=>s.story||s.desc).filter(Boolean).join(" "),desc:ss.map(s=>s.desc).filter(Boolean).join(" "),sb,vk,segs};
   });
-  D={title:p.title,src:p.src||"saját terv",plan:{call:p.call,targetWrap:p.wrapTarget},blocks,shots,groups,cast,crew,boards,vilko,
+  D={title:p.title,src:p.src||"saját terv",plan:{call:p.call,targetWrap:p.wrapTarget},blocks,shots,groups,cast,crew,boards,vilko,vkByShot:VKBY,
     script:p.script.filter(l=>l.x).map(l=>({t:l.t,x:l.x,cov:(l.ids||[]).length?[{ids:l.ids}]:[]})),
     contacts:[...p.crew,...p.cast].filter(c=>c.name&&c.phone).map(c=>({role:c.pos||c.role,name:c.name,phone:c.phone})),
     location:p.location,parking:p.parking,notes:p.notes.filter(Boolean)};
@@ -2618,6 +2640,9 @@ function imgEditor(r,kinds){
     <div class="eimg">${kinds.map(([k,l])=>`<label class="btn sm">${ic("plus",14)}${l}<input type="file" accept="image/*" data-addimg="${k}" multiple hidden></label>`).join("")}
     <input type="url" placeholder="vagy kép-link (https://…)" data-imgurl aria-label="Kép linkje">${kinds.length>1?`<select data-imgkind aria-label="Kép fajtája">${kinds.map(([k,l])=>`<option value="${k}">${l}</option>`).join("")}</select>`:`<input type="hidden" data-imgkind value="${kinds[0][0]}">`}<button type="button" class="btn sm" data-act="imgurl">Hozzáad</button></div></div>`;
 }
+function vkMatchNote(g){const ids=groupShotIds(g);if(!ids.length)return"";
+  const codes=new Set(P.shots.map(s=>String(s.code||"").replace(/\s/g,""))),ok=ids.filter(i=>codes.has(i)),miss=ids.filter(i=>!codes.has(i));
+  return`<p class="vkmatch span2">${ok.length?`<span class="slst ok">${ic("check",13)}A shotlistben: ${ok.map(esc).join(", ")} mellett${(g.images||[]).length?"":" (még nincs feltöltve vilkó)"}</span>`:""}${miss.length?`<span class="slst">Nincs ilyen shot a shotlistben: ${miss.map(esc).join(", ")}</span>`:""}</p>`}
 function rowsTable(list,cols,addLabel,extra){
   return`<div class="etab">${P[list].map((r,k)=>`<div class="er" data-list="${list}" data-k="${k}" data-id="${r._id||""}">${cols.map(([f,l,o])=>fld(f,r[f]||"",Object.assign({label:l},o||{}))).join("")}${extra?extra(r,k):""}<button type="button" class="ib del" data-act="rowdel" aria-label="Sor törlése">${ic("x",16)}</button></div>`).join("")}</div>
     <button type="button" class="btn sm" data-act="rowadd" data-list="${list}">${ic("plus",14)}${addLabel}</button>`;
@@ -2657,8 +2682,9 @@ function renderEdit(){
       ${fld("wrapTarget",P.wrapTarget?hhmm(P.wrapTarget):"",{label:"Wrap-határ (eddig kell végezni)",type:"time"})}${fld("location",P.location,{label:"Helyszín"})}${fld("parking",P.parking,{label:"Parkolás",cls:"span2"})}</div>
       ${fld("notes",P.notes.join("\n"),{label:"Fontos (soronként; a BIZTONSÁG kezdetű sor pirosan látszik)",area:1,rows:4})}
       <p class="muted small">A megadott napon az app magától élesben indul. Dátum nélkül az Info fülön kapcsold be: „Ma forgatunk”.</p></section>
-    <section class="card"><h2>Fénybeállítások</h2><p class="muted small">A kódot írd az Időrendben a blokk Fény mezőjébe; az app így jelzi, mikor változik a fény.</p>
-      ${rowsTable("groups",[["code","Kód",{cls:"w1"}],["name","Név"],["desc","Leírás",{cls:"span2"}]],"Új fény",r=>imgEditor(r,[["vk","Vilkó / fényterv"]]))}</section>`;
+    <section class="card"><h2>Fénybeállítások és vilkók</h2><p class="muted small">A kódot írd az Időrendben a blokk Fény mezőjébe; az app így jelzi, mikor változik a fény.</p>
+      <p class="muted small"><b>Vilkó egy shothoz:</b> ha a <b>Név</b> egy shot száma a shotlistből (pl. <b>1/3</b>, vagy több: <b>1/3, 1/4</b>), a vilkó a shotlistben és forgatás közben annak a shotnak a mellé kerül.</p>
+      ${rowsTable("groups",[["code","Kód",{cls:"w1"}],["name","Név",{ph:"pl. Nappal, vagy egy shot: 1/3"}],["desc","Leírás",{cls:"span2"}]],"Új fény / vilkó",r=>vkMatchNote(r)+imgEditor(r,[["vk","Vilkó / fényterv"]]))}</section>`;
   else if(editSec==="emberek")body=`<section class="card"><h2>Szereplők</h2><p class="muted small">A Szerep (pl. Anna) ugyanaz legyen, amit az Időrendben a Szereplők mezőbe írsz.</p>
       ${rowsTable("cast",[["role","Szerep"],["name","Színész"],["arr","Érkezés",{ph:"8:00",cls:"w1",im:"numeric"}],["ruha","Ruha",{cls:"w1"}],["smink","Smink",{cls:"w1"}],["haj","Haj",{cls:"w1"}],["onset","Setre",{cls:"w1"}],["phone","Telefon",{type:"tel"}]],"Új szereplő")}</section>
     <section class="card"><h2>Stáb</h2>${rowsTable("crew",[["dept","Részleg"],["pos","Pozíció"],["name","Név"],["arr","Érkezés",{ph:"8:00",cls:"w1"}],["phone","Telefon",{type:"tel"}]],"Új stábtag")}</section>`;
@@ -2835,6 +2861,7 @@ function slCard(s,k){
       ${fld("desc",s.desc,{ph:"Mit látunk? (pl. Anna arca, Bence válla felett)",cls:"grow"})}
       <button type="button" class="ib" data-act="sltog" aria-expanded="${open}" aria-label="Részletek">${ic(open?"up":"dn",18)}</button></div>
     <div class="eb-sum sl-sum">${[s.lens,s.move,s.talent].filter(Boolean).map(esc).join(" · ")}</div>
+    ${(()=>{const vk=(D&&D.vkByShot&&D.vkByShot[code])||[];return vk.length?`<div class="sl-vk" data-gallery>${vk.map(x=>`<button type="button" class="vkt" data-full="${esc(x.f)}" data-thumb="${esc(x.t)}" data-cap="Vilkó · ${esc(x.id)}" aria-label="Vilkó megnyitása: ${esc(x.id)}"><img src="${esc(x.t)}" alt=""></button>`).join("")}<span>${ic("img",13)}Vilkó${vk.length>1?` (${vk.length})`:""}: ${esc([...new Set(vk.map(x=>x.g?x.g+" · "+x.id:x.id))].join(", "))}</span></div>`:""})()}
     <div class="sl-status">${status}${code&&!sch.length?`<button type="button" class="btn sm" data-act="sltoplan">${ic("plus",14)}Időrendbe</button>`:""}</div>
     <div class="eb-more" ${open?"":"hidden"}>
       <div class="eg">${fld("lens",s.lens,{label:"Optika",ph:"pl. 50 mm"})}${fld("move",s.move,{label:"Mozgás",ph:"pl. Dolly",list:"slmoves"})}${fld("talent",s.talent,{label:"Szereplők (vesszővel)",ph:"Anna, Bence"})}</div>
@@ -3093,7 +3120,7 @@ function prShotlist(){
     let prev=null;
     return`<div class="pr-doc">${prHead("Shotlist")}<table class="sl"><thead><tr><th>Shot</th><th>Plán · optika · mozgás</th><th>Leírás · sztori</th><th>Szereplők · kellék</th><th class="num">Időrend</th><th>Storyboard</th></tr></thead><tbody>
       ${P.shots.map(s=>{const code=String(s.code||"").replace(/\s/g,""),sc=(code.match(/^(\d+)/)||[])[1]||"",h=sc!==prev?`<tr class="dept"><td colspan="6">${sc?sc+". jelenet":"Jelenet nélkül"}</td></tr>`:"";prev=sc;
-        const imgs=(s.images||[]).map(x=>x.url||IMG[x.idb]).filter(Boolean).slice(0,2);
+        const imgs=[...(s.images||[]).map(x=>x.url||IMG[x.idb]).filter(Boolean).slice(0,2),...((D.vkByShot||{})[code]||[]).map(x=>x.f).slice(0,1)];
         return h+`<tr><td><span class="shot">${esc(code)}</span></td><td>${esc([s.size,s.lens,s.move].filter(Boolean).join(" · "))}</td>
           <td>${esc(s.desc)}${s.story?`<br><small>${esc(s.story)}</small>`:""}${s.note?`<br><small><i>${esc(s.note)}</i></small>`:""}</td>
           <td>${esc(s.talent)}${s.props?`<br><small>${splitLines(s.props).map(esc).join(" · ")}</small>`:""}</td>
