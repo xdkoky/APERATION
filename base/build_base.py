@@ -328,7 +328,7 @@ head = """<!doctype html>
 <link rel="apple-touch-icon" href="icon-180.png?v=aperation">
 <link rel="icon" href="brand/aperation-icon.svg?v=aperation" type="image/svg+xml">
 <link rel="icon" href="icon-192.png?v=aperation" sizes="192x192">
-<style>html{padding-top:env(safe-area-inset-top,0px)}[hidden]{display:none!important}img{max-width:100%}</style>
+<style>[hidden]{display:none!important}img{max-width:100%}</style>
 </head><body>
 """
 tail = """
