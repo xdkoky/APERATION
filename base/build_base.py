@@ -46,6 +46,16 @@ tpl = tpl.replace("/*__BOOTSND__*/null", json.dumps(BOOT_SND))
 tpl = tpl.replace("/*__GLASS_CSS__*/", open(os.path.join(HERE, "glass.css"), encoding="utf-8").read())
 tpl = tpl.replace("/*__DESKTOP_CSS__*/", open(os.path.join(HERE, "desktop.css"), encoding="utf-8").read())
 tpl = tpl.replace("/*__JUICY_CSS__*/", open(os.path.join(HERE, "juicy.css"), encoding="utf-8").read())
+# filmszemcse: 160×160-as zajminta (fekete és fehér pöttyök, alacsony átlátszatlansággal), determinisztikus magból
+import base64, io, random as _rnd
+def _grain_png():
+    rnd = _rnd.Random(7); im = Image.new("RGBA", (160, 160)); px = im.load()
+    for y in range(160):
+        for x in range(160):
+            n = rnd.gauss(0, 1)
+            px[x, y] = (255, 255, 255, min(255, int(n * 13))) if n > 0 else (0, 0, 0, min(255, int(-n * 17)))
+    b = io.BytesIO(); im.save(b, "PNG", optimize=True); return "data:image/png;base64," + base64.b64encode(b.getvalue()).decode()
+tpl = tpl.replace("/*__SURFACE_CSS__*/", open(os.path.join(HERE, "surface.css"), encoding="utf-8").read().replace("/*__GRAIN__*/", _grain_png()))
 tpl = tpl.replace("/*__MULTI_CSS__*/", open(os.path.join(HERE, "multi.css"), encoding="utf-8").read())
 tpl = tpl.replace("/*__GATE_JS__*/", open(os.path.join(HERE, "gate.js"), encoding="utf-8").read())
 PRINT_CSS = open(os.path.join(HERE, "print.css"), encoding="utf-8").read()
