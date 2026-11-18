@@ -68,6 +68,12 @@ body.over .vig{opacity:1;animation:alarm 1.6s ease-in-out infinite}
 .hdr-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px}
 .clock{display:flex;align-items:baseline;gap:1px;font-weight:700;font-size:26px;letter-spacing:-.03em;line-height:1}
 .clock span{font-size:15px;color:var(--fg-3);font-weight:600;letter-spacing:0}
+.simbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;padding:8px 8px 8px 14px;border-radius:16px;
+  border:1px solid color-mix(in srgb,var(--move) 55%,transparent);background:color-mix(in srgb,var(--move) 12%,var(--panel-solid,#0b0f15));font-size:13.5px;font-weight:650;color:var(--move)}
+.simbar span{display:inline-flex;align-items:center;gap:8px}
+.simbar .live{width:8px;height:8px;border-radius:50%;background:var(--move);animation:blink 1.2s steps(2) infinite}
+.simbar .btn{color:var(--fg);gap:7px;flex:none}
+.simbar .sq{width:9px;height:9px;border-radius:2px;background:var(--late)}
 .simchip .sq{width:7px;height:7px;border-radius:1.5px;background:currentColor;flex:none}
 .simchip:hover{background:color-mix(in srgb,var(--move) 14%,transparent)}
 .simchip{display:inline-flex;align-items:center;gap:5px;cursor:pointer;background:none;font-family:inherit;line-height:1.2;
@@ -1272,7 +1278,9 @@ function renderMost(){
     else if(isMove){left=formationCard(b,P);right=upcomingCard(P)+callsCard(t)}
     else{left=formationCard(b,P);right=upcomingCard(P)+callsCard(t)+(b.i<4?arrivalsCard():"")}
   }
-  v.innerHTML=`<div id="banners"></div><div class="grid"><div class="stack">${hero}${left}</div><div class="stack">${right}</div></div>`;
+  // próba közben jól látható leállító sáv a Most nézet tetején
+  const simbar=st.sim.on&&!tour?`<div class="simbar" role="status"><span><i class="live"></i>Próba fut · ${st.sim.speed}× sebesség</span><button type="button" class="btn sm" id="simstop2"><i class="sq" aria-hidden="true"></i>Próba leállítása</button></div>`:"";
+  v.innerHTML=`${simbar}<div id="banners"></div><div class="grid"><div class="stack">${hero}${left}</div><div class="stack">${right}</div></div>`;
   renderDock();bindMost(v);tick(true);
 }
 function bindMost(v){
@@ -1280,6 +1288,7 @@ function bindMost(v){
   on("#ring",()=>present(true));on("#tourbtn",()=>tourStart());on("#extclr",()=>extend(-(st.ext[st.cur.i]||0)));
   on("#swgo",()=>st.sw?stopSW():startSW());
   bindTakes(v,renderMost);
+  on("#simstop2",()=>simStop());
   const rn=v.querySelector("#rnote");if(rn)rn.onchange=()=>{if(RO())return;st.rnote=rn.value.trim();save()};
   on("[data-seg]",x=>{detailSeg=x.dataset.seg;renderMost()});
   on("[data-unskip]",x=>toggleSkip(+x.dataset.unskip));
@@ -1293,7 +1302,7 @@ function renderDock(){
   else d.innerHTML=`<button class="dk" type="button" id="bk" aria-label="Vissza az előző blokkra">${ic("left",22)}</button><button class="dk primary" type="button" id="go"><span style="min-width:0"><span class="l1">Kész</span><span class="l2">Következik: ${esc(nextLabel(curBlock()))}</span></span>${ic("chev",22)}</button><button class="dk" type="button" id="ext" aria-label="5 perc hosszabbítás">+5′</button>`;
   const g=id=>d.querySelector(id);
   g("#go")&&(g("#go").onclick=advance);g("#bk")&&(g("#bk").onclick=back);g("#ext")&&(g("#ext").onclick=()=>extend(5));
-  g("#demo")&&(g("#demo").onclick=()=>{st.sim={on:true,start:D.plan.call-3,speed:10,base:Date.now()};save();renderAll();toast("Próba mód: 10× sebesség. Az Info fülön állítható.")});
+  g("#demo")&&(g("#demo").onclick=()=>{st.sim={on:true,start:D.plan.call-3,speed:10,base:Date.now()};save();renderAll();toast("Próba mód: 10× sebesség. Leállítás fent: ■ Próba leállítása.")});
 }
 function riportCard(){
   const ro=RO();
