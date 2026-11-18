@@ -1052,7 +1052,7 @@ body.over .now{box-shadow:inset 0 1px 0 color-mix(in srgb,var(--late) 50%,transp
   const start=withSound=>{
     if(reduce){box.classList.add("on","m","w");setTimeout(warp,700);return}
     t0=performance.now();loop();
-    if(withSound&&audio&&audio.paused){audio.currentTime=0;audio.play().then(()=>{t0=performance.now()-audio.currentTime*1000}).catch(()=>{})}};
+    if(withSound&&audio&&audio.paused&&!audio.__on){audio.__on=1;audio.currentTime=0;audio.play().then(()=>{t0=performance.now()-audio.currentTime*1000}).catch(()=>{})}};
   let started=false;
   if(!soundOn||!SND||reduce){started=true;start(false);return}
   audio=new Audio(SND);audio.preload="auto";
@@ -1070,8 +1070,10 @@ body.over .now{box-shadow:inset 0 1px 0 color-mix(in srgb,var(--late) 50%,transp
   const press=()=>{if(flipped||isDown)return;isDown=true;pb.classList.add("down");tick(1700,.22);try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}};
   const cancel=()=>{if(!isDown)return;isDown=false;pb.classList.remove("down")};
   const release=()=>{if(flipped||!isDown)return;isDown=false;flipped=true;pb.classList.remove("down");pb.classList.add("lit");sw.classList.add("on");tick(3200,.16);
-    // a hang feloldása a felengedésben (iPhone-on csak érintésre indulhat hang): elindul, megáll (az eleje csend), és a rendszerindítás már lejátszhatja
-    let ok=true;const pr=audio.play();if(pr&&pr.then)pr.then(()=>{if(!started){audio.pause();audio.currentTime=0}}).catch(()=>{ok=false});
+    // a hang feloldása a felengedésben (iPhone-on csak érintésre indulhat hang): az érintés közben elindítjuk és ugyanabban a pillanatban
+    // meg is állítjuk, így semmi nem szól belőle; a rendszerindítás aztán egyetlenegyszer, az elejéről játssza le.
+    // (Korábban csak az indulás visszajelzése után állt meg – lassabb telefonon addigra fél másodperc már elszólt, és kétszer indult.)
+    let ok=true;const pr=audio.play();audio.pause();if(pr&&pr.catch)pr.catch(e=>{if(e&&e.name==="NotAllowedError")ok=false});
     setTimeout(()=>sw.classList.add("bye"),380);
     setTimeout(()=>{if(sw.parentNode)sw.parentNode.removeChild(sw);try{AC&&AC.close()}catch(e){}started=true;start(ok)},650)};
   // lenyomás → benyomódik; felengedés a gombon → indul; ha lehúzod róla az ujjad, nem indul
