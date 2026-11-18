@@ -934,75 +934,77 @@ html.boot-in .app,html.boot-in .bottom{transition:transform 1.25s cubic-bezier(.
 .boot.cv .scr,.boot.cv .bl .lg-m,.boot.cv .bl circle{visibility:hidden}
 .boot canvas.mb{position:absolute;left:0;top:0;pointer-events:none}
 /* ---------- „nyalni-való” gombok ----------
-   Minden gomb kidomborodik: üveges test, felül csillogó csúcsfény, fényes felső és sötét alsó él, puha árnyék.
+   Minden gomb kidomborodik: a csillogás közvetlenül a gomb hátterében van (nincs külön réteg, így a széle tiszta,
+   pontosan a gomb formáját követi), körben egyetlen finom kontúr (maga a keret, a legszélén), felül fényesebb él, alatta puha árnyék.
    A fő gombok cukorkafényesek, halványan derengenek. Egér fölött fénycsík fut át rajtuk, lenyomva benyomódnak. */
-.btn,.ib,.dk,.codebtn,.seg button,.perm{position:relative;isolation:isolate}
+.btn,.ib,.dk,.codebtn{position:relative;isolation:isolate}
+/* a háttér a keret alá is pontosan, ismétlés nélkül feszül ki – különben a legfelső és legalsó képpontsoron
+   újrakezdődne a színátmenet, és ott „hiányozna” a perem */
+.btn,.ib,.dk,.codebtn,.perm,.seg button{background-origin:border-box;background-repeat:no-repeat}
 
-/* alap gomb: üveg */
+/* alap gomb: üveg (felül lágy csúcsfény, lefelé sötétedő test) */
 .btn:not(.solid):not(.armed),.ib{
+  border:1px solid rgba(255,255,255,.12);
   background-color:var(--panel-solid,#0b0f15);
-  background-image:linear-gradient(180deg,rgba(255,255,255,.14) 0%,rgba(255,255,255,.065) 47%,rgba(255,255,255,.028) 53%,rgba(255,255,255,.07) 100%);
-  border-color:rgba(255,255,255,.14);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.24),inset 0 -1px 0 rgba(0,0,0,.45),0 1px 2px rgba(0,0,0,.5),0 8px 18px -12px rgba(0,0,0,.95)}
+  background-image:radial-gradient(130% 70% at 50% -8%,rgba(255,255,255,.15),rgba(255,255,255,0) 62%),
+    linear-gradient(180deg,rgba(255,255,255,.11),rgba(255,255,255,.045) 55%,rgba(255,255,255,.06));
+  box-shadow:0 1px 2px rgba(0,0,0,.45),0 8px 18px -12px rgba(0,0,0,.95)}
 .btn,.ib,.dk,.codebtn,.perm,.seg button{transition:transform .2s cubic-bezier(.3,1.6,.5,1),box-shadow .22s ease,background-color .22s ease,border-color .22s ease,color .22s ease,filter .22s ease}
-
-/* csúcsfény a gomb felső felén (a felirat mögött) */
-.btn::before,.ib::before,.dk::before,.codebtn::before,.perm.on::before,.seg button[aria-pressed="true"]::before{
-  content:"";position:absolute;left:1px;right:1px;top:1px;height:54%;z-index:-1;pointer-events:none;
-  border-radius:inherit;border-bottom-left-radius:46% 34%;border-bottom-right-radius:46% 34%;
-  background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,.02));transition:opacity .22s ease}
 
 /* fő gomb: fehér cukorka, az állapotszínnel derengve */
 .btn.solid,.dk.primary{
-  background:linear-gradient(180deg,#ffffff 0%,#f2f5f9 46%,#e0e6ee 54%,#f7f9fc 100%);color:#0a0d12;border:1px solid rgba(255,255,255,.95);
-  box-shadow:inset 0 1px 0 #fff,inset 0 -2px 5px rgba(10,20,40,.14),0 0 0 1px rgba(0,0,0,.35),0 1px 1px rgba(0,0,0,.4),0 12px 28px -10px color-mix(in srgb,var(--shoot) 55%,transparent)}
-.dk.primary{box-shadow:inset 0 1px 0 #fff,inset 0 -2px 5px rgba(10,20,40,.14),0 0 0 1px rgba(0,0,0,.35),0 1px 1px rgba(0,0,0,.4),0 14px 34px -10px color-mix(in srgb,var(--state) 75%,transparent)}
-.btn.solid::before,.dk.primary::before{background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(255,255,255,.1))}
+  color:#0a0d12;border:1px solid rgba(255,255,255,.95);
+  background:radial-gradient(130% 75% at 50% -10%,#ffffff,rgba(255,255,255,0) 60%),linear-gradient(180deg,#fbfcfe,#eef2f7 52%,#e3e8ef);
+  box-shadow:0 1px 2px rgba(0,0,0,.4),0 12px 28px -12px color-mix(in srgb,var(--shoot) 55%,transparent)}
+.dk.primary{box-shadow:0 1px 2px rgba(0,0,0,.4),0 14px 34px -12px color-mix(in srgb,var(--state) 75%,transparent)}
 
 /* veszélyes művelet: piros üveg; élesítve: piros cukorka */
-.btn.danger:not(.armed){background-image:linear-gradient(180deg,color-mix(in srgb,var(--late) 24%,transparent) 0%,color-mix(in srgb,var(--late) 10%,transparent) 50%,color-mix(in srgb,var(--late) 14%,transparent) 100%);
-  border-color:color-mix(in srgb,var(--late) 50%,transparent);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.2),inset 0 -1px 0 rgba(0,0,0,.45),0 1px 2px rgba(0,0,0,.5),0 10px 20px -12px color-mix(in srgb,var(--late) 75%,transparent)}
-.btn.armed{background:linear-gradient(180deg,#ff8794 0%,#ff4a5e 47%,#e52a41 53%,#ff5468 100%);color:#fff;border:1px solid rgba(255,190,198,.7);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -2px 5px rgba(90,0,10,.3),0 10px 24px -8px rgba(255,60,80,.75)}
+.btn.danger:not(.armed){
+  background-image:radial-gradient(130% 70% at 50% -8%,rgba(255,255,255,.12),rgba(255,255,255,0) 62%),
+    linear-gradient(180deg,color-mix(in srgb,var(--late) 22%,transparent),color-mix(in srgb,var(--late) 9%,transparent) 55%,color-mix(in srgb,var(--late) 13%,transparent));
+  border-color:color-mix(in srgb,var(--late) 45%,transparent);
+  box-shadow:0 1px 2px rgba(0,0,0,.45),0 10px 20px -12px color-mix(in srgb,var(--late) 75%,transparent)}
+.btn.armed{color:#fff;border:1px solid #ff7d8b;
+  background:radial-gradient(130% 75% at 50% -10%,rgba(255,255,255,.55),rgba(255,255,255,0) 60%),linear-gradient(180deg,#ff6b7b,#ef3a50 55%,#e02f45);
+  box-shadow:0 1px 2px rgba(0,0,0,.4),0 10px 24px -10px rgba(255,60,80,.75)}
 
 /* szakaszválasztó: a kiválasztott elem fényes kapszula */
-.seg button[aria-pressed="true"]{background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,.08));
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.32),inset 0 -1px 0 rgba(0,0,0,.35),0 3px 8px -3px rgba(0,0,0,.8)}
-.seg button[aria-pressed="true"]::before{height:50%;background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,0))}
+.seg button[aria-pressed="true"]{
+  background:radial-gradient(130% 80% at 50% -10%,rgba(255,255,255,.2),rgba(255,255,255,0) 60%),linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.07));
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),inset 0 1px 0 rgba(255,255,255,.18),0 2px 6px -2px rgba(0,0,0,.7)}
 
-/* jogosultság-kapcsolók és kódok: színes üveggolyó */
-.perm.on{background:linear-gradient(180deg,color-mix(in srgb,var(--shoot) 36%,transparent),color-mix(in srgb,var(--shoot) 14%,transparent));
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 4px 12px -6px color-mix(in srgb,var(--shoot) 90%,transparent)}
-.perm.on.ctl{background:linear-gradient(180deg,color-mix(in srgb,var(--warn) 38%,transparent),color-mix(in srgb,var(--warn) 14%,transparent));box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 4px 12px -6px var(--warn)}
-.codebtn{box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 6px 14px -8px color-mix(in srgb,var(--shoot) 80%,transparent)}
-
-/* dokk mellékgombjai: az üvegre csúcsfény */
-.dk:not(.primary)::before{background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,0))}
+/* jogosultság-kapcsolók és kódok: színes üveg */
+.perm.on{border-color:color-mix(in srgb,var(--shoot) 55%,transparent);
+  background:radial-gradient(130% 80% at 50% -10%,rgba(255,255,255,.18),rgba(255,255,255,0) 60%),linear-gradient(180deg,color-mix(in srgb,var(--shoot) 30%,transparent),color-mix(in srgb,var(--shoot) 14%,transparent));
+  box-shadow:0 4px 12px -6px color-mix(in srgb,var(--shoot) 90%,transparent)}
+.perm.on.ctl{border-color:color-mix(in srgb,var(--warn) 55%,transparent);
+  background:radial-gradient(130% 80% at 50% -10%,rgba(255,255,255,.18),rgba(255,255,255,0) 60%),linear-gradient(180deg,color-mix(in srgb,var(--warn) 32%,transparent),color-mix(in srgb,var(--warn) 14%,transparent));
+  box-shadow:0 4px 12px -6px var(--warn)}
+.codebtn{box-shadow:0 6px 14px -8px color-mix(in srgb,var(--shoot) 80%,transparent)}
 
 /* a take-gomb: fényes, ékkőszerű piros */
-.recbtn{box-shadow:0 0 0 1px rgba(0,0,0,.55),inset 0 0 0 1px rgba(0,0,0,.45),0 8px 20px -8px rgba(0,0,0,.9)}
+.recbtn{box-shadow:0 8px 20px -8px rgba(0,0,0,.9)}
 .recbtn i{position:relative;background:radial-gradient(circle at 50% 30%,#ffb4bc 0,#ff5d6e 30%,#e3203b 68%,#a10f24 100%);
-  box-shadow:inset 0 -3px 7px rgba(70,0,10,.45),inset 0 2px 3px rgba(255,255,255,.45),0 0 18px rgba(255,60,80,.45)}
-.recbtn i::after{content:"";position:absolute;left:22%;right:22%;top:9%;height:34%;border-radius:50%;
-  background:linear-gradient(180deg,rgba(255,255,255,.8),rgba(255,255,255,0));pointer-events:none}
-.rec.run .recbtn i{box-shadow:inset 0 -2px 5px rgba(70,0,10,.45),inset 0 2px 2px rgba(255,255,255,.4),0 0 22px rgba(255,60,80,.7)}
+  box-shadow:inset 0 -3px 7px rgba(70,0,10,.45),inset 0 2px 3px rgba(255,255,255,.4),0 0 18px rgba(255,60,80,.4)}
+.recbtn i::after{content:"";position:absolute;left:24%;right:24%;top:10%;height:32%;border-radius:50%;
+  background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,0));pointer-events:none}
+.rec.run .recbtn i::after{left:18%;right:18%;top:8%;height:30%;border-radius:4px 4px 50% 50%}
+.rec.run .recbtn i{box-shadow:inset 0 -2px 5px rgba(70,0,10,.45),inset 0 2px 2px rgba(255,255,255,.35),0 0 22px rgba(255,60,80,.65)}
 
 /* egér fölött: kicsit felfénylik, és átfut rajta egy fénycsík */
 @media (hover:hover){
   .btn:hover,.ib:hover,.dk:hover,.codebtn:hover{filter:brightness(1.1) saturate(1.05)}
   .btn::after,.dk::after{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;opacity:0;
-    background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.22) 50%,transparent 62%) no-repeat;background-size:260% 100%;background-position:135% 0}
-  .btn.solid::after,.dk.primary::after{background-image:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.95) 50%,transparent 62%)}
+    background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.18) 50%,transparent 62%) no-repeat;background-size:260% 100%;background-position:135% 0}
+  .btn.solid::after,.dk.primary::after{background-image:linear-gradient(105deg,transparent 38%,rgba(255,255,255,.9) 50%,transparent 62%)}
   .btn:hover::after,.dk:hover::after{opacity:1;background-position:-35% 0;transition:background-position .75s cubic-bezier(.3,.7,.2,1),opacity .15s}
 }
 
-/* lenyomva: benyomódik, a csúcsfény elhalványul, felengedve visszarugózik */
+/* lenyomva: benyomódik, felengedve visszarugózik */
 .btn:active,.ib:active,.codebtn:active{transform:translateY(1px) scale(.965);
-  box-shadow:inset 0 2px 7px rgba(0,0,0,.6),inset 0 -1px 0 rgba(255,255,255,.06),0 1px 1px rgba(0,0,0,.4)}
-.btn.solid:active,.dk.primary:active{box-shadow:inset 0 2px 7px rgba(10,20,40,.35),0 0 0 1px rgba(0,0,0,.35),0 4px 12px -8px color-mix(in srgb,var(--shoot) 55%,transparent)}
-.btn:active::before,.ib:active::before,.dk:active::before{opacity:.35}
-.btn:disabled,.btn[disabled]{filter:saturate(.4) brightness(.75);box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+  box-shadow:inset 0 2px 6px rgba(0,0,0,.5),0 1px 1px rgba(0,0,0,.4)}
+.btn.solid:active,.dk.primary:active{box-shadow:inset 0 2px 6px rgba(10,20,40,.22),0 1px 1px rgba(0,0,0,.4),0 4px 12px -8px color-mix(in srgb,var(--shoot) 55%,transparent)}
+.btn:disabled,.btn[disabled]{filter:saturate(.4) brightness(.75)}
 @media (prefers-reduced-motion:reduce){.btn::after,.dk::after{display:none}}
 
 </style>
