@@ -1046,28 +1046,43 @@ try{if(navigator.userAgentData&&navigator.userAgentData.brands.some(b=>/Chromium
 /* ---------- alapok ---------- */
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+/* piktogramok: 24-es rács, lekerekített végek és sarkok; a vonalvastagság a mérethez igazodik (kicsiben vastagabb) */
 const IC={
- now:'<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9.5 2h5"/>',
- list:'<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>',
- doc:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
- users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/>',
- sliders:'<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
- shoot:'<rect x="3" y="7" width="12" height="10" rx="2"/><path d="m15 11 6-3v8l-6-3"/>',
- move:'<path d="M4 8h14l-3-3M20 16H6l3 3"/>',
- lunch:'<path d="M6 3v7a2 2 0 0 0 4 0V3M8 3v18M17 3c-2.5 2-2.5 7 0 9v9"/>',
- prep:'<path d="M9 3h6M12 3v4M6 21h12M8 21l1-9h6l1 9M7 12h10"/>',
- pres:'<path d="M3 11v2a1 1 0 0 0 1 1h3l6 4V6L7 10H4a1 1 0 0 0-1 1zM17 9a4 4 0 0 1 0 6"/>',
- res:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 2"/>',
- bolt:'<path d="M13 3 5 13h6l-1 8 8-10h-6z"/>',
- chev:'<path d="m9 6 6 6-6 6"/>', left:'<path d="m15 6-6 6 6 6"/>', arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',
- x:'<path d="M6 6l12 12M18 6 6 18"/>', edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>', upload:'<path d="M12 15V4M7 9l5-5 5 5M5 20h14"/>', down:'<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>', up:'<path d="m6 14 6-6 6 6"/>', dn:'<path d="m6 10 6 6 6-6"/>', dup:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16V6a2 2 0 0 1 2-2h10"/>', plus:'<path d="M12 5v14M5 12h14"/>', img:'<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/>', plus:'<path d="M12 5v14M5 12h14"/>', minus:'<path d="M5 12h14"/>', check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',
- star:'<path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 17l-5.2 2.7 1-5.9L3.5 9.7l5.9-.8z"/>',
- max:'<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
- alert:'<path d="M12 4 2.5 20h19zM12 10v4.5M12 17.5h.01"/>',
- copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
- play:'<path d="m7 4 13 8-13 8z"/>', skip:'<path d="m5 5 9 7-9 7zM19 5v14"/>', wrench:'<path d="M14.5 6.5a4 4 0 0 0 5 5L11 20a2.1 2.1 0 0 1-3-3l8.5-8.5a4 4 0 0 0-2-2z"/>'
+ now:'<circle cx="12" cy="13.5" r="7.25"/><path d="M12 10v3.5l2.4 1.6M10 2.75h4M12 2.75v3.5M18.3 7.2l1.3-1.3"/>',
+ list:'<path d="M6.5 7.6v2.8M6.5 13.6v2.8"/><circle cx="6.5" cy="6" r="1.6" fill="currentColor"/><circle cx="6.5" cy="12" r="1.6" fill="currentColor"/><circle cx="6.5" cy="18" r="1.6" fill="currentColor"/><path d="M11 6h9M11 12h6.5M11 18h8"/>',
+ doc:'<path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M11 8h5M12 11.5h3M11 15h5M12 18h2"/><circle cx="8" cy="7.5" r=".9" fill="currentColor" stroke="none"/><circle cx="8" cy="16.5" r=".9" fill="currentColor" stroke="none"/>',
+ users:'<circle cx="9.5" cy="8" r="3.25"/><path d="M3.5 19.5c.6-3.1 3-5 6-5s5.4 1.9 6 5"/><path d="M15.6 4.9a3.25 3.25 0 0 1 0 6.2M17.8 14.8c1.6.8 2.6 2.4 2.8 4.7"/>',
+ sliders:'<path d="M4 7h8.5M16.5 7H20M4 17h3.5M11.5 17H20"/><circle cx="14.5" cy="7" r="2.25"/><circle cx="9.5" cy="17" r="2.25"/>',
+ shoot:'<path d="M4 10.5h16v7.75A1.75 1.75 0 0 1 18.25 20H5.75A1.75 1.75 0 0 1 4 18.25z"/><path d="M4 10.5 3.45 7.9a1.5 1.5 0 0 1 1.15-1.78l12.6-2.68a1.5 1.5 0 0 1 1.78 1.15L19.5 7.2z"/><path d="m8.2 6.2 2 3.2M12.9 5.2l2 3.2"/>',
+ move:'<path d="M4.5 8.5h14M15 5l3.5 3.5L15 12M19.5 15.5h-14M9 12l-3.5 3.5L9 19"/>',
+ lunch:'<path d="M7 3v5.25a2 2 0 0 0 4 0V3M9 10.25V21M9 3v3.5"/><path d="M17 21V3c-2.2 1.6-3.5 4.4-3.5 8.5H17"/>',
+ prep:'<rect x="6" y="3" width="12" height="7.5" rx="2"/><circle cx="12" cy="6.75" r="1.9"/><path d="M12 10.5V15.5M12 15.5 7 20.5M12 15.5l5 5M12 15.5v5"/>',
+ pres:'<path d="M4 10.25v3.5a1 1 0 0 0 1 1h2.25L13.5 19V5L7.25 9.25H5a1 1 0 0 0-1 1z"/><path d="M17 9.5a3.5 3.5 0 0 1 0 5M19.25 7a7 7 0 0 1 0 10"/>',
+ res:'<path d="M6.5 3.5h11M6.5 20.5h11M8 3.5c0 4.2 4 5.3 4 8.5s-4 4.3-4 8.5M16 3.5c0 4.2-4 5.3-4 8.5s4 4.3 4 8.5M10 17.5h4"/>',
+ bolt:'<path d="M9.25 17.5h5.5M10.25 20.75h3.5"/><path d="M12 3a6.25 6.25 0 0 0-3.7 11.3c.6.45.95 1.1.95 1.85v1.35h5.5v-1.35c0-.75.35-1.4.95-1.85A6.25 6.25 0 0 0 12 3z"/>',
+ chev:'<path d="m9.5 5.5 6.5 6.5-6.5 6.5"/>',
+ left:'<path d="M14.5 5.5 8 12l6.5 6.5"/>',
+ arrow:'<path d="M4.5 12h15M13.5 6l6 6-6 6"/>',
+ x:'<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',
+ edit:'<path d="M4 20l.9-4.1L15.7 5.1a2.1 2.1 0 0 1 3 0l.2.2a2.1 2.1 0 0 1 0 3L8.1 19.1z"/><path d="M13.6 7.2l3.2 3.2"/>',
+ upload:'<path d="M12 14.5V4.5M7.75 8.75 12 4.5l4.25 4.25"/><path d="M4.5 14.5v2.5A2.5 2.5 0 0 0 7 19.5h10a2.5 2.5 0 0 0 2.5-2.5v-2.5"/>',
+ down:'<path d="M12 4.5v10M7.75 10.25 12 14.5l4.25-4.25"/><path d="M4.5 14.5v2.5A2.5 2.5 0 0 0 7 19.5h10a2.5 2.5 0 0 0 2.5-2.5v-2.5"/>',
+ up:'<path d="m5.5 15 6.5-6.5 6.5 6.5"/>',
+ dn:'<path d="m5.5 9 6.5 6.5L18.5 9"/>',
+ dup:'<rect x="8.5" y="8.5" width="12" height="12" rx="2.5"/><path d="M15.5 8.5V6A2.5 2.5 0 0 0 13 3.5H6A2.5 2.5 0 0 0 3.5 6v7A2.5 2.5 0 0 0 6 15.5h2.5M14.5 11.75v5.5M11.75 14.5h5.5"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>',
+ img:'<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.75"/><path d="m20.5 15.5-4.25-4.25L8 19.5"/>',
+ minus:'<path d="M5 12h14"/>',
+ check:'<path d="m4.75 12.75 4.5 4.5L19.25 7"/>',
+ star:'<path d="M11.1 3.9a1 1 0 0 1 1.8 0l2.1 4.3 4.7.7a1 1 0 0 1 .55 1.7l-3.4 3.3.8 4.7a1 1 0 0 1-1.45 1.05L12 17.4l-4.2 2.2a1 1 0 0 1-1.45-1.05l.8-4.7-3.4-3.3a1 1 0 0 1 .55-1.7l4.7-.7z"/>',
+ max:'<path d="M4 9V5.5A1.5 1.5 0 0 1 5.5 4H9M15 4h3.5A1.5 1.5 0 0 1 20 5.5V9M20 15v3.5a1.5 1.5 0 0 1-1.5 1.5H15M9 20H5.5A1.5 1.5 0 0 1 4 18.5V15"/>',
+ alert:'<path d="M10.3 4.4 2.95 17.3A2 2 0 0 0 4.7 20.3h14.6a2 2 0 0 0 1.75-3L13.7 4.4a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v4.25M12 16.9h.01"/>',
+ copy:'<rect x="8.5" y="8.5" width="12" height="12" rx="2.5"/><path d="M15.5 8.5V6A2.5 2.5 0 0 0 13 3.5H6A2.5 2.5 0 0 0 3.5 6v7A2.5 2.5 0 0 0 6 15.5h2.5"/>',
+ play:'<path d="M7.5 5.2v13.6a1.1 1.1 0 0 0 1.7.95l10.7-6.8a1.1 1.1 0 0 0 0-1.9L9.2 4.25a1.1 1.1 0 0 0-1.7.95z"/>',
+ skip:'<path d="M5.5 6.1v11.8a1 1 0 0 0 1.6.8l8.3-5.9a1 1 0 0 0 0-1.6L7.1 5.3a1 1 0 0 0-1.6.8zM18.5 5v14"/>',
+ wrench:'<path d="M14.5 6.5a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.4-3.4a5.75 5.75 0 0 1-7.6 7.6L6.6 20.4a2.05 2.05 0 0 1-2.9-2.9l6.7-6.7a5.75 5.75 0 0 1 7.6-7.6z"/>'
 };
-const ic=(n,s=20)=>`<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]||""}</svg>`;
+const ic=(n,s=20)=>`<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${s<=16?2:s>=24?1.6:1.8}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]||""}</svg>`;
 const TNAME={shoot:"Forgatás",move:"Átállás",lunch:"Ebéd",prep:"Előkészület",pres:"Prezentálás",res:"Tartalék"};
 let B=[],TOTAL=1,PLAN_WRAP=0,TARGET=0,CASTBY={},TOUR_SHOT=null;
 const hm=m=>{if(!Number.isFinite(m))return"–";m=Math.round(m);const h=Math.floor(m/60)%24,mm=((m%60)+60)%60;return`${h}:${String(mm).padStart(2,"0")}`};
