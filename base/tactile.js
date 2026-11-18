@@ -92,4 +92,17 @@ addEventListener("change",e=>{const el=e.target;if(!el||el===hkIn||el.tagName!==
   haptic();const key=keyOf(el),now=el.checked;
   requestAnimationFrame(()=>{if(el.isConnected||RM.matches)return;const n=heir(el,key);if(!n||n===el||n.checked!==now)return;
     n.classList.add("tk-nt");n.checked=!now;void n.offsetWidth;n.classList.remove("tk-nt");n.checked=now})},true);
+
+// ---- valódi app-érzet: nincs nagyítás, nincs böngészőmenü hosszú nyomásra ----
+// iPhone Safari csípés-gesztusa (a nézőkének saját nagyítása van, az pointer-eseményekből megy, nem érinti)
+for(const t of ["gesturestart","gesturechange","gestureend"])document.addEventListener(t,e=>e.preventDefault(),{passive:false});
+// laptop: kétujjas trackpad-csípés (ctrl+görgő) és Ctrl/Cmd +/−/0
+addEventListener("wheel",e=>{if(e.ctrlKey)e.preventDefault()},{passive:false});
+addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&!e.altKey&&["+","-","=","0","Add","Subtract"].includes(e.key))e.preventDefault()},true);
+// érintéses hosszú nyomás: nincs „Másolás / Kép mentése / Link megnyitása” menü (a szerkeszthető mezőkben marad)
+let lastPT="mouse";addEventListener("pointerdown",e=>{lastPT=e.pointerType},{capture:true,passive:true});
+addEventListener("contextmenu",e=>{if(lastPT==="mouse")return;const t=e.target;if(t&&t.closest&&t.closest('input,textarea,[contenteditable]:not([contenteditable="false"])'))return;e.preventDefault()},true);
+// a kijelölés ne „ragadjon be” egy nem szerkeszthető helyen (pl. dupla kattintás vagy programból)
+document.addEventListener("selectstart",e=>{const t=e.target&&e.target.nodeType===1?e.target:e.target&&e.target.parentElement;
+  if(t&&t.closest&&t.closest('input,textarea,[contenteditable]:not([contenteditable="false"])'))return;e.preventDefault()});
 })();

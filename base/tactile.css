@@ -46,3 +46,16 @@ input.chk:checked::after{opacity:1;transform:translateY(-1px) rotate(45deg) scal
 
 /* szövegszín-váltások is lágyan */
 .seg>button,.schip,.perm,.star{transition:background-color .22s ease,border-color .22s ease,color .22s ease,box-shadow .22s ease,opacity .22s ease}
+
+/* ---------- valódi app-érzet ----------
+   Nem lehet nagyítani (csípés, dupla koppintás), szöveget csak a szerkeszthető mezőkben lehet kijelölni,
+   hosszú nyomásra nem jön elő a böngésző menüje (másolás, link-előnézet, kép mentése), és a képek, linkek nem húzhatók ki.
+   (A képnézegető saját nagyítása ettől független, az megmarad.) */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+:where(*){touch-action:pan-x pan-y}
+body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:default}
+:where(input,textarea,select,[contenteditable]:not([contenteditable="false"])){-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+:where(input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=range]):not([type=file]):not([type=color]),textarea,[contenteditable]:not([contenteditable="false"])){cursor:text}
+:where(a[href],button,label,summary,select,[role="button"]){cursor:pointer}
+img,svg,a{-webkit-user-drag:none}
+.phone{-webkit-user-select:none;user-select:none}

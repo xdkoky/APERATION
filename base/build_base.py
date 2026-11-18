@@ -317,7 +317,7 @@ json.dump({"name": "APERATION", "short_name": "APERATION", "start_url": "./", "s
 head = """<!doctype html>
 <html lang="hu"><head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>APERATION</title>
 <meta name="theme-color" content="#07090d">
 <meta name="apple-mobile-web-app-capable" content="yes">
