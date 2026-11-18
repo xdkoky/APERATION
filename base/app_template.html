@@ -483,17 +483,22 @@ details[open]>:not(summary){animation:openIn .32s var(--ease-out) both}
 .boot.warp .bar,.boot.warp pre{opacity:0;transition:opacity .18s}
 .boot.warp .bl .lg-t{animation:wordOut .16s ease forwards}
 @keyframes wordOut{from{opacity:1}to{opacity:0}}
-/* indítókapcsoló: a gép „bekapcsolása” – koppintásra vagy felfelé húzásra átbillen, kattan, és indul a rendszer */
-.boot .sw{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:22px;text-align:center;background:#000;z-index:2;touch-action:none;cursor:pointer;
+/* bekapcsológomb: lenyomásra benyomódik és kattan, felengedésre visszarugózik, a jel felizzik, és indul a rendszer */
+.boot .sw{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:26px;text-align:center;background:#000;z-index:2;
   transition:transform .26s cubic-bezier(.6,0,.9,.4),opacity .26s ease,filter .26s}
-.boot .sw svg{width:min(46vw,190px);height:auto;overflow:visible;filter:drop-shadow(0 18px 30px rgba(0,0,0,.9))}
-.boot .sw .lev{transform-box:view-box;transform-origin:100px 150px;transform:scaleY(-1);transition:transform .17s cubic-bezier(.45,0,.2,1.35)}
-.boot .sw.on .lev{transform:scaleY(1)}
-.boot .sw .onl{transition:filter .2s}
-.boot .sw.on .onl{filter:drop-shadow(0 0 7px rgba(255,40,40,.9)) brightness(1.25)}
-.boot .sw .cap{font-size:11px;letter-spacing:.32em;color:#8a8a8a;font-weight:700}
-.boot .sw .cap.blink{animation:bootblink 1.4s steps(2) infinite;color:#bbb}
-.boot .sw.on .cap.blink{animation:none;opacity:0}
+.boot .sw::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 1px,transparent 1px 3px)}
+.boot .pbtn{position:relative;width:128px;height:128px;border-radius:50%;border:0;padding:0;cursor:pointer;touch-action:none;-webkit-tap-highlight-color:transparent;
+  background:radial-gradient(circle at 50% 30%,#3a3a3a,#141414 62%,#060606);box-shadow:0 0 0 1px #3c3c3c,0 0 0 9px #0b0b0b,0 0 0 10px #2a2a2a,0 14px 28px -8px #000,inset 0 1px 0 rgba(255,255,255,.18)}
+.boot .pbtn i{position:absolute;inset:14px;border-radius:50%;display:grid;place-items:center;
+  background:radial-gradient(circle at 50% 28%,#2e2e2e,#161616 70%);box-shadow:0 6px 0 #050505,0 8px 14px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,255,255,.22),inset 0 -2px 6px rgba(0,0,0,.6);
+  transition:transform .06s ease-out,box-shadow .06s ease-out}
+.boot .pbtn svg{width:42px;height:42px;stroke:#bdbdbd;stroke-width:2.6;fill:none;stroke-linecap:round;transition:stroke .2s,filter .2s}
+.boot .pbtn.down i{transform:translateY(5px) scale(.985);box-shadow:0 1px 0 #050505,0 2px 5px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,255,255,.1),inset 0 3px 10px rgba(0,0,0,.75)}
+.boot .pbtn.lit svg{stroke:#fff;filter:drop-shadow(0 0 6px rgba(255,255,255,.9)) drop-shadow(0 0 16px rgba(255,255,255,.5))}
+.boot .pbtn:focus,.boot .pbtn:focus-visible{outline:none}
+.boot .sw .cap{font-size:12px;letter-spacing:.3em;color:#9a9a9a;font-weight:700;text-shadow:0 0 6px rgba(255,255,255,.25)}
+.boot .sw .cap .cur{width:.55em;height:1em;margin-left:.2em}
+.boot .sw.on .cap{opacity:0;transition:opacity .2s}
 .boot .sw.bye{transform:scaleY(.004) scaleX(.6);filter:brightness(4);opacity:0}
 .boot .hint{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom,0px));text-align:center;font-size:11px;color:#666;letter-spacing:.06em;z-index:1}
 /* az app beúszása a splash mögül */
@@ -611,40 +616,31 @@ html.boot-in .app,html.boot-in .bottom{transition:transform 1.25s cubic-bezier(.
   audio=new Audio(SND);audio.preload="auto";
   // indítókapcsoló (a régi „koppints az indításhoz” helyett). iPhone-on hang csak érintésre indulhat:
   // a kar átbillentése ezért egyben „feloldja” a hangot, és pont a gép felzúgása szól rá.
-  const SWSVG=`<svg viewBox="0 0 200 300" aria-hidden="true"><defs>
-    <linearGradient id="bkMet" x1="0" x2="1"><stop offset="0" stop-color="#8d8f95"/><stop offset=".18" stop-color="#e9eaee"/><stop offset=".5" stop-color="#b9bbc1"/><stop offset=".82" stop-color="#f2f3f6"/><stop offset="1" stop-color="#7d8086"/></linearGradient>
-    <linearGradient id="bkBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b2c30"/><stop offset="1" stop-color="#0d0d0f"/></linearGradient>
-    <radialGradient id="bkNut" cx=".38" cy=".32" r=".8"><stop offset="0" stop-color="#ffffff"/><stop offset=".35" stop-color="#c9cbd1"/><stop offset=".75" stop-color="#7e8188"/><stop offset="1" stop-color="#d9dbe0"/></radialGradient>
-    <linearGradient id="bkLev" x1="0" x2="1"><stop offset="0" stop-color="#6f7278"/><stop offset=".3" stop-color="#f7f8fa"/><stop offset=".55" stop-color="#b4b7bd"/><stop offset="1" stop-color="#55585e"/></linearGradient>
-    <radialGradient id="bkTip" cx=".35" cy=".3" r=".75"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#c2c5cb"/><stop offset="1" stop-color="#5d6066"/></radialGradient></defs>
-    <rect x="34" y="58" width="132" height="200" rx="10" fill="url(#bkBody)"/>
-    <rect x="24" y="22" width="152" height="256" rx="9" fill="url(#bkMet)" stroke="#5f6268" stroke-width="1.2"/>
-    <g class="onl"><rect x="56" y="30" width="88" height="34" rx="4" fill="#d81d24"/><text x="100" y="56" text-anchor="middle" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="24" fill="#fff">ON</text></g>
-    <rect x="56" y="236" width="88" height="34" rx="4" fill="#141416"/><text x="100" y="262" text-anchor="middle" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="24" fill="#f2f2f2">OFF</text>
-    <polygon points="100,104 140,127 140,173 100,196 60,173 60,127" fill="url(#bkNut)" stroke="#6b6e74" stroke-width="1.5"/>
-    <circle cx="100" cy="150" r="31" fill="none" stroke="#8b8e94" stroke-width="5"/><circle cx="100" cy="150" r="26" fill="none" stroke="#e4e5e9" stroke-width="2"/>
-    <circle cx="100" cy="150" r="21" fill="none" stroke="#7a7d83" stroke-width="2"/><circle cx="100" cy="150" r="15" fill="#2a2b2f"/>
-    <g class="lev"><rect x="91" y="84" width="18" height="68" rx="9" fill="url(#bkLev)"/><circle cx="100" cy="84" r="13.5" fill="url(#bkTip)" stroke="#5a5d63" stroke-width="1"/></g></svg>`;
-  const sw=document.createElement("div");sw.className="sw";sw.setAttribute("role","button");sw.setAttribute("aria-label","Bekapcsolás");
-  sw.innerHTML=`<div class="cap">APERATION · POWER</div>${SWSVG}<div class="cap blink">KAPCSOLD BE</div>`;box.appendChild(sw);
-  // mechanikus kattanás (rövid zaj + mély koppanás), halkan
-  const clack=()=>{try{const C=new(window.AudioContext||window.webkitAudioContext)(),t=C.currentTime+.005;
-    const n=C.createBuffer(1,Math.round(C.sampleRate*.05),C.sampleRate),d=n.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,7);
-    const ns=C.createBufferSource();ns.buffer=n;const bp=C.createBiquadFilter();bp.type="bandpass";bp.frequency.value=2600;bp.Q.value=1.1;const g1=C.createGain();g1.gain.value=.28;ns.connect(bp).connect(g1).connect(C.destination);ns.start(t);
-    const o=C.createOscillator(),g2=C.createGain();o.frequency.setValueAtTime(170,t);o.frequency.exponentialRampToValueAtTime(55,t+.07);g2.gain.setValueAtTime(.22,t);g2.gain.exponentialRampToValueAtTime(.001,t+.09);o.connect(g2).connect(C.destination);o.start(t);o.stop(t+.1);
-    setTimeout(()=>{try{C.close()}catch(e){}},400)}catch(e){}};
-  let flipped=false;
-  const flip=()=>{if(flipped)return;flipped=true;sw.classList.add("on");clack();try{navigator.vibrate&&navigator.vibrate(12)}catch(e){}
-    // a hang feloldása az érintésben: elindul, majd azonnal megáll (az eleje csend), és a rendszerindítás már szabadon lejátszhatja
+  const sw=document.createElement("div");sw.className="sw";
+  sw.innerHTML=`<button type="button" class="pbtn" aria-label="Bekapcsolás"><i><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v7.5"/><path d="M7.05 6.6a7.5 7.5 0 1 0 9.9 0"/></svg></i></button><div class="cap">POWER<span class="cur"></span></div>`;
+  box.appendChild(sw);const pb=sw.querySelector(".pbtn");
+  // halk kattanások: lenyomáskor mélyebb, felengedéskor magasabb (mint egy valódi gombnál)
+  let AC=null;const tick=(f,g)=>{try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const C=AC,t=C.currentTime+.003;
+    const n=C.createBuffer(1,Math.round(C.sampleRate*.035),C.sampleRate),d=n.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,8);
+    const ns=C.createBufferSource();ns.buffer=n;const bp=C.createBiquadFilter();bp.type="bandpass";bp.frequency.value=f;bp.Q.value=1.4;const g1=C.createGain();g1.gain.value=g;ns.connect(bp).connect(g1).connect(C.destination);ns.start(t);
+    const o=C.createOscillator(),g2=C.createGain();o.frequency.setValueAtTime(f/14,t);o.frequency.exponentialRampToValueAtTime(f/40,t+.05);g2.gain.setValueAtTime(g*.7,t);g2.gain.exponentialRampToValueAtTime(.001,t+.06);o.connect(g2).connect(C.destination);o.start(t);o.stop(t+.07)}catch(e){}};
+  let flipped=false,isDown=false;
+  const press=()=>{if(flipped||isDown)return;isDown=true;pb.classList.add("down");tick(1700,.22);try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}};
+  const cancel=()=>{if(!isDown)return;isDown=false;pb.classList.remove("down")};
+  const release=()=>{if(flipped||!isDown)return;isDown=false;flipped=true;pb.classList.remove("down");pb.classList.add("lit");sw.classList.add("on");tick(3200,.16);
+    // a hang feloldása a felengedésben (iPhone-on csak érintésre indulhat hang): elindul, megáll (az eleje csend), és a rendszerindítás már lejátszhatja
     let ok=true;const pr=audio.play();if(pr&&pr.then)pr.then(()=>{if(!started){audio.pause();audio.currentTime=0}}).catch(()=>{ok=false});
-    setTimeout(()=>sw.classList.add("bye"),430);
-    setTimeout(()=>{if(sw.parentNode)sw.parentNode.removeChild(sw);started=true;start(ok)},700)};
-  // koppintás bárhol, vagy a kar felfelé húzása
-  let y0=null;
-  sw.addEventListener("pointerdown",e=>{y0=e.clientY});
-  sw.addEventListener("pointermove",e=>{if(y0!=null&&y0-e.clientY>18)flip()});
-  sw.addEventListener("pointerup",()=>{if(y0!=null)flip();y0=null});
-  sw.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" ")flip()});sw.tabIndex=0;
+    setTimeout(()=>sw.classList.add("bye"),380);
+    setTimeout(()=>{if(sw.parentNode)sw.parentNode.removeChild(sw);try{AC&&AC.close()}catch(e){}started=true;start(ok)},650)};
+  // lenyomás → benyomódik; felengedés a gombon → indul; ha lehúzod róla az ujjad, nem indul
+  pb.addEventListener("pointerdown",e=>{e.preventDefault();try{pb.setPointerCapture(e.pointerId)}catch(x){}press()});
+  pb.addEventListener("pointerup",e=>{const r=pb.getBoundingClientRect(),inside=e.clientX>=r.left-12&&e.clientX<=r.right+12&&e.clientY>=r.top-12&&e.clientY<=r.bottom+12;if(inside)release();else cancel()});
+  pb.addEventListener("pointercancel",cancel);
+  // gépen Enter vagy szóköz is működik (lenyomás → felengedés), fókusz nélkül is
+  const kd=e=>{if(!sw.parentNode)return;if((e.key==="Enter"||e.key===" ")&&!e.repeat){e.preventDefault();press()}};
+  const ku=e=>{if(!sw.parentNode)return;if(e.key==="Enter"||e.key===" "){e.preventDefault();release()}};
+  addEventListener("keydown",kd);addEventListener("keyup",ku);
+  pb.addEventListener("contextmenu",e=>e.preventDefault());
   // ha senki nem kapcsolja be, kis idő múlva hang nélkül indul
   setTimeout(()=>{if(!flipped){flipped=true;if(sw.parentNode)sw.parentNode.removeChild(sw);started=true;start(false)}},12000);
 })();
