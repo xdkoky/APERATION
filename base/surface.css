@@ -1,6 +1,6 @@
 /* ---------- panelek belső fénye és filmszemcse ----------
    A panelek felső pereme mentén finom fénycsík, ami befelé lágy derengésbe megy át; körben egészen halvány fényes perem.
-   A Most nézet nagy kártyája a blokk típusának színével dereng. Az egész felületen állóképes, analóg filmszemcse. */
+   A Most nézet nagy kártyája a blokk típusának színével dereng. A háttérben állóképes, analóg filmszemcse. */
 .card{background-image:radial-gradient(120% 55% at 50% 0%,rgba(255,255,255,.05),rgba(255,255,255,0) 70%),linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.025))}
 .card,.esecw{box-shadow:inset 0 1px 0 rgba(255,255,255,.09),inset 0 0 0 1px rgba(255,255,255,.02),inset 0 22px 36px -26px rgba(255,255,255,.12),
   inset 0 -18px 30px -28px rgba(255,255,255,.05),0 22px 44px -30px rgba(0,0,0,.95)}
@@ -11,7 +11,8 @@ body.over .now{box-shadow:inset 0 1px 0 color-mix(in srgb,var(--late) 50%,transp
 .card .eb,.card .role,.card .stat{box-shadow:inset 0 1px 0 rgba(255,255,255,.06),inset 0 14px 22px -18px rgba(255,255,255,.06)}
 .eb.dragging{box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 22px 44px -14px rgba(0,0,0,.85)}
 
-/* filmszemcse: apró, előre legenerált zajminta, csempézve; nem élő szűrő, így nem lassítja a görgetést */
-.grain{position:fixed;inset:-50px;z-index:65;pointer-events:none;background-image:url("/*__GRAIN__*/");background-size:160px 160px;opacity:.55}
+/* filmszemcse: csak a háttérben (a panelek és a tartalom alatt). Apró, előre legenerált zajminta, csempézve;
+   nem élő szűrő, így nem lassítja a görgetést */
+.grain{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:url("/*__GRAIN__*/");background-size:160px 160px;opacity:.55}
 @media (prefers-reduced-transparency:reduce){.grain{opacity:.25}}
 @media print{.grain{display:none}}
