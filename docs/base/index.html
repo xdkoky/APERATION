@@ -886,20 +886,43 @@ details[open]>:not(summary){animation:openIn .32s var(--ease-out) both}
 @keyframes crtOn{0%{transform:scaleY(.004) scaleX(0);filter:brightness(3)}35%{transform:scaleY(.004) scaleX(1);filter:brightness(3)}100%{transform:none;filter:none}}
 .boot .scr::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 1px,transparent 1px 3px);animation:flick 3.2s steps(1) infinite}
 @keyframes flick{0%,100%{opacity:1}47%{opacity:.75}48%{opacity:1}}
-.boot pre{margin:0;font:inherit;white-space:pre-wrap;word-break:break-word;text-shadow:0 0 6px rgba(255,255,255,.25)}
-.boot .cur{display:inline-block;width:.6em;height:1.05em;background:#e6e6e6;vertical-align:-2px;animation:bootblink .9s steps(2) infinite}
+/* ízléses fény az egész introra: mintha egy régi katódcsöves monitor fénypora derengene. Fehér, visszafogott, és csak
+   az áttetszőség (opacity) mozog, így nem terheli a telefont */
+.boot::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse 85% 60% at 50% 42%,rgba(255,255,255,.04),rgba(255,255,255,0) 72%)}
+.boot.on::after{opacity:1;transition:opacity .6s .25s}
+.boot.warp::after{opacity:0;transition:opacity .45s}
+.boot::before{content:"";position:absolute;left:0;right:0;top:50%;height:2px;margin-top:-1px;z-index:1;pointer-events:none;opacity:0;background:#fff;
+  box-shadow:0 0 10px 1px rgba(255,255,255,.85),0 0 34px 6px rgba(255,255,255,.3);transform:scaleX(0)}
+.boot.on::before{animation:crtLine .75s cubic-bezier(.2,.9,.2,1) forwards}
+@keyframes crtLine{0%{opacity:1;transform:scaleX(0)}32%{opacity:1;transform:scaleX(1)}100%{opacity:0;transform:scaleX(1)}}
+.boot pre{margin:0;font:inherit;white-space:pre-wrap;word-break:break-word;color:#ececec;
+  text-shadow:0 0 1px rgba(255,255,255,.55),0 0 5px rgba(255,255,255,.34),0 0 16px rgba(255,255,255,.14)}
+.boot .cur{display:inline-block;width:.6em;height:1.05em;background:#ededed;vertical-align:-2px;animation:bootblink .9s steps(2) infinite;
+  box-shadow:0 0 6px rgba(255,255,255,.55),0 0 16px rgba(255,255,255,.22)}
 @keyframes bootblink{50%{opacity:0}}
 .boot .bl{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:30px;pointer-events:none}
-.boot .bl svg{height:126px;width:auto;max-width:74vw;overflow:visible}
+.boot .bl svg{height:126px;width:auto;max-width:74vw;overflow:visible;filter:drop-shadow(0 0 5px rgba(255,255,255,.4)) drop-shadow(0 0 18px rgba(255,255,255,.16))}
+.boot .bl::before{content:"";position:absolute;left:50%;top:calc(50% - 25px);width:720px;height:560px;margin:-280px 0 0 -360px;pointer-events:none;opacity:0;
+  background:radial-gradient(closest-side,rgba(255,255,255,.09),rgba(255,255,255,.035) 45%,rgba(255,255,255,0))}
+.boot.m .bl::before{animation:halo1 .9s cubic-bezier(.2,.8,.2,1) forwards}
+.boot.w .bl::before{animation:halo2 .8s ease-out forwards}
+.boot.b .bl::before{animation:halo3 .8s ease-out forwards}
+.boot.warp .bl::before{animation:haloOut .45s ease forwards}
+@keyframes halo1{0%{opacity:0;transform:scale(.55)}18%{opacity:1;transform:scale(1.04)}100%{opacity:.55;transform:none}}
+@keyframes halo2{0%{opacity:.55}22%{opacity:.85}100%{opacity:.62}}
+@keyframes halo3{0%{opacity:.62}22%{opacity:.95}100%{opacity:.7}}
+@keyframes haloOut{0%{opacity:.7}100%{opacity:0}}
 .boot:not(.m) .bl{visibility:hidden}
 .boot .bl .lg-m,.boot .bl .lg-t{opacity:0;fill:#eee}
 .boot.m .bl .lg-m{animation:markIn .6s cubic-bezier(.16,1,.3,1) forwards;transform-box:fill-box;transform-origin:50% 50%}
 @keyframes markIn{0%{opacity:0;transform:scale(1.6);filter:brightness(4) blur(2px)}25%{opacity:1}100%{opacity:1;transform:none;filter:none}}
 .boot.w .bl .lg-t{animation:wordIn .6s ease forwards}
 @keyframes wordIn{0%{opacity:0;clip-path:inset(0 100% 0 0)}100%{opacity:1;clip-path:inset(0 0 0 0)}}
-.boot .bar{width:min(240px,62vw);height:16px;border:2px solid #e6e6e6;padding:2px;overflow:hidden;position:relative;opacity:0}
+.boot .bar{width:min(240px,62vw);height:16px;border:2px solid #ececec;padding:2px;overflow:hidden;position:relative;opacity:0;
+  box-shadow:0 0 6px rgba(255,255,255,.4),0 0 18px rgba(255,255,255,.14),inset 0 0 6px rgba(255,255,255,.18)}
 .boot.b .bar{opacity:1;transition:opacity .2s}
-.boot .bar i{position:absolute;top:2px;bottom:2px;width:46px;left:-50px;background:repeating-linear-gradient(90deg,#e6e6e6 0 10px,transparent 10px 14px);animation:bootbar .9s linear infinite}
+.boot .bar i{position:absolute;top:2px;bottom:2px;width:46px;left:-50px;background:repeating-linear-gradient(90deg,#ececec 0 10px,transparent 10px 14px);animation:bootbar .9s linear infinite;
+  filter:drop-shadow(0 0 3px rgba(255,255,255,.75))}
 @keyframes bootbar{to{left:100%}}
 .boot .flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
 /* átmenet: a nyitólap a hatszög belsejéből tárul fel. A fekete réteg kap egy hatszög alakú „ablakot” (maszk),
@@ -917,11 +940,16 @@ details[open]>:not(summary){animation:openIn .32s var(--ease-out) both}
 .boot .pbtn i{position:absolute;inset:14px;border-radius:50%;display:grid;place-items:center;
   background:radial-gradient(circle at 50% 28%,#2e2e2e,#161616 70%);box-shadow:0 6px 0 #050505,0 8px 14px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,255,255,.22),inset 0 -2px 6px rgba(0,0,0,.6);
   transition:transform .06s ease-out,box-shadow .06s ease-out}
-.boot .pbtn svg{width:42px;height:42px;stroke:#bdbdbd;stroke-width:2.6;fill:none;stroke-linecap:round;transition:stroke .2s,filter .2s}
+.boot .pbtn svg{width:42px;height:42px;stroke:#bdbdbd;stroke-width:2.6;fill:none;stroke-linecap:round;transition:stroke .2s,filter .2s;filter:drop-shadow(0 0 3px rgba(255,255,255,.2))}
+.boot .pbtn::before{content:"";position:absolute;inset:-10px;border-radius:50%;pointer-events:none;box-shadow:0 0 26px 3px rgba(255,255,255,.08);opacity:.45;
+  animation:pbBreath 3.4s ease-in-out infinite}
+@keyframes pbBreath{50%{opacity:1}}
+.boot .pbtn.lit::before{animation:pbFlash .55s ease-out forwards}
+@keyframes pbFlash{0%{opacity:1;box-shadow:0 0 26px 3px rgba(255,255,255,.08)}22%{opacity:1;box-shadow:0 0 44px 9px rgba(255,255,255,.34)}100%{opacity:1;box-shadow:0 0 34px 6px rgba(255,255,255,.18)}}
 .boot .pbtn.down i{transform:translateY(5px) scale(.985);box-shadow:0 1px 0 #050505,0 2px 5px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,255,255,.1),inset 0 3px 10px rgba(0,0,0,.75)}
 .boot .pbtn.lit svg{stroke:#fff;filter:drop-shadow(0 0 6px rgba(255,255,255,.9)) drop-shadow(0 0 16px rgba(255,255,255,.5))}
 .boot .pbtn:focus,.boot .pbtn:focus-visible{outline:none}
-.boot .sw .cap{font-size:12px;letter-spacing:.3em;color:#9a9a9a;font-weight:700;text-shadow:0 0 6px rgba(255,255,255,.25)}
+.boot .sw .cap{font-size:12px;letter-spacing:.3em;color:#a2a2a2;font-weight:700;text-shadow:0 0 1px rgba(255,255,255,.3),0 0 7px rgba(255,255,255,.28),0 0 18px rgba(255,255,255,.1)}
 .boot .sw .cap .cur{width:.55em;height:1em;margin-left:.2em}
 .boot .sw.on .cap{opacity:0;transition:opacity .2s}
 .boot .sw.bye{transform:scaleY(.004) scaleX(.6);filter:brightness(4);opacity:0}
@@ -933,6 +961,7 @@ html.boot-in .app,html.boot-in .bottom{transition:transform 1.25s cubic-bezier(.
 .boot.cv{background:transparent}
 .boot.cv .scr,.boot.cv .bl .lg-m,.boot.cv .bl circle{visibility:hidden}
 .boot canvas.mb{position:absolute;left:0;top:0;pointer-events:none}
+@media (prefers-reduced-motion:reduce){.boot.m .bl::before,.boot.w .bl::before,.boot.b .bl::before{animation:none;opacity:.6}.boot .pbtn::before{animation:none;opacity:.7}}
 /* ---------- „nyalni-való” gombok ----------
    Minden gomb kidomborodik: a csillogás közvetlenül a gomb hátterében van (nincs külön réteg, így a széle tiszta,
    pontosan a gomb formáját követi), körben egyetlen finom kontúr (maga a keret, a legszélén), felül fényesebb él, alatta puha árnyék.
@@ -1044,10 +1073,16 @@ body.over .now{box-shadow:inset 0 1px 0 color-mix(in srgb,var(--late) 50%,transp
   const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
   box.querySelector(".bl").innerHTML=(logo||"")+'<div class="bar"><i></i></div>';
   // a jel (hatszög-gyűrű) külön képként a vászonhoz: felirat és sötét középkör nélkül
-  const markImg=new Image();
+  const markImg=new Image(),glowImg=new Image(),GPV=230;
   if(logo){const m=logo.replace(/<title>[\s\S]*?<\/title>/,"").replace(/<path class="lg-t"[^>]*?\/>/g,"").replace(/<circle[^>]*?\/>/g,"")
       .replace(/fill="#[0-9A-Fa-f]{3,6}"/g,'fill="#eeeeee"').replace("<svg ",'<svg width="792" height="477" ');
-    markImg.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(m)}
+    markImg.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(m);
+    // a jel fénye külön képként, ugyanazzal az elmosással, mint a jel CSS-fénye (5 és 18 képpont; a jel 126 px magas → 477 egység)
+    const u=477/126,s1=5*u,s2=18*u,cm=a=>'<feColorMatrix values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 '+a+' 0"/>',vb=(493-GPV)+" "+(60-GPV)+" "+(792+2*GPV)+" "+(477+2*GPV);
+    glowImg.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="'+(792+2*GPV)+'" height="'+(477+2*GPV)+'" viewBox="'+vb+'">'+
+      '<defs><filter id="w" filterUnits="userSpaceOnUse" x="'+(493-GPV)+'" y="'+(60-GPV)+'" width="'+(792+2*GPV)+'" height="'+(477+2*GPV)+'" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceAlpha" stdDeviation="'+s2+'"/>'+cm(.2)+'</filter>'+
+      '<filter id="n" filterUnits="userSpaceOnUse" x="'+(493-GPV)+'" y="'+(60-GPV)+'" width="'+(792+2*GPV)+'" height="'+(477+2*GPV)+'" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceAlpha" stdDeviation="'+s1+'"/>'+cm(.4)+'</filter></defs>'+
+      '<g filter="url(#w)">'+m.replace(/^<svg[^>]*>/,"").replace(/<\/svg>\s*$/,"")+'</g><g filter="url(#n)">'+m.replace(/^<svg[^>]*>/,"").replace(/<\/svg>\s*$/,"")+'</g></svg>')}
   const pre=document.getElementById("bootpre"),d=new Date(),p2=n=>String(n).padStart(2,"0"),on=navigator.onLine;
   const L=(k,v)=>(k+" ").padEnd(20,".")+" "+v;
   let out=[],mem=-1,dots=0,done=false,raf=0,audio=null,t0=0,line="";
@@ -1087,12 +1122,16 @@ body.over .now{box-shadow:inset 0 1px 0 color-mix(in srgb,var(--late) 50%,transp
     const cv=mk();cv.className="mb";cv.style.width=W+"px";cv.style.height=Hh+"px";cv.style.visibility="hidden";box.insertBefore(cv,box.querySelector(".bl"));
     const mL=X(545),mT=Y(60),mW=270*ux,mH=312*uy,K=4*bs,mc=document.createElement("canvas");mc.width=Math.round(mW*K);mc.height=Math.round(mH*K);
     let markOk=false;try{if(markImg.complete&&markImg.naturalWidth){mc.getContext("2d").drawImage(markImg,-(545-493)*ux*K,0,792*ux*K,477*uy*K);markOk=true}}catch(e){}
+    // a jel fénye (a jel alatti részt kivágjuk, hogy a jel ne fényesedjen ki az összeadásnál); a fény elmosott, elég kisebb felbontás
+    const gL=X(545-GPV),gT=Y(60-GPV),gW=(270+2*GPV)*ux,gH=(312+2*GPV)*uy,KG=bs,gc=document.createElement("canvas");gc.width=Math.round(gW*KG);gc.height=Math.round(gH*KG);
+    let glowOk=false;try{if(markOk&&glowImg.complete&&glowImg.naturalWidth){const g=gc.getContext("2d");g.drawImage(glowImg,-(545-493)*ux*KG,0,(792+2*GPV)*ux*KG,(477+2*GPV)*uy*KG);
+      g.globalCompositeOperation="destination-out";g.drawImage(markImg,(GPV-52)*ux*KG,GPV*uy*KG,792*ux*KG,477*uy*KG);glowOk=true}}catch(e){}
     const hc=mk(),rc=mk();
-    return PR={cx,cy,mw,W,Hh,bs,far,cv,ctx:cv.getContext("2d"),hc,hx:hc.getContext("2d"),rc,rx:rc.getContext("2d"),mc,mL,mT,mW,mH,markOk}}
+    return PR={cx,cy,mw,W,Hh,bs,far,cv,ctx:cv.getContext("2d"),hc,hx:hc.getContext("2d"),rc,rx:rc.getContext("2d"),mc,mL,mT,mW,mH,markOk,gc,gL,gT,gW,gH,glowOk}}
   function warp(){if(box.classList.contains("warp"))return;box.classList.add("warp");
     const q=prep();
     if(!q){root.classList.add("boot-in");box.style.transition="opacity .5s";box.style.opacity="0";setTimeout(finish,520);return}
-    const {cx,cy,mw,W,Hh,bs,far,cv,ctx,hc,hx,rc,rx,mc,mL,mT,mW,mH,markOk}=q;
+    const {cx,cy,mw,W,Hh,bs,far,cv,ctx,hc,hx,rc,rx,mc,mL,mT,mW,mH,markOk,gc,gL,gT,gW,gH,glowOk}=q;
     root.style.setProperty("--po",cx+"px "+cy+"px");
     const w0=mw*.34,sEnd=far*2.35/w0,HX=1.1547;
     cv.style.visibility="";box.classList.add("cv");
@@ -1103,8 +1142,10 @@ body.over .now{box-shadow:inset 0 1px 0 color-mix(in srgb,var(--late) 50%,transp
     // Így a gyűrű és az ablak pereme a nagyítás középpontjából sugárirányban csíkozódik, gyorsabb mozgásnál hosszabban.
     const SHUT=26;
     // a gyűrű képéből csak a képernyőre eső részt rajzoljuk (nagy nagyításnál ez a különbség a sima és a szaggatott futás között)
-    const blit=(dx,dy,dw,dh)=>{const x0=Math.max(0,dx),y0=Math.max(0,dy),x1=Math.min(W,dx+dw),y1=Math.min(Hh,dy+dh);if(x1<=x0||y1<=y0)return;
-      const kx=mc.width/dw,ky=mc.height/dh;rx.drawImage(mc,(x0-dx)*kx,(y0-dy)*ky,(x1-x0)*kx,(y1-y0)*ky,x0,y0,x1-x0,y1-y0)};
+    const blit=(src,dx,dy,dw,dh)=>{const x0=Math.max(0,dx),y0=Math.max(0,dy),x1=Math.min(W,dx+dw),y1=Math.min(Hh,dy+dh);if(x1<=x0||y1<=y0)return;
+      const kx=src.width/dw,ky=src.height/dh;rx.drawImage(src,(x0-dx)*kx,(y0-dy)*ky,(x1-x0)*kx,(y1-y0)*ky,x0,y0,x1-x0,y1-y0)};
+    // a gyűrű fénye a nagyítással együtt elhalványul (különben a végén fehér ködként söpörne át a nyitólapon)
+    const glowA=sc=>{const k=Math.max(0,1-(sc-1)/3);return k*k};
     const hexPath=(c,x,y,w)=>{const h=w*HX;c.beginPath();c.moveTo(x,y-h/2);c.lineTo(x+w/2,y-h/4);c.lineTo(x+w/2,y+h/4);c.lineTo(x,y+h/2);c.lineTo(x-w/2,y+h/4);c.lineTo(x-w/2,y-h/4);c.closePath()};
     const f=()=>{if(done)return;const ms=performance.now()-st;
       // a minták száma a csík hosszához igazodik (kb. 4 képpontonként egy), a kis véletlen eltolás elsimítja a maradék lépcsőket
@@ -1112,10 +1153,12 @@ body.over .now{box-shadow:inset 0 1px 0 color-mix(in srgb,var(--late) 50%,transp
       hx.setTransform(bs,0,0,bs,0,0);rx.setTransform(bs,0,0,bs,0,0);
       hx.globalCompositeOperation=rx.globalCompositeOperation="source-over";hx.globalAlpha=rx.globalAlpha=1;hx.clearRect(0,0,W,Hh);rx.clearRect(0,0,W,Hh);
       hx.globalCompositeOperation=rx.globalCompositeOperation="lighter";hx.globalAlpha=rx.globalAlpha=1/N;hx.fillStyle="#fff";
+      // a gyűrű fénye eleve elmosott, ezért képkockánként elég egyszer (a záridő közepén) kirajzolni – a mintánkénti rajzolás lassú lenne
+      if(glowOk){const sc=scaleAt(ms-SHUT/2),a=glowA(sc);if(a>.01){rx.globalAlpha=a;blit(gc,cx+(gL-cx)*sc,cy+(gT-cy)*sc,gW*sc,gH*sc);rx.globalAlpha=1/N}}
       for(let i=0;i<N;i++){const sc=scaleAt(ms-SHUT*Math.min(1,i/N+jit));
         // ha az ablak már az egész képernyőt lefedi, vagy a gyűrű teljesen kívül esik, azt a mintát nem kell rajzolni
         if(w0*sc*.5>far)hx.fillRect(0,0,W,Hh);else{hexPath(hx,cx,cy,w0*sc);hx.fill()}
-        if(markOk&&mw*.2*sc<far)blit(cx+(mL-cx)*sc,cy+(mT-cy)*sc,mW*sc,mH*sc)}
+        if(markOk&&mw*.2*sc<far)blit(mc,cx+(mL-cx)*sc,cy+(mT-cy)*sc,mW*sc,mH*sc)}
       // összerakás: fekete réteg, kivágva belőle az (elmosott) ablak, rá az (elmosott) gyűrű
       ctx.globalCompositeOperation="source-over";ctx.globalAlpha=1;ctx.fillStyle="#000";ctx.fillRect(0,0,cv.width,cv.height);
       ctx.globalCompositeOperation="destination-out";ctx.drawImage(hc,0,0);
