@@ -45,6 +45,7 @@ BOOT_SND = "data:audio/mpeg;base64," + base64.b64encode(open(os.path.join(HERE, 
 tpl = tpl.replace("/*__BOOTSND__*/null", json.dumps(BOOT_SND))
 tpl = tpl.replace("/*__GLASS_CSS__*/", open(os.path.join(HERE, "glass.css"), encoding="utf-8").read())
 tpl = tpl.replace("/*__DESKTOP_CSS__*/", open(os.path.join(HERE, "desktop.css"), encoding="utf-8").read())
+tpl = tpl.replace("/*__JUICY_CSS__*/", open(os.path.join(HERE, "juicy.css"), encoding="utf-8").read())
 tpl = tpl.replace("/*__MULTI_CSS__*/", open(os.path.join(HERE, "multi.css"), encoding="utf-8").read())
 tpl = tpl.replace("/*__GATE_JS__*/", open(os.path.join(HERE, "gate.js"), encoding="utf-8").read())
 PRINT_CSS = open(os.path.join(HERE, "print.css"), encoding="utf-8").read()
