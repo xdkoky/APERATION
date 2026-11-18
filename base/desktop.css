@@ -48,7 +48,7 @@
   .eb-sum{display:block;margin:-4px 0 0 92px;font-size:13px;color:var(--fg-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .eb-more{padding-left:92px}
   .welcome{max-width:720px}
-  .esec{max-width:760px}
+  .esecw{max-width:760px}
   .er.sr{flex-wrap:nowrap}
   .tour-card{width:min(440px,calc(100vw - 24px))}
 }

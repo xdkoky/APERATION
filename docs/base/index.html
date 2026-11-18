@@ -459,7 +459,14 @@ body.dragging::after{content:"Engedd el: beolvasom a táblázatot";position:fixe
 .wgrid.add .btn{flex:1 1 110px}
 .btn[disabled]{opacity:.4;pointer-events:none}
 .btn.armed{background:var(--late);color:#fff;border-color:transparent}
-.esec{margin-bottom:14px;overflow-x:auto}
+@property --fl{syntax:"<length>";inherits:false;initial-value:0px}
+@property --fr{syntax:"<length>";inherits:false;initial-value:0px}
+.esecw{position:relative;margin-bottom:14px;border-radius:13px;border:1px solid var(--hair);overflow:hidden;
+  background:linear-gradient(rgba(255,255,255,.06),rgba(255,255,255,.06)),var(--panel-solid,#0b0f15)}
+.esecw .esec{margin:0;border:0;border-radius:0;background:none;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 var(--fl),#000 calc(100% - var(--fr)),transparent 100%);
+  mask-image:linear-gradient(90deg,transparent 0,#000 var(--fl),#000 calc(100% - var(--fr)),transparent 100%);transition:--fl .25s ease,--fr .25s ease}
+.esecw .esec::-webkit-scrollbar{display:none}
 .esec button{white-space:nowrap;padding-inline:6px}
 .eblist{display:grid;gap:8px;margin-bottom:12px}
 .eb{border:1px solid var(--hair);border-left:3px solid var(--type);border-radius:var(--r-tile);background:var(--surface);padding:8px 8px 8px 10px;display:grid;gap:10px}
@@ -822,7 +829,7 @@ html.refract .tabs,html.refract .dk:not(.primary),html.refract .toast,html.refra
   .eb-sum{display:block;margin:-4px 0 0 92px;font-size:13px;color:var(--fg-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .eb-more{padding-left:92px}
   .welcome{max-width:720px}
-  .esec{max-width:760px}
+  .esecw{max-width:760px}
   .er.sr{flex-wrap:nowrap}
   .tour-card{width:min(440px,calc(100vw - 24px))}
 }
@@ -2794,6 +2801,17 @@ function importPreview(){
     <p class="muted small">${p._full?`<b>Projektkulcs</b>${Object.keys(p._images||{}).length?`, ${Object.keys(p._images).length} képpel`:""}${p._team&&p._team.length?`, ${p._team.length} pozícióval`:""}${p._state&&p._state.cur?", a nap állásával együtt":""}. `:""}A betöltés után ${MP.on?"a közös projektben mindenkinél ez lesz a terv":"a mostani terv a Projektek közé kerül"}${p._full?".":", a nap állása (kész blokkok, take-ek) nullázódik."}</p>
     <div class="wgrid"><button class="btn solid" type="button" data-do="load" ${p.blocks.length?"":"disabled"}>Betöltés</button><button class="btn" type="button" data-do="cancel">Mégse</button></div></section>`;
 }
+/* a Terv részeinek sávja: ha nem fér ki, vízszintesen görgethető, és a széleken lágyan elhalványul – csak azon az oldalon,
+   amerre még van tartalom. Szakaszváltáskor a kiválasztott rész középre gördül, egyébként a görgetés helye megmarad. */
+const ESC={sec:null,x:0};
+function escFade(e){e=e||document.querySelector('[data-view="terv"] .esec');if(!e)return;
+  const over=e.scrollWidth-e.clientWidth>2;e.style.setProperty("--fl",(over&&e.scrollLeft>2?30:0)+"px");e.style.setProperty("--fr",(over&&e.scrollLeft<e.scrollWidth-e.clientWidth-2?30:0)+"px")}
+function escSetup(){const e=document.querySelector('[data-view="terv"] .esec');if(!e)return;
+  if(ESC.sec===editSec)e.scrollLeft=ESC.x;
+  else{const a=e.querySelector('[aria-pressed="true"]');if(a&&e.scrollWidth>e.clientWidth){const x=a.offsetLeft-(e.clientWidth-a.offsetWidth)/2;
+    e.scrollLeft=ESC.sec==null?x:ESC.x;if(ESC.sec!=null)requestAnimationFrame(()=>e.scrollTo({left:x,behavior:"smooth"}))}}
+  ESC.sec=editSec;ESC.x=e.scrollLeft;e.onscroll=()=>{ESC.x=e.scrollLeft;escFade(e)};escFade(e)}
+addEventListener("resize",()=>escFade());
 function renderEdit(){
   const v=$('[data-view="terv"]');
   const secs=[["projekt","Projekt"],["shotlist","Shotlist"],["idorend","Időrend"],["emberek","Emberek"],["szkript","Forgatókönyv"],["csapat","Csapat"],["fajl","Fájl"]];
@@ -2832,8 +2850,9 @@ function renderEdit(){
   document.documentElement.style.setProperty("--hdr-h",($(".hdr")?$(".hdr").offsetHeight:96)+"px");
   renderTabs();$$(".tabs a").forEach(a=>{if(a.getAttribute("href")==="#terv")a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});placeInd();
   {const ord=secs.filter(x=>x[0]!=="fajl"),ix=ord.findIndex(x=>x[0]===editSec);if(ix>=0&&ix<ord.length-1&&!pending)body+=`<div class="nextsec"><button class="btn" type="button" data-sec="${ord[ix+1][0]}">Tovább: ${ord[ix+1][1]}${ic("chev",16)}</button></div>`}
-  v.innerHTML=`<div class="vh-row"><div class="vh">Terv</div><span class="presbar" id="presbar" aria-label="Most itt dolgoznak"></span><span class="vh-act"><span class="savedind" id="savedind" aria-live="polite">${savedText()}</span>${MP_AVAIL&&!isMember()?`<button class="btn sm ${MP.on?"":"solid"}" type="button" data-sec="csapat">${ic("users",14)}${MP.on?"Közös":"Meghívás"}</button>`:""}<button class="btn sm" type="button" data-do="projlist">${ic("list",14)}Projektek</button><button class="btn sm" type="button" data-do="newproj">${ic("plus",14)}Új projekt</button></span></div><div class="seg esec" role="group" aria-label="Szakasz">${secs.map(([k,l])=>`<button type="button" data-sec="${k}" aria-pressed="${editSec===k}">${l}</button>`).join("")}</div><div class="stack">${body}</div>`;
+  v.innerHTML=`<div class="vh-row"><div class="vh">Terv</div><span class="presbar" id="presbar" aria-label="Most itt dolgoznak"></span><span class="vh-act"><span class="savedind" id="savedind" aria-live="polite">${savedText()}</span>${MP_AVAIL&&!isMember()?`<button class="btn sm ${MP.on?"":"solid"}" type="button" data-sec="csapat">${ic("users",14)}${MP.on?"Közös":"Meghívás"}</button>`:""}<button class="btn sm" type="button" data-do="projlist">${ic("list",14)}Projektek</button><button class="btn sm" type="button" data-do="newproj">${ic("plus",14)}Új projekt</button></span></div><div class="esecw"><div class="seg esec" role="group" aria-label="Szakasz">${secs.map(([k,l])=>`<button type="button" data-sec="${k}" aria-pressed="${editSec===k}">${l}</button>`).join("")}</div></div><div class="stack">${body}</div>`;
   if(editSec==="fajl")backupListFill();
+  escSetup();
   presPaint();presTouch();
 }
 /* blokkok átrendezése húzással: a fogantyút megfogva a kártya követi az ujjat, a többi félrecsúszik,

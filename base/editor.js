@@ -436,6 +436,17 @@ function importPreview(){
     <p class="muted small">${p._full?`<b>Projektkulcs</b>${Object.keys(p._images||{}).length?`, ${Object.keys(p._images).length} képpel`:""}${p._team&&p._team.length?`, ${p._team.length} pozícióval`:""}${p._state&&p._state.cur?", a nap állásával együtt":""}. `:""}A betöltés után ${MP.on?"a közös projektben mindenkinél ez lesz a terv":"a mostani terv a Projektek közé kerül"}${p._full?".":", a nap állása (kész blokkok, take-ek) nullázódik."}</p>
     <div class="wgrid"><button class="btn solid" type="button" data-do="load" ${p.blocks.length?"":"disabled"}>Betöltés</button><button class="btn" type="button" data-do="cancel">Mégse</button></div></section>`;
 }
+/* a Terv részeinek sávja: ha nem fér ki, vízszintesen görgethető, és a széleken lágyan elhalványul – csak azon az oldalon,
+   amerre még van tartalom. Szakaszváltáskor a kiválasztott rész középre gördül, egyébként a görgetés helye megmarad. */
+const ESC={sec:null,x:0};
+function escFade(e){e=e||document.querySelector('[data-view="terv"] .esec');if(!e)return;
+  const over=e.scrollWidth-e.clientWidth>2;e.style.setProperty("--fl",(over&&e.scrollLeft>2?30:0)+"px");e.style.setProperty("--fr",(over&&e.scrollLeft<e.scrollWidth-e.clientWidth-2?30:0)+"px")}
+function escSetup(){const e=document.querySelector('[data-view="terv"] .esec');if(!e)return;
+  if(ESC.sec===editSec)e.scrollLeft=ESC.x;
+  else{const a=e.querySelector('[aria-pressed="true"]');if(a&&e.scrollWidth>e.clientWidth){const x=a.offsetLeft-(e.clientWidth-a.offsetWidth)/2;
+    e.scrollLeft=ESC.sec==null?x:ESC.x;if(ESC.sec!=null)requestAnimationFrame(()=>e.scrollTo({left:x,behavior:"smooth"}))}}
+  ESC.sec=editSec;ESC.x=e.scrollLeft;e.onscroll=()=>{ESC.x=e.scrollLeft;escFade(e)};escFade(e)}
+addEventListener("resize",()=>escFade());
 function renderEdit(){
   const v=$('[data-view="terv"]');
   const secs=[["projekt","Projekt"],["shotlist","Shotlist"],["idorend","Időrend"],["emberek","Emberek"],["szkript","Forgatókönyv"],["csapat","Csapat"],["fajl","Fájl"]];
@@ -474,8 +485,9 @@ function renderEdit(){
   document.documentElement.style.setProperty("--hdr-h",($(".hdr")?$(".hdr").offsetHeight:96)+"px");
   renderTabs();$$(".tabs a").forEach(a=>{if(a.getAttribute("href")==="#terv")a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});placeInd();
   {const ord=secs.filter(x=>x[0]!=="fajl"),ix=ord.findIndex(x=>x[0]===editSec);if(ix>=0&&ix<ord.length-1&&!pending)body+=`<div class="nextsec"><button class="btn" type="button" data-sec="${ord[ix+1][0]}">Tovább: ${ord[ix+1][1]}${ic("chev",16)}</button></div>`}
-  v.innerHTML=`<div class="vh-row"><div class="vh">Terv</div><span class="presbar" id="presbar" aria-label="Most itt dolgoznak"></span><span class="vh-act"><span class="savedind" id="savedind" aria-live="polite">${savedText()}</span>${MP_AVAIL&&!isMember()?`<button class="btn sm ${MP.on?"":"solid"}" type="button" data-sec="csapat">${ic("users",14)}${MP.on?"Közös":"Meghívás"}</button>`:""}<button class="btn sm" type="button" data-do="projlist">${ic("list",14)}Projektek</button><button class="btn sm" type="button" data-do="newproj">${ic("plus",14)}Új projekt</button></span></div><div class="seg esec" role="group" aria-label="Szakasz">${secs.map(([k,l])=>`<button type="button" data-sec="${k}" aria-pressed="${editSec===k}">${l}</button>`).join("")}</div><div class="stack">${body}</div>`;
+  v.innerHTML=`<div class="vh-row"><div class="vh">Terv</div><span class="presbar" id="presbar" aria-label="Most itt dolgoznak"></span><span class="vh-act"><span class="savedind" id="savedind" aria-live="polite">${savedText()}</span>${MP_AVAIL&&!isMember()?`<button class="btn sm ${MP.on?"":"solid"}" type="button" data-sec="csapat">${ic("users",14)}${MP.on?"Közös":"Meghívás"}</button>`:""}<button class="btn sm" type="button" data-do="projlist">${ic("list",14)}Projektek</button><button class="btn sm" type="button" data-do="newproj">${ic("plus",14)}Új projekt</button></span></div><div class="esecw"><div class="seg esec" role="group" aria-label="Szakasz">${secs.map(([k,l])=>`<button type="button" data-sec="${k}" aria-pressed="${editSec===k}">${l}</button>`).join("")}</div></div><div class="stack">${body}</div>`;
   if(editSec==="fajl")backupListFill();
+  escSetup();
   presPaint();presTouch();
 }
 /* blokkok átrendezése húzással: a fogantyút megfogva a kártya követi az ujjat, a többi félrecsúszik,
