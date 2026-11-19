@@ -1462,23 +1462,25 @@ function toggleSkip(j,quiet){
 }
 function extend(m){if(RO())return;const b=curBlock();if(!b)return;st.ext[b.i]=Math.max(0,(st.ext[b.i]||0)+m);if(!st.ext[b.i])delete st.ext[b.i];lastAlert="";save();renderAll();
   toast(m>0?`+${m} perc erre a blokkra · várható wrap ${hm(project().wrap)}`:"Hosszabbítás törölve",m>0?{action:"Visszavonás",fn:()=>extend(-m)}:{})}
-function takesSaved(k){save();mpPushTakes(k)}
+function takesSaved(k,sw){save();mpPushTakes(k,sw?{sw:true}:undefined)}
 /* próba leállítása (fejléc ■ gombja vagy Info): a nap nullázódik, de egy ideig visszavonható */
 function simStop(){if(!st.sim.on||tour)return;const prev=JSON.stringify(st),keep=fresh();keep.sound=st.sound;keep.force=st.force;st=keep;save();renderAll();
   toast("Próba leállítva, a nap nullázva.",{tone:"ok",action:"Visszavonás",fn:()=>{st=Object.assign(fresh(),JSON.parse(prev));save();renderAll()}})}
-function startSW(){if(st.sw||!canTake())return;st.sw={at:tod(),i:st.cur?st.cur.i:"gen"};takesSaved([]);renderMost()}
-function stopSW(silent){if(!st.sw)return;const d=(tod()-st.sw.at)*60,k=st.sw.i;newTake(k,d,st.sw.at);st.sw=null;takesSaved(k);if(!silent)renderMost()}
+function startSW(){if(st.sw||!canTake())return;st.sw={at:tod(),i:st.cur?st.cur.i:"gen"};takesSaved([],true);renderMost()}
+function stopSW(silent){if(!st.sw)return;const d=(tod()-st.sw.at)*60,k=st.sw.i;newTake(k,d,st.sw.at,true);st.sw=null;takesSaved(k,true);if(!silent)renderMost()}
 /* új take: a szkriptes rubrikáit előre kitölti, amit lehet – beállítás, csapó, mm az előző take-ből (vagy a shotból), a fájlszám eggyel nő */
 const incNum=s=>{const m=String(s||"").match(/^(.*?)(\d+)(\D*)$/);return m?m[1]+String(+m[2]+1).padStart(m[2].length,"0")+m[3]:""};
 const lensOf=b=>{if(!b)return"";const sh=D.shots[b.label]||{},m=String([b.setup,sh.setup,sh.lens].filter(Boolean).join(" ")).match(/(\d{2,3})\s*mm/i);return m?m[1]:""};
-function newTake(k,d,at){const a=st.takes[k]=st.takes[k]||[],prev=a[a.length-1],b=B.find(x=>String(x.i)===String(k));
-  const t={d,ok:false,at,note:"",c:Date.now()};
+function newTake(k,d,at,fromSW){const a=st.takes[k]=st.takes[k]||[],prev=a[a.length-1],b=B.find(x=>String(x.i)===String(k));
+  const now=Date.now(),t={d,ok:false,at,note:"",c:now,u:now,id:fromSW?"a"+Math.round(at*6e7):"m"+now.toString(36)+Math.random().toString(36).slice(2,6)};
+  if(typeof MP!=="undefined"&&MP.on)t.p=MP.pid;
+  if(a.some(x=>x.id===t.id))return a.find(x=>x.id===t.id);
   const set=prev&&prev.set||(b&&b.type==="shoot"?b.label:"");if(set)t.set=set;
   if(prev&&prev.slate)t.slate=prev.slate;
   let lf=prev&&prev.file?prev:null;if(!lf)Object.values(st.takes).flat().forEach(x=>{if(x.file&&(!lf||(x.c||0)>(lf.c||0)||(!x.c&&!lf.c&&(x.at||0)>(lf.at||0))))lf=x});
   if(lf){const f=incNum(lf.file);if(f)t.file=f}
   const mm=prev&&prev.mm||lensOf(b);if(mm)t.mm=mm;
-  a.push(t);return t}
+  a.push(t);tkSort(a);return t}
 /* idő beírása: „1:23”, „1.23”, vagy csak számok („123” = 1:23, „45” = 0:45) */
 const parseDur=v=>{v=String(v).trim();if(!v)return null;let m=v.match(/^(\d+)\s*[:.,]\s*(\d{1,2})$/);if(m)return +m[1]*60+ +m[2];
   if(/^\d+$/.test(v)){const n=+v;return v.length>=3?Math.floor(n/100)*60+n%100:n}return undefined};
@@ -1486,23 +1488,24 @@ const parseDur=v=>{v=String(v).trim();if(!v)return null;let m=v.match(/^(\d+)\s*
 const TKF=[["set","Beáll.","Beállítás","1/1","text"],["slate","Csapó","Csapószám","","text"],["file","Fájl","Fájlszám","A001C001","text"],["mm","mm","Optika (mm)","35","numeric"],["d","Idő","Idő (perc:mp)","0:00","numeric"]];
 function takeList(k,add){const tk=st.takes[k]||[],ed=canTake();if(!tk.length&&!(add&&ed))return"";
   const cell=(x,n,[f,,lab,ph,im])=>{const v=f==="d"?(x.d!=null?mmss(x.d):""):(x[f]??"");
-    return`<label class="tkc f-${f}"><span>${TKF.find(t=>t[0]===f)[1]}</span><input class="tk-in" data-tk="${k}|${n}" data-tf="${f}" value="${esc(String(v))}" placeholder="${ed?ph:""}" inputmode="${im}" enterkeyhint="next" autocomplete="off" autocorrect="off" spellcheck="false" ${im==="text"?'autocapitalize="characters"':""} ${ed?"":"readonly"} aria-label="T${n+1} ${lab}"></label>`};
+    return`<label class="tkc f-${f}"><span>${TKF.find(t=>t[0]===f)[1]}</span><input class="tk-in" data-tk="${k}|${tkId(x)}" data-tf="${f}" value="${esc(String(v))}" placeholder="${ed?ph:""}" inputmode="${im}" enterkeyhint="next" autocomplete="off" autocorrect="off" spellcheck="false" ${im==="text"?'autocapitalize="characters"':""} ${ed?"":"readonly"} aria-label="T${n+1} ${lab}"></label>`};
   return`<div class="tks">${tk.length?`<div class="tkh" aria-hidden="true"><span>#</span>${TKF.map(f=>`<span>${f[1]}</span>`).join("")}</div>`:""}${tk.map((x,n)=>`<div class="tk ${x.ok?"ok":""} ${ed?"":"ro"}">
     <div class="tkr"><em>T${n+1}</em>${TKF.map(f=>cell(x,n,f)).join("")}</div>
-    <div class="tkn"><textarea class="tk-note" rows="1" enterkeyhint="done" placeholder="${ed?"Megjegyzés…":" "}" data-note="${k}|${n}" ${ed?"":"readonly"} aria-label="Megjegyzés a ${n+1}. take-hez">${esc(x.note||"")}</textarea>
-    <button type="button" class="star" aria-label="Jó take" aria-pressed="${!!x.ok}" data-ok="${k}|${n}">${ic("star",18)}</button>${ed?`<button type="button" class="del" aria-label="Take törlése" data-del="${k}|${n}">${ic("x",15)}</button>`:""}</div></div>`).join("")}
+    <div class="tkn"><textarea class="tk-note" rows="1" enterkeyhint="done" placeholder="${ed?"Megjegyzés…":" "}" data-note="${k}|${tkId(x)}" ${ed?"":"readonly"} aria-label="Megjegyzés a ${n+1}. take-hez">${esc(x.note||"")}</textarea>
+    <button type="button" class="star" aria-label="Jó take" aria-pressed="${!!x.ok}" data-ok="${k}|${tkId(x)}">${ic("star",18)}</button>${ed?`<button type="button" class="del" aria-label="Take törlése" data-del="${k}|${tkId(x)}">${ic("x",15)}</button>`:""}</div></div>`).join("")}
     ${add&&ed?`<button type="button" class="btn sm tk-add" data-tkadd="${k}">${ic("plus",14)}Take kézzel</button>`:""}</div>`}
 function takeSum(k){const tk=st.takes[k]||[];if(!tk.length)return"";const ok=tk.map((x,n)=>x.ok?"T"+(n+1):"").filter(Boolean);
   return` · ${tk.length} take${ok.length?` · <span class="tl-stars">★ ${ok.join(", ")}</span>`:""}`}
 function bindTakes(v,redraw){
-  const tkAt=x=>{const[k,n]=x.dataset[Object.keys(x.dataset)[0]].split("|");return[k,st.takes[k]&&st.takes[k][+n],+n]};
-  v.querySelectorAll("[data-ok]").forEach(x=>x.onclick=()=>{if(!canTake())return;const[k,tk]=tkAt(x);if(tk){tk.ok=!tk.ok;takesSaved(k);redraw()}});
-  v.querySelectorAll("[data-del]").forEach(x=>x.onclick=()=>{if(!canTake())return;const[k,tk,n]=tkAt(x);if(!tk)return;st.takes[k].splice(n,1);if(!st.takes[k].length)delete st.takes[k];takesSaved(k);redraw();
-    toast(`T${n+1} törölve`,{action:"Visszavonás",fn:()=>{(st.takes[k]=st.takes[k]||[]).splice(n,0,tk);takesSaved(k);redraw()}})});
+  const tkAt=x=>{const[k,id]=(x.dataset.ok||x.dataset.del||x.dataset.note||x.dataset.tk||"").split("|"),a=st.takes[k]||[],n=a.findIndex(t=>tkId(t)===id);return[k,a[n],n]};
+  v.querySelectorAll("[data-ok]").forEach(x=>x.onclick=()=>{if(!canTake())return;const[k,tk]=tkAt(x);if(tk){tk.ok=!tk.ok;tk.u=Date.now();takesSaved(k);redraw()}});
+  v.querySelectorAll("[data-del]").forEach(x=>x.onclick=()=>{if(!canTake())return;const[k,tk,n]=tkAt(x);if(!tk)return;st.takes[k].splice(n,1);if(!st.takes[k].length)delete st.takes[k];tkDel(tk.id);takesSaved(k);redraw();
+    // visszavonáskor új azonosítót kap (a régi törlése már elindulhatott a többiekhez)
+    toast(`T${n+1} törölve`,{action:"Visszavonás",fn:()=>{const r={...tk,id:tk.id+"r"+Date.now().toString(36),u:Date.now()};st.takes[k]=tkSort((st.takes[k]||[]).concat(r));takesSaved(k);redraw()}})});
   v.querySelectorAll("[data-note]").forEach(x=>{
     const fit=()=>{if(CSS.supports&&CSS.supports("field-sizing","content"))return;x.style.height="auto";x.style.height=x.scrollHeight+"px"};fit();requestAnimationFrame(fit);
     x.oninput=fit;x.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();x.blur()}};
-    x.onchange=()=>{if(!canTake())return;const[k,tk]=tkAt(x);if(tk){tk.note=x.value.trim();takesSaved(k)}};
+    x.onchange=()=>{if(!canTake())return;const[k,tk]=tkAt(x);if(tk){tk.note=x.value.trim();tk.u=Date.now();takesSaved(k)}};
     x.onblur=()=>{if(takesHold)setTimeout(()=>{if(!(document.activeElement&&document.activeElement.matches(".tk-note,.tk-in")))takesRedraw()},0)}});
   const cells=()=>[...v.querySelectorAll(".tk-in:not([readonly]),.tk-note:not([readonly])")];
   v.querySelectorAll("[data-tf]").forEach(x=>{
@@ -1510,7 +1513,7 @@ function bindTakes(v,redraw){
     const sel=()=>{try{if(document.activeElement===x)x.select()}catch(e){}};
     x.onfocus=()=>{sel();setTimeout(sel,0);setTimeout(sel,60)};
     x.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();const a=cells(),nx=a[a.indexOf(x)+1];if(nx){nx.focus();if(nx.select&&nx.matches(".tk-in"))nx.select()}else x.blur()}};
-    x.onchange=()=>{if(!canTake())return;const[k,n]=x.dataset.tk.split("|"),tk=st.takes[k]&&st.takes[k][+n];if(!tk)return;const f=x.dataset.tf;
+    x.onchange=()=>{if(!canTake())return;const[k,tk]=tkAt(x);if(!tk)return;const f=x.dataset.tf;tk.u=Date.now();
       if(f==="d"){const s=parseDur(x.value);if(s===undefined){x.value=tk.d!=null?mmss(tk.d):"";return}tk.d=s;x.value=s!=null?mmss(s):""}
       else{const val=x.value.trim();if(val)tk[f]=val;else delete tk[f]}
       takesSaved(k)};
@@ -2123,23 +2126,83 @@ function mpOnLive(s){
   if(document.activeElement&&document.activeElement.matches(".tk-note,.tk-in")){takesHold=true;tick(true)}
   else if(view==="terv"&&document.activeElement&&document.activeElement.closest('[data-view="terv"]'))tick(true);else renderAll();
 }
-/* take-ek külön dokumentumban (live/takes), blokkonként összefésülve, hogy a szkriptes és az AD ne írja felül egymást */
-let takesT=null,takesDirty=new Set(),takesAll=false;
-function mpPushTakes(keys){
+/* ---------- take-napló közösen (live/takes) ----------
+   Blokkonként JSON-lista, de minden take-nek saját, minden készüléken azonos azonosítója van (id). Íráskor tranzakcióban,
+   take-enként fésüljük össze a szerveren lévővel: senki nem írhatja felül és nem törölheti véletlenül a másik ember take-jeit.
+   – Törlés: „sírkővel” (dl: azonosító → idő) terjed, így csak az tűnik el, amit valaki tényleg törölt.
+   – Módosítás: a take „u” ideje dönt, az újabb nyer.
+   – A stopper állapotát (sw) csak az írja, aki indította vagy leállította (más írása nem állíthatja le a futó mérést).
+   – Önjavítás: ha a szerverről hiányzik egy take, amit ebben a projektben már láttunk vagy itt vettünk fel (pl. egy még
+     frissítetlen készülék törölte ki), visszaírjuk. */
+let takesT=null,takesDirty=new Set(),takesAll=false,swDirty=false,swPend=false,takesBusy=false,takesWait=0;
+const TK_DL={};let TK_SEEN={pid:null,ids:new Set()};
+const tkSeen=()=>{if(TK_SEEN.pid!==MP.pid)TK_SEEN={pid:MP.pid,ids:new Set()};return TK_SEEN.ids};
+function tkId(x){if(x&&!x.id)x.id=x.at!=null?"a"+Math.round(x.at*6e7):"x"+(x.c||Math.random().toString(36).slice(2));return x&&x.id}
+function tkSort(a){return a.sort((p,q)=>(p.at??1e9)-(q.at??1e9)||(p.c||0)-(q.c||0)||String(p.id).localeCompare(String(q.id)))}
+function tkMerge(srv,loc,dl){const m=new Map();
+  for(const x of srv||[])if(!dl[tkId(x)])m.set(x.id,x);
+  for(const x of loc||[]){if(dl[tkId(x)])continue;const o=m.get(x.id);if(!o||(x.u||0)>=(o.u||0))m.set(x.id,x)}
+  return tkSort([...m.values()])}
+function tkParse(t){const r={};for(const k in t||{}){try{const a=JSON.parse(t[k]);if(a&&a.length)r[k]=a}catch(e){}}return r}
+function tkDel(id){if(id)TK_DL[id]=Date.now()}
+function mpPushTakes(keys,o){
   if(!MP.on||!MP.ready||mpApplying||tour||st.sim.on||!canTake())return;
+  if(o&&o.sw){swDirty=true;swPend=true}
   if(keys==null)takesAll=true;else[].concat(keys).forEach(k=>takesDirty.add(String(k)));
-  clearTimeout(takesT);takesT=setTimeout(()=>{const ts=Date.now();MP.takesTs=ts;const t={};
-    const ks=takesAll?Object.keys(st.takes):[...takesDirty];ks.forEach(k=>t[k]=JSON.stringify(st.takes[k]||[]));
-    const all=takesAll;takesAll=false;takesDirty.clear();
-    pref().collection("live").doc("takes").set({t,sw:st.sw?JSON.stringify(st.sw):"",ts,by:UID},all?{}:{merge:true}).catch(mpErr)},200);
+  clearTimeout(takesT);takesT=setTimeout(tkFlush,120);
 }
-let takesHold=false;
+async function tkFlush(){
+  if(!MP.on||!fdb)return;
+  if(takesBusy){clearTimeout(takesT);takesT=setTimeout(tkFlush,150);return}
+  const all=takesAll,keys=[...takesDirty],swW=swDirty,dlLoc={...TK_DL};
+  if(!all&&!keys.length&&!swW&&!Object.keys(dlLoc).length)return;
+  takesAll=false;takesDirty.clear();swDirty=false;takesBusy=true;
+  const ref=pref().collection("live").doc("takes");let out=null;
+  try{
+    await fdb.runTransaction(async tx=>{
+      const s=await tx.get(ref),d=s.exists?s.data():{},srv=tkParse(d.t),dl={...(d.dl||{}),...dlLoc};
+      const locKey=new Map();for(const k in st.takes)for(const x of st.takes[k])locKey.set(tkId(x),k);
+      const t={};
+      for(const k of new Set(all?[...Object.keys(st.takes),...Object.keys(srv)]:keys)){
+        // ami nálunk másik blokkhoz tartozik (pl. a terv átrendezése után), az a régi helyén ne duplázódjon
+        const sv=(srv[k]||[]).filter(x=>{const lk=locKey.get(tkId(x));return lk==null||lk===k});
+        t[k]=JSON.stringify(tkMerge(sv,st.takes[k],dl))}
+      const ts=Date.now(),w={t,ts,by:UID};if(Object.keys(dlLoc).length)w.dl=dlLoc;if(swW)w.sw=st.sw?JSON.stringify(st.sw):"";
+      tx.set(ref,w,{merge:true});out={t,ts,dl}});
+    MP.takesTs=out.ts;takesWait=0;
+    for(const id in dlLoc)if(TK_DL[id]===dlLoc[id])delete TK_DL[id];
+    if(swW&&!swDirty)swPend=false;
+    // a helyi állapot az összefésült lesz; ami közben itt változott, az megmarad (az újabb nyer)
+    let ch=false;const seen=tkSeen();
+    for(const k in out.t){const sv=JSON.parse(out.t[k]);sv.forEach(x=>seen.add(tkId(x)));const before=JSON.stringify(st.takes[k]||[]),m=tkMerge(sv,st.takes[k],{...out.dl,...TK_DL});
+      if(m.length)st.takes[k]=m;else delete st.takes[k];if(JSON.stringify(m)!==before)ch=true}
+    if(ch){mpApplying=true;save();mpApplying=false;tkRedrawSoon()}
+  }catch(e){
+    // nem ment ki (pl. nincs térerő): semmi nem vész el, egyre ritkábban újrapróbáljuk, és amint van net, azonnal
+    keys.forEach(k=>takesDirty.add(k));if(all)takesAll=true;if(swW)swDirty=true;
+    if(!/unavailable|failed-precondition|deadline|aborted|offline/i.test((e&&e.code||"")+" "+(e&&e.message||"")))mpErr(e);else console.warn("take-szinkron később:",e&&e.code);
+    takesWait=Math.min(15000,(takesWait||1000)*2);clearTimeout(takesT);takesT=setTimeout(tkFlush,takesWait)}
+  finally{takesBusy=false}
+}
+addEventListener("online",()=>{if(takesDirty.size||takesAll||swDirty||Object.keys(TK_DL).length){clearTimeout(takesT);takesT=setTimeout(tkFlush,300)}});
+let takesHold=false,tkRT=0;
+function tkRedrawSoon(){clearTimeout(tkRT);tkRT=setTimeout(()=>{if(document.activeElement&&document.activeElement.matches(".tk-note,.tk-in")){takesHold=true;return}takesRedraw()},30)}
 function mpOnTakes(s){
   if(!s.exists)return;const d=s.data();if(d.by===UID&&d.ts<=(MP.takesTs||0))return;
   if(tour){MP.pendTakes=s;return}
-  const t={};for(const k in d.t||{}){try{const a=JSON.parse(d.t[k]);if(a&&a.length)t[k]=a}catch(e){}}
-  st.takes=t;try{st.sw=d.sw?JSON.parse(d.sw):null}catch(e){st.sw=null}
+  const srv=tkParse(d.t),dl={...(d.dl||{}),...TK_DL},seen=tkSeen();
+  const srvKey=new Map();for(const k in srv)for(const x of srv[k])srvKey.set(tkId(x),k);
+  const t={},heal=new Set();
+  for(const k of new Set([...Object.keys(srv),...Object.keys(st.takes)])){
+    const loc=(st.takes[k]||[]).filter(x=>{const id=tkId(x),sk=srvKey.get(id);if(sk!=null)return sk===k;
+      // a szerveren nincs: ha ebben a projektben itt vettük fel vagy már láttuk (és senki nem törölte), megtartjuk és visszaírjuk
+      if(dl[id])return false;if(x.p===MP.pid||seen.has(id)){heal.add(k);return true}return false});
+    const m=tkMerge(srv[k],loc,dl);if(m.length)t[k]=m}
+  srvKey.forEach((k,id)=>seen.add(id));
+  st.takes=t;
+  if(!swPend){try{st.sw=d.sw?JSON.parse(d.sw):null}catch(e){st.sw=null}}
   mpApplying=true;save();mpApplying=false;
+  if(heal.size)mpPushTakes([...heal]);
   // jegyzetírás közben nem rajzolunk újra (elveszne a fókusz); a mező elhagyásakor frissül
   if(document.activeElement&&document.activeElement.matches(".tk-note,.tk-in")){takesHold=true;return}
   takesRedraw();

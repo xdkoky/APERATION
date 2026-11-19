@@ -213,23 +213,83 @@ function mpOnLive(s){
   if(document.activeElement&&document.activeElement.matches(".tk-note,.tk-in")){takesHold=true;tick(true)}
   else if(view==="terv"&&document.activeElement&&document.activeElement.closest('[data-view="terv"]'))tick(true);else renderAll();
 }
-/* take-ek külön dokumentumban (live/takes), blokkonként összefésülve, hogy a szkriptes és az AD ne írja felül egymást */
-let takesT=null,takesDirty=new Set(),takesAll=false;
-function mpPushTakes(keys){
+/* ---------- take-napló közösen (live/takes) ----------
+   Blokkonként JSON-lista, de minden take-nek saját, minden készüléken azonos azonosítója van (id). Íráskor tranzakcióban,
+   take-enként fésüljük össze a szerveren lévővel: senki nem írhatja felül és nem törölheti véletlenül a másik ember take-jeit.
+   – Törlés: „sírkővel” (dl: azonosító → idő) terjed, így csak az tűnik el, amit valaki tényleg törölt.
+   – Módosítás: a take „u” ideje dönt, az újabb nyer.
+   – A stopper állapotát (sw) csak az írja, aki indította vagy leállította (más írása nem állíthatja le a futó mérést).
+   – Önjavítás: ha a szerverről hiányzik egy take, amit ebben a projektben már láttunk vagy itt vettünk fel (pl. egy még
+     frissítetlen készülék törölte ki), visszaírjuk. */
+let takesT=null,takesDirty=new Set(),takesAll=false,swDirty=false,swPend=false,takesBusy=false,takesWait=0;
+const TK_DL={};let TK_SEEN={pid:null,ids:new Set()};
+const tkSeen=()=>{if(TK_SEEN.pid!==MP.pid)TK_SEEN={pid:MP.pid,ids:new Set()};return TK_SEEN.ids};
+function tkId(x){if(x&&!x.id)x.id=x.at!=null?"a"+Math.round(x.at*6e7):"x"+(x.c||Math.random().toString(36).slice(2));return x&&x.id}
+function tkSort(a){return a.sort((p,q)=>(p.at??1e9)-(q.at??1e9)||(p.c||0)-(q.c||0)||String(p.id).localeCompare(String(q.id)))}
+function tkMerge(srv,loc,dl){const m=new Map();
+  for(const x of srv||[])if(!dl[tkId(x)])m.set(x.id,x);
+  for(const x of loc||[]){if(dl[tkId(x)])continue;const o=m.get(x.id);if(!o||(x.u||0)>=(o.u||0))m.set(x.id,x)}
+  return tkSort([...m.values()])}
+function tkParse(t){const r={};for(const k in t||{}){try{const a=JSON.parse(t[k]);if(a&&a.length)r[k]=a}catch(e){}}return r}
+function tkDel(id){if(id)TK_DL[id]=Date.now()}
+function mpPushTakes(keys,o){
   if(!MP.on||!MP.ready||mpApplying||tour||st.sim.on||!canTake())return;
+  if(o&&o.sw){swDirty=true;swPend=true}
   if(keys==null)takesAll=true;else[].concat(keys).forEach(k=>takesDirty.add(String(k)));
-  clearTimeout(takesT);takesT=setTimeout(()=>{const ts=Date.now();MP.takesTs=ts;const t={};
-    const ks=takesAll?Object.keys(st.takes):[...takesDirty];ks.forEach(k=>t[k]=JSON.stringify(st.takes[k]||[]));
-    const all=takesAll;takesAll=false;takesDirty.clear();
-    pref().collection("live").doc("takes").set({t,sw:st.sw?JSON.stringify(st.sw):"",ts,by:UID},all?{}:{merge:true}).catch(mpErr)},200);
+  clearTimeout(takesT);takesT=setTimeout(tkFlush,120);
 }
-let takesHold=false;
+async function tkFlush(){
+  if(!MP.on||!fdb)return;
+  if(takesBusy){clearTimeout(takesT);takesT=setTimeout(tkFlush,150);return}
+  const all=takesAll,keys=[...takesDirty],swW=swDirty,dlLoc={...TK_DL};
+  if(!all&&!keys.length&&!swW&&!Object.keys(dlLoc).length)return;
+  takesAll=false;takesDirty.clear();swDirty=false;takesBusy=true;
+  const ref=pref().collection("live").doc("takes");let out=null;
+  try{
+    await fdb.runTransaction(async tx=>{
+      const s=await tx.get(ref),d=s.exists?s.data():{},srv=tkParse(d.t),dl={...(d.dl||{}),...dlLoc};
+      const locKey=new Map();for(const k in st.takes)for(const x of st.takes[k])locKey.set(tkId(x),k);
+      const t={};
+      for(const k of new Set(all?[...Object.keys(st.takes),...Object.keys(srv)]:keys)){
+        // ami nálunk másik blokkhoz tartozik (pl. a terv átrendezése után), az a régi helyén ne duplázódjon
+        const sv=(srv[k]||[]).filter(x=>{const lk=locKey.get(tkId(x));return lk==null||lk===k});
+        t[k]=JSON.stringify(tkMerge(sv,st.takes[k],dl))}
+      const ts=Date.now(),w={t,ts,by:UID};if(Object.keys(dlLoc).length)w.dl=dlLoc;if(swW)w.sw=st.sw?JSON.stringify(st.sw):"";
+      tx.set(ref,w,{merge:true});out={t,ts,dl}});
+    MP.takesTs=out.ts;takesWait=0;
+    for(const id in dlLoc)if(TK_DL[id]===dlLoc[id])delete TK_DL[id];
+    if(swW&&!swDirty)swPend=false;
+    // a helyi állapot az összefésült lesz; ami közben itt változott, az megmarad (az újabb nyer)
+    let ch=false;const seen=tkSeen();
+    for(const k in out.t){const sv=JSON.parse(out.t[k]);sv.forEach(x=>seen.add(tkId(x)));const before=JSON.stringify(st.takes[k]||[]),m=tkMerge(sv,st.takes[k],{...out.dl,...TK_DL});
+      if(m.length)st.takes[k]=m;else delete st.takes[k];if(JSON.stringify(m)!==before)ch=true}
+    if(ch){mpApplying=true;save();mpApplying=false;tkRedrawSoon()}
+  }catch(e){
+    // nem ment ki (pl. nincs térerő): semmi nem vész el, egyre ritkábban újrapróbáljuk, és amint van net, azonnal
+    keys.forEach(k=>takesDirty.add(k));if(all)takesAll=true;if(swW)swDirty=true;
+    if(!/unavailable|failed-precondition|deadline|aborted|offline/i.test((e&&e.code||"")+" "+(e&&e.message||"")))mpErr(e);else console.warn("take-szinkron később:",e&&e.code);
+    takesWait=Math.min(15000,(takesWait||1000)*2);clearTimeout(takesT);takesT=setTimeout(tkFlush,takesWait)}
+  finally{takesBusy=false}
+}
+addEventListener("online",()=>{if(takesDirty.size||takesAll||swDirty||Object.keys(TK_DL).length){clearTimeout(takesT);takesT=setTimeout(tkFlush,300)}});
+let takesHold=false,tkRT=0;
+function tkRedrawSoon(){clearTimeout(tkRT);tkRT=setTimeout(()=>{if(document.activeElement&&document.activeElement.matches(".tk-note,.tk-in")){takesHold=true;return}takesRedraw()},30)}
 function mpOnTakes(s){
   if(!s.exists)return;const d=s.data();if(d.by===UID&&d.ts<=(MP.takesTs||0))return;
   if(tour){MP.pendTakes=s;return}
-  const t={};for(const k in d.t||{}){try{const a=JSON.parse(d.t[k]);if(a&&a.length)t[k]=a}catch(e){}}
-  st.takes=t;try{st.sw=d.sw?JSON.parse(d.sw):null}catch(e){st.sw=null}
+  const srv=tkParse(d.t),dl={...(d.dl||{}),...TK_DL},seen=tkSeen();
+  const srvKey=new Map();for(const k in srv)for(const x of srv[k])srvKey.set(tkId(x),k);
+  const t={},heal=new Set();
+  for(const k of new Set([...Object.keys(srv),...Object.keys(st.takes)])){
+    const loc=(st.takes[k]||[]).filter(x=>{const id=tkId(x),sk=srvKey.get(id);if(sk!=null)return sk===k;
+      // a szerveren nincs: ha ebben a projektben itt vettük fel vagy már láttuk (és senki nem törölte), megtartjuk és visszaírjuk
+      if(dl[id])return false;if(x.p===MP.pid||seen.has(id)){heal.add(k);return true}return false});
+    const m=tkMerge(srv[k],loc,dl);if(m.length)t[k]=m}
+  srvKey.forEach((k,id)=>seen.add(id));
+  st.takes=t;
+  if(!swPend){try{st.sw=d.sw?JSON.parse(d.sw):null}catch(e){st.sw=null}}
   mpApplying=true;save();mpApplying=false;
+  if(heal.size)mpPushTakes([...heal]);
   // jegyzetírás közben nem rajzolunk újra (elveszne a fókusz); a mező elhagyásakor frissül
   if(document.activeElement&&document.activeElement.matches(".tk-note,.tk-in")){takesHold=true;return}
   takesRedraw();

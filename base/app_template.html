@@ -885,23 +885,25 @@ function toggleSkip(j,quiet){
 }
 function extend(m){if(RO())return;const b=curBlock();if(!b)return;st.ext[b.i]=Math.max(0,(st.ext[b.i]||0)+m);if(!st.ext[b.i])delete st.ext[b.i];lastAlert="";save();renderAll();
   toast(m>0?`+${m} perc erre a blokkra · várható wrap ${hm(project().wrap)}`:"Hosszabbítás törölve",m>0?{action:"Visszavonás",fn:()=>extend(-m)}:{})}
-function takesSaved(k){save();mpPushTakes(k)}
+function takesSaved(k,sw){save();mpPushTakes(k,sw?{sw:true}:undefined)}
 /* próba leállítása (fejléc ■ gombja vagy Info): a nap nullázódik, de egy ideig visszavonható */
 function simStop(){if(!st.sim.on||tour)return;const prev=JSON.stringify(st),keep=fresh();keep.sound=st.sound;keep.force=st.force;st=keep;save();renderAll();
   toast("Próba leállítva, a nap nullázva.",{tone:"ok",action:"Visszavonás",fn:()=>{st=Object.assign(fresh(),JSON.parse(prev));save();renderAll()}})}
-function startSW(){if(st.sw||!canTake())return;st.sw={at:tod(),i:st.cur?st.cur.i:"gen"};takesSaved([]);renderMost()}
-function stopSW(silent){if(!st.sw)return;const d=(tod()-st.sw.at)*60,k=st.sw.i;newTake(k,d,st.sw.at);st.sw=null;takesSaved(k);if(!silent)renderMost()}
+function startSW(){if(st.sw||!canTake())return;st.sw={at:tod(),i:st.cur?st.cur.i:"gen"};takesSaved([],true);renderMost()}
+function stopSW(silent){if(!st.sw)return;const d=(tod()-st.sw.at)*60,k=st.sw.i;newTake(k,d,st.sw.at,true);st.sw=null;takesSaved(k,true);if(!silent)renderMost()}
 /* új take: a szkriptes rubrikáit előre kitölti, amit lehet – beállítás, csapó, mm az előző take-ből (vagy a shotból), a fájlszám eggyel nő */
 const incNum=s=>{const m=String(s||"").match(/^(.*?)(\d+)(\D*)$/);return m?m[1]+String(+m[2]+1).padStart(m[2].length,"0")+m[3]:""};
 const lensOf=b=>{if(!b)return"";const sh=D.shots[b.label]||{},m=String([b.setup,sh.setup,sh.lens].filter(Boolean).join(" ")).match(/(\d{2,3})\s*mm/i);return m?m[1]:""};
-function newTake(k,d,at){const a=st.takes[k]=st.takes[k]||[],prev=a[a.length-1],b=B.find(x=>String(x.i)===String(k));
-  const t={d,ok:false,at,note:"",c:Date.now()};
+function newTake(k,d,at,fromSW){const a=st.takes[k]=st.takes[k]||[],prev=a[a.length-1],b=B.find(x=>String(x.i)===String(k));
+  const now=Date.now(),t={d,ok:false,at,note:"",c:now,u:now,id:fromSW?"a"+Math.round(at*6e7):"m"+now.toString(36)+Math.random().toString(36).slice(2,6)};
+  if(typeof MP!=="undefined"&&MP.on)t.p=MP.pid;
+  if(a.some(x=>x.id===t.id))return a.find(x=>x.id===t.id);
   const set=prev&&prev.set||(b&&b.type==="shoot"?b.label:"");if(set)t.set=set;
   if(prev&&prev.slate)t.slate=prev.slate;
   let lf=prev&&prev.file?prev:null;if(!lf)Object.values(st.takes).flat().forEach(x=>{if(x.file&&(!lf||(x.c||0)>(lf.c||0)||(!x.c&&!lf.c&&(x.at||0)>(lf.at||0))))lf=x});
   if(lf){const f=incNum(lf.file);if(f)t.file=f}
   const mm=prev&&prev.mm||lensOf(b);if(mm)t.mm=mm;
-  a.push(t);return t}
+  a.push(t);tkSort(a);return t}
 /* idő beírása: „1:23”, „1.23”, vagy csak számok („123” = 1:23, „45” = 0:45) */
 const parseDur=v=>{v=String(v).trim();if(!v)return null;let m=v.match(/^(\d+)\s*[:.,]\s*(\d{1,2})$/);if(m)return +m[1]*60+ +m[2];
   if(/^\d+$/.test(v)){const n=+v;return v.length>=3?Math.floor(n/100)*60+n%100:n}return undefined};
@@ -909,23 +911,24 @@ const parseDur=v=>{v=String(v).trim();if(!v)return null;let m=v.match(/^(\d+)\s*
 const TKF=[["set","Beáll.","Beállítás","1/1","text"],["slate","Csapó","Csapószám","","text"],["file","Fájl","Fájlszám","A001C001","text"],["mm","mm","Optika (mm)","35","numeric"],["d","Idő","Idő (perc:mp)","0:00","numeric"]];
 function takeList(k,add){const tk=st.takes[k]||[],ed=canTake();if(!tk.length&&!(add&&ed))return"";
   const cell=(x,n,[f,,lab,ph,im])=>{const v=f==="d"?(x.d!=null?mmss(x.d):""):(x[f]??"");
-    return`<label class="tkc f-${f}"><span>${TKF.find(t=>t[0]===f)[1]}</span><input class="tk-in" data-tk="${k}|${n}" data-tf="${f}" value="${esc(String(v))}" placeholder="${ed?ph:""}" inputmode="${im}" enterkeyhint="next" autocomplete="off" autocorrect="off" spellcheck="false" ${im==="text"?'autocapitalize="characters"':""} ${ed?"":"readonly"} aria-label="T${n+1} ${lab}"></label>`};
+    return`<label class="tkc f-${f}"><span>${TKF.find(t=>t[0]===f)[1]}</span><input class="tk-in" data-tk="${k}|${tkId(x)}" data-tf="${f}" value="${esc(String(v))}" placeholder="${ed?ph:""}" inputmode="${im}" enterkeyhint="next" autocomplete="off" autocorrect="off" spellcheck="false" ${im==="text"?'autocapitalize="characters"':""} ${ed?"":"readonly"} aria-label="T${n+1} ${lab}"></label>`};
   return`<div class="tks">${tk.length?`<div class="tkh" aria-hidden="true"><span>#</span>${TKF.map(f=>`<span>${f[1]}</span>`).join("")}</div>`:""}${tk.map((x,n)=>`<div class="tk ${x.ok?"ok":""} ${ed?"":"ro"}">
     <div class="tkr"><em>T${n+1}</em>${TKF.map(f=>cell(x,n,f)).join("")}</div>
-    <div class="tkn"><textarea class="tk-note" rows="1" enterkeyhint="done" placeholder="${ed?"Megjegyzés…":" "}" data-note="${k}|${n}" ${ed?"":"readonly"} aria-label="Megjegyzés a ${n+1}. take-hez">${esc(x.note||"")}</textarea>
-    <button type="button" class="star" aria-label="Jó take" aria-pressed="${!!x.ok}" data-ok="${k}|${n}">${ic("star",18)}</button>${ed?`<button type="button" class="del" aria-label="Take törlése" data-del="${k}|${n}">${ic("x",15)}</button>`:""}</div></div>`).join("")}
+    <div class="tkn"><textarea class="tk-note" rows="1" enterkeyhint="done" placeholder="${ed?"Megjegyzés…":" "}" data-note="${k}|${tkId(x)}" ${ed?"":"readonly"} aria-label="Megjegyzés a ${n+1}. take-hez">${esc(x.note||"")}</textarea>
+    <button type="button" class="star" aria-label="Jó take" aria-pressed="${!!x.ok}" data-ok="${k}|${tkId(x)}">${ic("star",18)}</button>${ed?`<button type="button" class="del" aria-label="Take törlése" data-del="${k}|${tkId(x)}">${ic("x",15)}</button>`:""}</div></div>`).join("")}
     ${add&&ed?`<button type="button" class="btn sm tk-add" data-tkadd="${k}">${ic("plus",14)}Take kézzel</button>`:""}</div>`}
 function takeSum(k){const tk=st.takes[k]||[];if(!tk.length)return"";const ok=tk.map((x,n)=>x.ok?"T"+(n+1):"").filter(Boolean);
   return` · ${tk.length} take${ok.length?` · <span class="tl-stars">★ ${ok.join(", ")}</span>`:""}`}
 function bindTakes(v,redraw){
-  const tkAt=x=>{const[k,n]=x.dataset[Object.keys(x.dataset)[0]].split("|");return[k,st.takes[k]&&st.takes[k][+n],+n]};
-  v.querySelectorAll("[data-ok]").forEach(x=>x.onclick=()=>{if(!canTake())return;const[k,tk]=tkAt(x);if(tk){tk.ok=!tk.ok;takesSaved(k);redraw()}});
-  v.querySelectorAll("[data-del]").forEach(x=>x.onclick=()=>{if(!canTake())return;const[k,tk,n]=tkAt(x);if(!tk)return;st.takes[k].splice(n,1);if(!st.takes[k].length)delete st.takes[k];takesSaved(k);redraw();
-    toast(`T${n+1} törölve`,{action:"Visszavonás",fn:()=>{(st.takes[k]=st.takes[k]||[]).splice(n,0,tk);takesSaved(k);redraw()}})});
+  const tkAt=x=>{const[k,id]=(x.dataset.ok||x.dataset.del||x.dataset.note||x.dataset.tk||"").split("|"),a=st.takes[k]||[],n=a.findIndex(t=>tkId(t)===id);return[k,a[n],n]};
+  v.querySelectorAll("[data-ok]").forEach(x=>x.onclick=()=>{if(!canTake())return;const[k,tk]=tkAt(x);if(tk){tk.ok=!tk.ok;tk.u=Date.now();takesSaved(k);redraw()}});
+  v.querySelectorAll("[data-del]").forEach(x=>x.onclick=()=>{if(!canTake())return;const[k,tk,n]=tkAt(x);if(!tk)return;st.takes[k].splice(n,1);if(!st.takes[k].length)delete st.takes[k];tkDel(tk.id);takesSaved(k);redraw();
+    // visszavonáskor új azonosítót kap (a régi törlése már elindulhatott a többiekhez)
+    toast(`T${n+1} törölve`,{action:"Visszavonás",fn:()=>{const r={...tk,id:tk.id+"r"+Date.now().toString(36),u:Date.now()};st.takes[k]=tkSort((st.takes[k]||[]).concat(r));takesSaved(k);redraw()}})});
   v.querySelectorAll("[data-note]").forEach(x=>{
     const fit=()=>{if(CSS.supports&&CSS.supports("field-sizing","content"))return;x.style.height="auto";x.style.height=x.scrollHeight+"px"};fit();requestAnimationFrame(fit);
     x.oninput=fit;x.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();x.blur()}};
-    x.onchange=()=>{if(!canTake())return;const[k,tk]=tkAt(x);if(tk){tk.note=x.value.trim();takesSaved(k)}};
+    x.onchange=()=>{if(!canTake())return;const[k,tk]=tkAt(x);if(tk){tk.note=x.value.trim();tk.u=Date.now();takesSaved(k)}};
     x.onblur=()=>{if(takesHold)setTimeout(()=>{if(!(document.activeElement&&document.activeElement.matches(".tk-note,.tk-in")))takesRedraw()},0)}});
   const cells=()=>[...v.querySelectorAll(".tk-in:not([readonly]),.tk-note:not([readonly])")];
   v.querySelectorAll("[data-tf]").forEach(x=>{
@@ -933,7 +936,7 @@ function bindTakes(v,redraw){
     const sel=()=>{try{if(document.activeElement===x)x.select()}catch(e){}};
     x.onfocus=()=>{sel();setTimeout(sel,0);setTimeout(sel,60)};
     x.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();const a=cells(),nx=a[a.indexOf(x)+1];if(nx){nx.focus();if(nx.select&&nx.matches(".tk-in"))nx.select()}else x.blur()}};
-    x.onchange=()=>{if(!canTake())return;const[k,n]=x.dataset.tk.split("|"),tk=st.takes[k]&&st.takes[k][+n];if(!tk)return;const f=x.dataset.tf;
+    x.onchange=()=>{if(!canTake())return;const[k,tk]=tkAt(x);if(!tk)return;const f=x.dataset.tf;tk.u=Date.now();
       if(f==="d"){const s=parseDur(x.value);if(s===undefined){x.value=tk.d!=null?mmss(tk.d):"";return}tk.d=s;x.value=s!=null?mmss(s):""}
       else{const val=x.value.trim();if(val)tk[f]=val;else delete tk[f]}
       takesSaved(k)};
