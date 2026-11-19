@@ -2196,7 +2196,8 @@ function mpOnTakes(s){
   for(const k of new Set([...Object.keys(srv),...Object.keys(st.takes)])){
     const loc=(st.takes[k]||[]).filter(x=>{const id=tkId(x),sk=srvKey.get(id);if(sk!=null)return sk===k;
       // a szerveren nincs: ha ebben a projektben itt vettük fel vagy már láttuk (és senki nem törölte), megtartjuk és visszaírjuk
-      if(dl[id])return false;if(x.p===MP.pid||seen.has(id)){heal.add(k);return true}return false});
+      // (a javítás előtti, ma felvett take-ek is: azoknak még nincs projektjelük, de van felvételi idejük)
+      if(dl[id])return false;if(x.p===MP.pid||seen.has(id)||(x.p==null&&x.c&&Date.now()-x.c<18*3600e3)){heal.add(k);return true}return false});
     const m=tkMerge(srv[k],loc,dl);if(m.length)t[k]=m}
   srvKey.forEach((k,id)=>seen.add(id));
   st.takes=t;
