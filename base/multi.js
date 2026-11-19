@@ -210,7 +210,7 @@ function mpOnLive(s){
   MP.liveTs=d.ts;let x;try{x=JSON.parse(d.s)}catch(e){return}
   LIVEKEYS.forEach(k=>{st[k]=x[k]??fresh()[k]});
   mpApplying=true;save();mpApplying=false;lastHero=null;
-  if(document.activeElement&&document.activeElement.matches(".tk-note")){takesHold=true;tick(true)}
+  if(document.activeElement&&document.activeElement.matches(".tk-note,.tk-in")){takesHold=true;tick(true)}
   else if(view==="terv"&&document.activeElement&&document.activeElement.closest('[data-view="terv"]'))tick(true);else renderAll();
 }
 /* take-ek külön dokumentumban (live/takes), blokkonként összefésülve, hogy a szkriptes és az AD ne írja felül egymást */
@@ -231,7 +231,7 @@ function mpOnTakes(s){
   st.takes=t;try{st.sw=d.sw?JSON.parse(d.sw):null}catch(e){st.sw=null}
   mpApplying=true;save();mpApplying=false;
   // jegyzetírás közben nem rajzolunk újra (elveszne a fókusz); a mező elhagyásakor frissül
-  if(document.activeElement&&document.activeElement.matches(".tk-note")){takesHold=true;return}
+  if(document.activeElement&&document.activeElement.matches(".tk-note,.tk-in")){takesHold=true;return}
   takesRedraw();
 }
 function takesRedraw(){takesHold=false;if(!B.length)return;if(view==="most")renderMost();else if(view==="idorend")renderTimeline()}

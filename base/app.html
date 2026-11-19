@@ -164,22 +164,38 @@ body.over .ring .big{color:var(--late)}
 .take.ok{border-color:color-mix(in srgb,var(--ok) 55%,transparent);background:color-mix(in srgb,var(--ok) 12%,transparent)}
 .take button{border:0;background:none;width:30px;height:30px;display:grid;place-items:center;color:var(--fg-3);padding:0}
 .take.ok button.star{color:var(--ok)} .take.ok button.star svg{fill:currentColor}
-.tks{grid-column:1/-1;display:grid;gap:6px}
-.tk{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto auto;align-items:center;gap:6px;padding:4px 4px 4px 10px;border-radius:12px;background:var(--surface-2);border:1px solid var(--hair);font-variant-numeric:tabular-nums}
+/* take-napló táblázatként (a szkriptes rubrikái): # · Beállítás · Csapó · Fájl · mm · Idő, alatta a jegyzet, a jó take csillaga és a törlés */
+.tks{grid-column:1/-1;display:grid;gap:6px;container:tks/inline-size}
+.tkh,.tkr{display:grid;grid-template-columns:22px minmax(0,1fr) minmax(0,.8fr) minmax(0,1.65fr) minmax(0,.65fr) minmax(0,1fr);gap:4px;align-items:center}
+.tkh{padding:0 7px 0 9px;font-size:10px;font-weight:750;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3)}
+.tkh span{text-align:center}.tkh span:first-child{text-align:left}
+.tk{display:grid;gap:3px;padding:6px 6px 3px 8px;border-radius:12px;background:var(--surface-2);border:1px solid var(--hair);font-variant-numeric:tabular-nums}
 .tk em{font-style:normal;font-weight:750;color:var(--fg-3);font-size:13px}
-.tk .num{font-weight:650;font-size:14px;min-width:38px}
+.tk-in{min-width:0;width:100%;height:34px;margin:0;border:1px solid var(--hair);border-radius:8px;background:rgba(0,0,0,.24);color:var(--fg);font:inherit;font-size:13.5px;font-weight:650;letter-spacing:-.01em;
+  padding:0 3px;text-align:center;font-variant-numeric:tabular-nums;text-overflow:ellipsis}
+.tk-in:focus{outline:none;border-color:var(--shoot);background:var(--surface-3)}
+.tk-in[readonly]{border-color:transparent;background:none}
+.tk-in::placeholder{color:var(--fg-3);font-weight:500;opacity:.6}
+.tkn{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:2px}
+.tk.ro .tkn:has(.tk-note:placeholder-shown){display:none}
+.tk-add{justify-self:start}
+.tkc{display:contents}.tkc>span{display:none}
+/* keskeny helyen (pl. az Időrend sorában) a take két sorba törik, minden rubrika fölött kis felirattal */
+@container tks (max-width:299px){
+  .tkh{display:none}
+  .tkr{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-areas:"n n n" "set slate mm" "file file d";row-gap:5px}
+  .tkr em{grid-area:n}
+  .tkc{display:grid;gap:1px;min-width:0}.tkc>span{display:block;font-size:9.5px;font-weight:750;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);padding-left:2px}
+  .tkc.f-set{grid-area:set}.tkc.f-slate{grid-area:slate}.tkc.f-file{grid-area:file}.tkc.f-mm{grid-area:mm}.tkc.f-d{grid-area:d}
+}
 .tk-note{min-width:0;width:100%;border:0;background:transparent;color:var(--fg);font:inherit;font-size:14px;line-height:1.35;padding:7px 6px;border-radius:8px;resize:none;overflow:hidden;field-sizing:content;min-height:34px;display:block}
-.tl-tk .tk{grid-template-columns:auto minmax(0,1fr) auto auto;padding-left:10px}
-.tl-tk .tk .tk-note{grid-column:1/-1;grid-row:2;margin:-4px 0 2px -6px;width:calc(100% + 6px)}
-.tl-tk .tk .tk-note:placeholder-shown{display:none}
-body.cantake .tl-tk .tk .tk-note:placeholder-shown{display:block}
 .tk-note:focus{outline:none;background:var(--surface-3)}
 .tk-note::placeholder{color:var(--fg-3)}
 .tk button{border:0;background:none;width:34px;height:34px;display:grid;place-items:center;color:var(--fg-3);padding:0;border-radius:9px;cursor:pointer}
 .tk.ok{border-color:color-mix(in srgb,var(--ok) 55%,transparent);background:color-mix(in srgb,var(--ok) 12%,transparent)}
 .tk.ok button.star{color:var(--ok)} .tk.ok button.star svg{fill:currentColor}
-.tk.ro button.del{display:none} .tk.ro{grid-template-columns:auto auto minmax(0,1fr) auto} .tl-tk .tk.ro{grid-template-columns:auto minmax(0,1fr) auto}
-.tl-tk{margin-top:10px}
+.tk.ro button.del{display:none}
+.tl-tk{margin-top:10px;margin-right:-54px}
 .tl-tk .cap{margin-bottom:6px;display:block}
 .tl-stars{color:var(--ok);font-weight:650}
 
@@ -1375,12 +1391,31 @@ function takesSaved(k){save();mpPushTakes(k)}
 function simStop(){if(!st.sim.on||tour)return;const prev=JSON.stringify(st),keep=fresh();keep.sound=st.sound;keep.force=st.force;st=keep;save();renderAll();
   toast("Próba leállítva, a nap nullázva.",{tone:"ok",action:"Visszavonás",fn:()=>{st=Object.assign(fresh(),JSON.parse(prev));save();renderAll()}})}
 function startSW(){if(st.sw||!canTake())return;st.sw={at:tod(),i:st.cur?st.cur.i:"gen"};takesSaved([]);renderMost()}
-function stopSW(silent){if(!st.sw)return;const d=(tod()-st.sw.at)*60,k=st.sw.i;(st.takes[k]=st.takes[k]||[]).push({d,ok:false,at:st.sw.at,note:""});st.sw=null;takesSaved(k);if(!silent)renderMost()}
+function stopSW(silent){if(!st.sw)return;const d=(tod()-st.sw.at)*60,k=st.sw.i;newTake(k,d,st.sw.at);st.sw=null;takesSaved(k);if(!silent)renderMost()}
+/* új take: a szkriptes rubrikáit előre kitölti, amit lehet – beállítás, csapó, mm az előző take-ből (vagy a shotból), a fájlszám eggyel nő */
+const incNum=s=>{const m=String(s||"").match(/^(.*?)(\d+)(\D*)$/);return m?m[1]+String(+m[2]+1).padStart(m[2].length,"0")+m[3]:""};
+const lensOf=b=>{if(!b)return"";const sh=D.shots[b.label]||{},m=String([b.setup,sh.setup,sh.lens].filter(Boolean).join(" ")).match(/(\d{2,3})\s*mm/i);return m?m[1]:""};
+function newTake(k,d,at){const a=st.takes[k]=st.takes[k]||[],prev=a[a.length-1],b=B.find(x=>String(x.i)===String(k));
+  const t={d,ok:false,at,note:"",c:Date.now()};
+  const set=prev&&prev.set||(b&&b.type==="shoot"?b.label:"");if(set)t.set=set;
+  if(prev&&prev.slate)t.slate=prev.slate;
+  let lf=prev&&prev.file?prev:null;if(!lf)Object.values(st.takes).flat().forEach(x=>{if(x.file&&(!lf||(x.c||0)>(lf.c||0)||(!x.c&&!lf.c&&(x.at||0)>(lf.at||0))))lf=x});
+  if(lf){const f=incNum(lf.file);if(f)t.file=f}
+  const mm=prev&&prev.mm||lensOf(b);if(mm)t.mm=mm;
+  a.push(t);return t}
+/* idő beírása: „1:23”, „1.23”, vagy csak számok („123” = 1:23, „45” = 0:45) */
+const parseDur=v=>{v=String(v).trim();if(!v)return null;let m=v.match(/^(\d+)\s*[:.,]\s*(\d{1,2})$/);if(m)return +m[1]*60+ +m[2];
+  if(/^\d+$/.test(v)){const n=+v;return v.length>=3?Math.floor(n/100)*60+n%100:n}return undefined};
 /* take-lista: idő, jó take csillag, jegyzet – a Most nézetben és az Időrendben is */
-function takeList(k){const tk=st.takes[k]||[],ed=canTake();if(!tk.length)return"";
-  return`<div class="tks">${tk.map((x,n)=>`<div class="tk ${x.ok?"ok":""} ${ed?"":"ro"}"><em>T${n+1}</em><span class="num">${mmss(x.d)}</span>
-    <textarea class="tk-note" rows="1" enterkeyhint="done" placeholder="${ed?"Jegyzet…":" "}" data-note="${k}|${n}" ${ed?"":"readonly"} aria-label="Jegyzet a ${n+1}. take-hez">${esc(x.note||"")}</textarea>
-    <button type="button" class="star" aria-label="Jó take" aria-pressed="${!!x.ok}" data-ok="${k}|${n}">${ic("star",18)}</button>${ed?`<button type="button" class="del" aria-label="Take törlése" data-del="${k}|${n}">${ic("x",15)}</button>`:""}</div>`).join("")}</div>`}
+const TKF=[["set","Beáll.","Beállítás","1/1","text"],["slate","Csapó","Csapószám","","text"],["file","Fájl","Fájlszám","A001C001","text"],["mm","mm","Optika (mm)","35","numeric"],["d","Idő","Idő (perc:mp)","0:00","numeric"]];
+function takeList(k,add){const tk=st.takes[k]||[],ed=canTake();if(!tk.length&&!(add&&ed))return"";
+  const cell=(x,n,[f,,lab,ph,im])=>{const v=f==="d"?(x.d!=null?mmss(x.d):""):(x[f]??"");
+    return`<label class="tkc f-${f}"><span>${TKF.find(t=>t[0]===f)[1]}</span><input class="tk-in" data-tk="${k}|${n}" data-tf="${f}" value="${esc(String(v))}" placeholder="${ed?ph:""}" inputmode="${im}" enterkeyhint="next" autocomplete="off" autocorrect="off" spellcheck="false" ${im==="text"?'autocapitalize="characters"':""} ${ed?"":"readonly"} aria-label="T${n+1} ${lab}"></label>`};
+  return`<div class="tks">${tk.length?`<div class="tkh" aria-hidden="true"><span>#</span>${TKF.map(f=>`<span>${f[1]}</span>`).join("")}</div>`:""}${tk.map((x,n)=>`<div class="tk ${x.ok?"ok":""} ${ed?"":"ro"}">
+    <div class="tkr"><em>T${n+1}</em>${TKF.map(f=>cell(x,n,f)).join("")}</div>
+    <div class="tkn"><textarea class="tk-note" rows="1" enterkeyhint="done" placeholder="${ed?"Megjegyzés…":" "}" data-note="${k}|${n}" ${ed?"":"readonly"} aria-label="Megjegyzés a ${n+1}. take-hez">${esc(x.note||"")}</textarea>
+    <button type="button" class="star" aria-label="Jó take" aria-pressed="${!!x.ok}" data-ok="${k}|${n}">${ic("star",18)}</button>${ed?`<button type="button" class="del" aria-label="Take törlése" data-del="${k}|${n}">${ic("x",15)}</button>`:""}</div></div>`).join("")}
+    ${add&&ed?`<button type="button" class="btn sm tk-add" data-tkadd="${k}">${ic("plus",14)}Take kézzel</button>`:""}</div>`}
 function takeSum(k){const tk=st.takes[k]||[];if(!tk.length)return"";const ok=tk.map((x,n)=>x.ok?"T"+(n+1):"").filter(Boolean);
   return` · ${tk.length} take${ok.length?` · <span class="tl-stars">★ ${ok.join(", ")}</span>`:""}`}
 function bindTakes(v,redraw){
@@ -1392,7 +1427,20 @@ function bindTakes(v,redraw){
     const fit=()=>{if(CSS.supports&&CSS.supports("field-sizing","content"))return;x.style.height="auto";x.style.height=x.scrollHeight+"px"};fit();requestAnimationFrame(fit);
     x.oninput=fit;x.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();x.blur()}};
     x.onchange=()=>{if(!canTake())return;const[k,tk]=tkAt(x);if(tk){tk.note=x.value.trim();takesSaved(k)}};
-    x.onblur=()=>{if(takesHold)setTimeout(()=>{if(!(document.activeElement&&document.activeElement.matches(".tk-note")))takesRedraw()},0)}});
+    x.onblur=()=>{if(takesHold)setTimeout(()=>{if(!(document.activeElement&&document.activeElement.matches(".tk-note,.tk-in")))takesRedraw()},0)}});
+  const cells=()=>[...v.querySelectorAll(".tk-in:not([readonly]),.tk-note:not([readonly])")];
+  v.querySelectorAll("[data-tf]").forEach(x=>{
+    // mint Excelben: a rubrikába lépve a tartalma ki van jelölve, így a beírt érték lecseréli (a koppintás utáni egérfelengedés miatt később is)
+    const sel=()=>{try{if(document.activeElement===x)x.select()}catch(e){}};
+    x.onfocus=()=>{sel();setTimeout(sel,0);setTimeout(sel,60)};
+    x.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();const a=cells(),nx=a[a.indexOf(x)+1];if(nx){nx.focus();if(nx.select&&nx.matches(".tk-in"))nx.select()}else x.blur()}};
+    x.onchange=()=>{if(!canTake())return;const[k,n]=x.dataset.tk.split("|"),tk=st.takes[k]&&st.takes[k][+n];if(!tk)return;const f=x.dataset.tf;
+      if(f==="d"){const s=parseDur(x.value);if(s===undefined){x.value=tk.d!=null?mmss(tk.d):"";return}tk.d=s;x.value=s!=null?mmss(s):""}
+      else{const val=x.value.trim();if(val)tk[f]=val;else delete tk[f]}
+      takesSaved(k)};
+    x.onblur=()=>{if(takesHold)setTimeout(()=>{if(!(document.activeElement&&document.activeElement.matches(".tk-note,.tk-in")))takesRedraw()},0)}});
+  v.querySelectorAll("[data-tkadd]").forEach(x=>x.onclick=()=>{if(!canTake())return;const k=x.dataset.tkadd;newTake(k,null,tod());takesSaved(k);redraw();
+    const a=v.querySelectorAll(`.tk-in[data-tk^="${k}|"][data-tf="slate"]`);if(a.length)a[a.length-1].focus()});
 }
 
 /* ---------- hang, rezgés, ébren tartás, toast ---------- */
@@ -1574,7 +1622,7 @@ function recCard(b){
   return`<section class="card rec ${run?"run":""}"><button class="recbtn" type="button" id="swgo" aria-label="${run?"Take leállítása":"Take indítása"}"><i></i></button>
     <div><div class="cap">${run?'<span class="live"></span>':""}Take ${tk.length+1}${run?" · forog":""}</div><div class="rec-time num" id="swt">0:00</div></div>
     <div class="rec-stat"><b>${tk.length}</b>take · ${tk.filter(x=>x.ok).length} jó</div>
-    ${takeList(k)}</section>`;
+    ${takeList(k,true)}</section>`;
 }
 function shootDetail(b){
   const sh=D.shots[b.label];if(!sh)return"";
@@ -1693,7 +1741,7 @@ function renderTimeline(){
     else if(p.cur)end=`<span class="nowtag">MOST</span>`;else{const dr=p.s-b.s;end=Math.abs(dr)>=1?`<span class="drift ${driftCls(dr)}">${signMin(dr)}</span>`:""}
     return`<div class="tl-row ${cls}" data-type="${b.type}" data-row="${b.i}"><div class="tl-time"><b>${main}</b>${planDiff?`<span>terv ${hm(b.s)}</span>`:""}</div><div class="tl-rail"><i></i></div>
       <div class="tl-body">${(()=>{const sh=D.shots[b.label];return sh&&sh.sb.length?`<span class="tl-sb" data-gallery>${sh.sb.map(x=>sbThumb(x)).join("")}</span>`:""})()}<b>${esc(b.label)}</b><div class="sub">${esc(TNAME[b.type])} · ${dEff(b)}′${b.setup?" · "+esc(b.setup):""}${takeSum(b.i)}</div>
-      ${open?`${b.note?`<p class="muted small" style="margin-top:8px">${esc(b.note)}</p>`:""}${b.type==="shoot"&&(st.takes[b.i]||[]).length?`<div class="tl-tk"><span class="cap">Take-ek</span>${takeList(b.i)}</div>`:""}<div class="tl-x">${p.cur?"":`<button class="btn sm solid" type="button" data-jump="${b.i}">${ic("play",14)}Ez megy most</button><button class="btn sm" type="button" data-skip="${b.i}">${ic("skip",14)}${p.skip?"Visszavétel":"Kihagyás"}</button>`}${p.cur?`<a class="btn sm" href="#most">Vissza a Most nézethez</a>`:""}</div>`:""}</div>
+      ${open?`${b.note?`<p class="muted small" style="margin-top:8px">${esc(b.note)}</p>`:""}${b.type==="shoot"&&((st.takes[b.i]||[]).length||canTake())?`<div class="tl-tk"><span class="cap">Take-ek</span>${takeList(b.i,true)}</div>`:""}<div class="tl-x">${p.cur?"":`<button class="btn sm solid" type="button" data-jump="${b.i}">${ic("play",14)}Ez megy most</button><button class="btn sm" type="button" data-skip="${b.i}">${ic("skip",14)}${p.skip?"Visszavétel":"Kihagyás"}</button>`}${p.cur?`<a class="btn sm" href="#most">Vissza a Most nézethez</a>`:""}</div>`:""}</div>
       <div class="tl-end">${end}</div></div>`}).join("");
   v.innerHTML=`<div class="vh">Időrend</div><div class="stats"><div class="stat"><span class="cap">Shot</span><b>${shDone}/${shTot}</b></div><div class="stat"><span class="cap">Várható wrap</span><b style="color:var(--${s})">${hm(wrap)}</b></div><div class="stat"><span class="cap">Tervhez</span><b>${signMin(wr-PLAN_WRAP)}</b></div></div>
     <section class="card" style="padding:8px 6px"><div class="tl">${rows}<div class="tl-row last" data-type="pres"><div class="tl-time"><b>${hm(wrap)}</b>${wr!==PLAN_WRAP?`<span>terv ${hm(PLAN_WRAP)}</span>`:""}</div><div class="tl-rail"><i></i></div><div class="tl-body"><b>Wrap</b><div class="sub">Bontás, pakolás, napi riport</div></div><div class="tl-end"></div></div></div></section>
@@ -1996,7 +2044,7 @@ function mpOnLive(s){
   MP.liveTs=d.ts;let x;try{x=JSON.parse(d.s)}catch(e){return}
   LIVEKEYS.forEach(k=>{st[k]=x[k]??fresh()[k]});
   mpApplying=true;save();mpApplying=false;lastHero=null;
-  if(document.activeElement&&document.activeElement.matches(".tk-note")){takesHold=true;tick(true)}
+  if(document.activeElement&&document.activeElement.matches(".tk-note,.tk-in")){takesHold=true;tick(true)}
   else if(view==="terv"&&document.activeElement&&document.activeElement.closest('[data-view="terv"]'))tick(true);else renderAll();
 }
 /* take-ek külön dokumentumban (live/takes), blokkonként összefésülve, hogy a szkriptes és az AD ne írja felül egymást */
@@ -2017,7 +2065,7 @@ function mpOnTakes(s){
   st.takes=t;try{st.sw=d.sw?JSON.parse(d.sw):null}catch(e){st.sw=null}
   mpApplying=true;save();mpApplying=false;
   // jegyzetírás közben nem rajzolunk újra (elveszne a fókusz); a mező elhagyásakor frissül
-  if(document.activeElement&&document.activeElement.matches(".tk-note")){takesHold=true;return}
+  if(document.activeElement&&document.activeElement.matches(".tk-note,.tk-in")){takesHold=true;return}
   takesRedraw();
 }
 function takesRedraw(){takesHold=false;if(!B.length)return;if(view==="most")renderMost();else if(view==="idorend")renderTimeline()}
@@ -3427,10 +3475,10 @@ function prSkript(){
       <div class="info"><b>${esc(b.setup||"")}</b>${b.group?` · fény ${esc(b.group)}`:""}<br>${hm(b.s)}–${hm(b.e)} · ${b.d}′${s.talent.length?` · ${esc(s.talent.join(", "))}`:""}</div>
       <div class="proj">${esc(D.title||"")}<br>Szkript ${n+1} / ${sh.length}</div></div>
       ${ex.length?`<div class="sk-ex">${prLines(ex)}</div>`:""}
-      <table><thead><tr><th style="width:12mm">Take</th><th style="width:16mm">Idő</th><th style="width:14mm">Hossz</th><th style="width:12mm">Jó?</th><th>Megjegyzés (játék, szöveg, technika)</th></tr></thead>
+      <table><thead><tr><th style="width:10mm">Take</th><th style="width:13mm">Beáll.</th><th style="width:12mm">Csapó</th><th style="width:22mm">Fájl</th><th style="width:10mm">mm</th><th style="width:13mm">Kezdés</th><th style="width:12mm">Idő</th><th style="width:9mm">Jó?</th><th>Megjegyzés (játék, szöveg, technika)</th></tr></thead>
       <tbody>${(()=>{const tk=st.takes[b.i]||[];return Array.from({length:Math.max(rows,tk.length+3)},(_,i)=>{const x=tk[i];
-        return x?`<tr><td class="num">${i+1}</td><td class="num">${x.at!=null?hm(x.at):""}</td><td class="num">${mmss(x.d)}</td><td style="text-align:center">${x.ok?"★":"☐"}</td><td>${esc(x.note||"")}</td></tr>`
-          :`<tr><td class="num">${i+1}</td><td></td><td></td><td style="text-align:center">☐</td><td></td></tr>`}).join("")})()}</tbody></table>
+        return x?`<tr><td class="num">${i+1}</td><td>${esc(x.set||"")}</td><td>${esc(x.slate||"")}</td><td>${esc(x.file||"")}</td><td class="num">${esc(x.mm||"")}</td><td class="num">${x.at!=null?hm(x.at):""}</td><td class="num">${x.d!=null?mmss(x.d):""}</td><td style="text-align:center">${x.ok?"★":"☐"}</td><td>${esc(x.note||"")}</td></tr>`
+          :`<tr><td class="num">${i+1}</td><td></td><td></td><td></td><td></td><td></td><td></td><td style="text-align:center">☐</td><td></td></tr>`}).join("")})()}</tbody></table>
       <div class="two"><div class="box"><small>Kontinuitás: ruha, kellék, pozíció, irány</small>${s.props&&s.props.length?`<div style="font-size:8pt;color:#555;margin-top:2pt">${s.props.map(esc).join(" · ")}</div>`:""}<div class="lines"></div></div>
         <div class="box"><small>Optika · hang · egyéb</small><div class="lines"></div></div></div>
     </div>`}).join("")}</div>`;
@@ -3453,13 +3501,13 @@ function prRiport(){
     return`<tr class="${b.type}${p.skip?" skip":""}"><td class="num">${hm(b.s)}</td><td class="num">${p.done||p.cur?hm(p.s):"–"}</td><td class="num">${b.d}′</td><td class="num">${ad!=null?ad+"′":"–"}</td>
       <td class="num">${diff!=null&&diff!==0?`<b class="${diff>0?"late":"early"}">${signMin(diff)}</b>`:diff===0?"±0′":""}</td><td>${esc(b.label)}${b.setup?`<br><small>${esc(b.setup)}</small>`:""}</td><td>${st8(b,p)}${st.ext[b.i]?`<br><small>+${st.ext[b.i]}′ hossz.</small>`:""}</td>
       <td class="num">${t.length?`${t.length}${t.some(x=>x.ok)?` · ★ ${t.map((x,n)=>x.ok?"T"+(n+1):"").filter(Boolean).join(", ")}`:""}`:""}</td></tr>`}).join("");
-  const tnotes=B.filter(b=>(st.takes[b.i]||[]).length).map(b=>`<tr class="dept"><td colspan="4">${esc(b.label)}${b.setup?` · ${esc(b.setup)}`:""}</td></tr>${st.takes[b.i].map((x,n)=>`<tr><td class="num">T${n+1}</td><td class="num">${x.at!=null?hm(x.at):""}</td><td class="num">${mmss(x.d)}${x.ok?" ★":""}</td><td>${esc(x.note||"")}</td></tr>`).join("")}`).join("");
+  const tnotes=B.filter(b=>(st.takes[b.i]||[]).length).map(b=>`<tr class="dept"><td colspan="8">${esc(b.label)}${b.setup?` · ${esc(b.setup)}`:""}</td></tr>${st.takes[b.i].map((x,n)=>`<tr><td class="num">T${n+1}${x.ok?" ★":""}</td><td>${esc(x.set||"")}</td><td>${esc(x.slate||"")}</td><td>${esc(x.file||"")}</td><td class="num">${esc(x.mm||"")}</td><td class="num">${x.at!=null?hm(x.at):""}</td><td class="num">${x.d!=null?mmss(x.d):""}</td><td>${esc(x.note||"")}</td></tr>`).join("")}`).join("");
   return`<div class="pr-doc rp">${prHead("Napi riport")}
     ${started?"":`<p class="warn">A nap még nem indult: a riport a Kész gombok idejéből készül.</p>`}${started&&!ended?`<p class="warn">A nap még tart (${hm(tod())}): ez közbenső állapot.</p>`:""}
     <div class="facts">${facts.map(([k,v])=>`<div><small>${k}</small><b>${esc(v)}</b></div>`).join("")}</div>
     <h2>Időrend: terv és tény</h2><table><thead><tr><th class="num">Terv</th><th class="num">Tény</th><th class="num">Terv perc</th><th class="num">Tény perc</th><th class="num">Eltérés</th><th>Blokk / shot</th><th>Állapot</th><th class="num">Take</th></tr></thead><tbody>${rows}</tbody></table>
     ${shSkip.length?`<h2>Elmaradt shotok</h2><p>${shSkip.map(b=>esc(b.label)+(b.setup?` (${esc(b.setup)})`:"")).join(" · ")}</p>`:""}
-    ${tnotes?`<h2>Take-napló</h2><table><thead><tr><th class="num">Take</th><th class="num">Kezdés</th><th class="num">Hossz</th><th>Jegyzet</th></tr></thead><tbody>${tnotes}</tbody></table>`:""}
+    ${tnotes?`<h2>Take-napló</h2><table><thead><tr><th class="num">Take</th><th>Beáll.</th><th>Csapó</th><th>Fájl</th><th class="num">mm</th><th class="num">Kezdés</th><th class="num">Idő</th><th>Megjegyzés</th></tr></thead><tbody>${tnotes}</tbody></table>`:""}
     ${usedChk?`<h2>Érkezések</h2><p>Megérkezett: ${all.length-missing.length} / ${all.length}${missing.length?` · nem jelölve: ${missing.map(c=>esc(c.name)).join(", ")}`:""}</p>`:""}
     <h2>Megjegyzések</h2>${st.rnote?`<p class="rnote">${esc(st.rnote).replace(/\n/g,"<br>")}</p>`:""}<div class="rlines"></div>
     <div class="sign"><div>1st AD</div><div>Gyártásvezető</div></div>${prFoot()}</div>`;
@@ -3722,7 +3770,7 @@ function tourState(kind){
   for(const b of B)if(b.i<sb.i)s.act[b.i]={s:b.s,e:b.e};
   const mv=B[sb.i+1];
   if(kind==="move"&&mv){s.act[sb.i]={s:sb.s+2,e:sb.e+2};s.sim={on:true,start:mv.s+5,speed:1,base:now};s.cur={i:mv.i,at:mv.s+2}}
-  else{s.sim={on:true,start:sb.s+11,speed:1,base:now};s.cur={i:sb.i,at:sb.s+2};s.takes[sb.i]=[{d:47,ok:false,note:"Anna elvétette a szöveget"},{d:52,ok:true,note:"Ez az! Rendező kedvence"}]}
+  else{s.sim={on:true,start:sb.s+11,speed:1,base:now};s.cur={i:sb.i,at:sb.s+2};s.takes[sb.i]=[{d:47,ok:false,note:"Anna elvétette a szöveget",set:sb.label,slate:"12",file:"A001C004",mm:"35"},{d:52,ok:true,note:"Ez az! Rendező kedvence",set:sb.label,slate:"12",file:"A001C005",mm:"35"}]}
   st=s;detailSeg="setre";
 }
 function tourStart(){

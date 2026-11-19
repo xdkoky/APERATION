@@ -67,10 +67,10 @@ function prSkript(){
       <div class="info"><b>${esc(b.setup||"")}</b>${b.group?` · fény ${esc(b.group)}`:""}<br>${hm(b.s)}–${hm(b.e)} · ${b.d}′${s.talent.length?` · ${esc(s.talent.join(", "))}`:""}</div>
       <div class="proj">${esc(D.title||"")}<br>Szkript ${n+1} / ${sh.length}</div></div>
       ${ex.length?`<div class="sk-ex">${prLines(ex)}</div>`:""}
-      <table><thead><tr><th style="width:12mm">Take</th><th style="width:16mm">Idő</th><th style="width:14mm">Hossz</th><th style="width:12mm">Jó?</th><th>Megjegyzés (játék, szöveg, technika)</th></tr></thead>
+      <table><thead><tr><th style="width:10mm">Take</th><th style="width:13mm">Beáll.</th><th style="width:12mm">Csapó</th><th style="width:22mm">Fájl</th><th style="width:10mm">mm</th><th style="width:13mm">Kezdés</th><th style="width:12mm">Idő</th><th style="width:9mm">Jó?</th><th>Megjegyzés (játék, szöveg, technika)</th></tr></thead>
       <tbody>${(()=>{const tk=st.takes[b.i]||[];return Array.from({length:Math.max(rows,tk.length+3)},(_,i)=>{const x=tk[i];
-        return x?`<tr><td class="num">${i+1}</td><td class="num">${x.at!=null?hm(x.at):""}</td><td class="num">${mmss(x.d)}</td><td style="text-align:center">${x.ok?"★":"☐"}</td><td>${esc(x.note||"")}</td></tr>`
-          :`<tr><td class="num">${i+1}</td><td></td><td></td><td style="text-align:center">☐</td><td></td></tr>`}).join("")})()}</tbody></table>
+        return x?`<tr><td class="num">${i+1}</td><td>${esc(x.set||"")}</td><td>${esc(x.slate||"")}</td><td>${esc(x.file||"")}</td><td class="num">${esc(x.mm||"")}</td><td class="num">${x.at!=null?hm(x.at):""}</td><td class="num">${x.d!=null?mmss(x.d):""}</td><td style="text-align:center">${x.ok?"★":"☐"}</td><td>${esc(x.note||"")}</td></tr>`
+          :`<tr><td class="num">${i+1}</td><td></td><td></td><td></td><td></td><td></td><td></td><td style="text-align:center">☐</td><td></td></tr>`}).join("")})()}</tbody></table>
       <div class="two"><div class="box"><small>Kontinuitás: ruha, kellék, pozíció, irány</small>${s.props&&s.props.length?`<div style="font-size:8pt;color:#555;margin-top:2pt">${s.props.map(esc).join(" · ")}</div>`:""}<div class="lines"></div></div>
         <div class="box"><small>Optika · hang · egyéb</small><div class="lines"></div></div></div>
     </div>`}).join("")}</div>`;
@@ -93,13 +93,13 @@ function prRiport(){
     return`<tr class="${b.type}${p.skip?" skip":""}"><td class="num">${hm(b.s)}</td><td class="num">${p.done||p.cur?hm(p.s):"–"}</td><td class="num">${b.d}′</td><td class="num">${ad!=null?ad+"′":"–"}</td>
       <td class="num">${diff!=null&&diff!==0?`<b class="${diff>0?"late":"early"}">${signMin(diff)}</b>`:diff===0?"±0′":""}</td><td>${esc(b.label)}${b.setup?`<br><small>${esc(b.setup)}</small>`:""}</td><td>${st8(b,p)}${st.ext[b.i]?`<br><small>+${st.ext[b.i]}′ hossz.</small>`:""}</td>
       <td class="num">${t.length?`${t.length}${t.some(x=>x.ok)?` · ★ ${t.map((x,n)=>x.ok?"T"+(n+1):"").filter(Boolean).join(", ")}`:""}`:""}</td></tr>`}).join("");
-  const tnotes=B.filter(b=>(st.takes[b.i]||[]).length).map(b=>`<tr class="dept"><td colspan="4">${esc(b.label)}${b.setup?` · ${esc(b.setup)}`:""}</td></tr>${st.takes[b.i].map((x,n)=>`<tr><td class="num">T${n+1}</td><td class="num">${x.at!=null?hm(x.at):""}</td><td class="num">${mmss(x.d)}${x.ok?" ★":""}</td><td>${esc(x.note||"")}</td></tr>`).join("")}`).join("");
+  const tnotes=B.filter(b=>(st.takes[b.i]||[]).length).map(b=>`<tr class="dept"><td colspan="8">${esc(b.label)}${b.setup?` · ${esc(b.setup)}`:""}</td></tr>${st.takes[b.i].map((x,n)=>`<tr><td class="num">T${n+1}${x.ok?" ★":""}</td><td>${esc(x.set||"")}</td><td>${esc(x.slate||"")}</td><td>${esc(x.file||"")}</td><td class="num">${esc(x.mm||"")}</td><td class="num">${x.at!=null?hm(x.at):""}</td><td class="num">${x.d!=null?mmss(x.d):""}</td><td>${esc(x.note||"")}</td></tr>`).join("")}`).join("");
   return`<div class="pr-doc rp">${prHead("Napi riport")}
     ${started?"":`<p class="warn">A nap még nem indult: a riport a Kész gombok idejéből készül.</p>`}${started&&!ended?`<p class="warn">A nap még tart (${hm(tod())}): ez közbenső állapot.</p>`:""}
     <div class="facts">${facts.map(([k,v])=>`<div><small>${k}</small><b>${esc(v)}</b></div>`).join("")}</div>
     <h2>Időrend: terv és tény</h2><table><thead><tr><th class="num">Terv</th><th class="num">Tény</th><th class="num">Terv perc</th><th class="num">Tény perc</th><th class="num">Eltérés</th><th>Blokk / shot</th><th>Állapot</th><th class="num">Take</th></tr></thead><tbody>${rows}</tbody></table>
     ${shSkip.length?`<h2>Elmaradt shotok</h2><p>${shSkip.map(b=>esc(b.label)+(b.setup?` (${esc(b.setup)})`:"")).join(" · ")}</p>`:""}
-    ${tnotes?`<h2>Take-napló</h2><table><thead><tr><th class="num">Take</th><th class="num">Kezdés</th><th class="num">Hossz</th><th>Jegyzet</th></tr></thead><tbody>${tnotes}</tbody></table>`:""}
+    ${tnotes?`<h2>Take-napló</h2><table><thead><tr><th class="num">Take</th><th>Beáll.</th><th>Csapó</th><th>Fájl</th><th class="num">mm</th><th class="num">Kezdés</th><th class="num">Idő</th><th>Megjegyzés</th></tr></thead><tbody>${tnotes}</tbody></table>`:""}
     ${usedChk?`<h2>Érkezések</h2><p>Megérkezett: ${all.length-missing.length} / ${all.length}${missing.length?` · nem jelölve: ${missing.map(c=>esc(c.name)).join(", ")}`:""}</p>`:""}
     <h2>Megjegyzések</h2>${st.rnote?`<p class="rnote">${esc(st.rnote).replace(/\n/g,"<br>")}</p>`:""}<div class="rlines"></div>
     <div class="sign"><div>1st AD</div><div>Gyártásvezető</div></div>${prFoot()}</div>`;
