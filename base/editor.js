@@ -75,8 +75,8 @@ const plSave=l=>{try{localStorage.setItem(PLKEY,JSON.stringify(l));return true}c
 const hasContent=()=>P&&(P.blocks.length||P.title);
 function archiveCurrent(){if(!hasContent()||tour)return false;const l=plLoad();l.unshift({id:uid(),saved:Date.now(),P,st:{...st,sim:fresh().sim,sw:null}});return plSave(l.slice(0,40))}
 async function newProject(btn){
-  if(isMember())return;
-  if(MP.on){if(!sure(btn,"Közös projekt fut: koppints újra, leválasztom"))return;await mpLeave(true)}
+  // közös projektből is indítható: előbb leválasztjuk (a tagság megmarad, a csapat ugyanúgy folytatja)
+  if(MP.on){if(!sure(btn,isMember()?"Kilépsz a közösből: koppints újra":"Közös projekt fut: koppints újra, leválasztom"))return;await mpLeave(true)}
   const had=archiveCurrent();
   setProject({title:"",call:480,blocks:[]},{reset:true});
   editSec="projekt";openEB=null;location.hash="#terv";renderEdit();
@@ -584,7 +584,8 @@ document.addEventListener("click",async e=>{
     else if(d.do==="gotoplan"){editSec="projekt";location.hash="#terv";renderEdit()}
     else if(d.do==="gototeam"){editSec="csapat";location.hash="#terv";renderEdit()}
     else if(d.do==="projexport")exportProjectFile(t);
-    else if(d.do==="projlist"){editSec="fajl";renderEdit();const c=document.getElementById("projcard");c&&c.scrollIntoView({block:"start",behavior:"smooth"})}
+    else if(d.do==="projlist"){editSec="fajl";if(location.hash!=="#terv")location.hash="#terv";else renderEdit();
+      setTimeout(()=>{const c=document.getElementById("projcard");c&&c.scrollIntoView({block:"start",behavior:"smooth"})},80)}
     else if(d.do==="sablon")downloadSablon();
     else if(d.do==="tour")tourStart();
     else if(d.do==="export")exportNow();

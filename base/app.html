@@ -1795,6 +1795,9 @@ document.addEventListener("click",e=>{if(e.target.closest("#simchip"))simStop()}
 function renderInfo(){
   const v=$('[data-view="info"]'),notes=[];
   v.innerHTML=`<div class="vh">Info</div><div class="grid"><div class="stack">
+    <section class="card"><div class="card-head"><h2>Projekt</h2></div>
+      <p class="muted small">${B.length?`Most nyitva: <b>${esc(D.title||"Névtelen projekt")}</b>. `:""}${isMember()?`Közös projektben vagy${MP.roleName?` (${esc(MP.roleName)})`:""}: új projektnél kilépsz belőle, a csapat ugyanúgy folytatja, és később a kóddal visszaléphetsz.`:"Új projektnél a mostani elmentődik a Projektek közé, onnan bármikor visszanyitható."}</p>
+      <div class="field"><button class="btn solid" type="button" data-do="newproj">${ic("plus",16)}Új projekt</button>${isMember()?"":`<button class="btn" type="button" data-do="projlist">${ic("list",16)}Projektek</button>`}</div></section>
     <section class="card"><div class="card-head"><h2>Így működik</h2><button class="btn sm solid" type="button" id="tourgo">${ic("play",14)}Bemutató · 2 perc</button></div>
       ${B.length?`<ul class="list"><li><b>Kész</b>: lezárja a mostani blokkot, és indítja a következőt.</li><li><b>‹</b> visszalép az előző blokkra. <b>+5′</b> öt percet ad a mostanihoz.</li><li>Zöld: terv szerint. Narancs: késés, de belefér a tartalékba. Piros: a wrap ${hm(TARGET)} utánra csúszik, vagy a blokk kerete lejárt.</li><li>A gyűrűre koppintva teljes képernyős óra a stábnak.</li><li>Az Időrendben egy sorra koppintva odaugorhatsz vagy kihagyhatod.</li></ul>`:`<ul class="list"><li>Először írd meg a napot a <a href="#terv">Terv</a> fülön (Kezdés → <b>Új diszpó</b>), vagy nyisd meg a projektkulcsodat. Excelből is betölthető.</li><li>Ha még csak ismerkedsz, nyisd meg a <b>mintát</b>, vagy nézd meg a bemutatót.</li></ul>`}</section>
     ${B.length&&MP.on?`<section class="card"><h2>Próba mód</h2><p class="muted small">Közös projektben a próba mód ki van kapcsolva, hogy ne zavarja a stáb élő képét. Próbához lépj ki, vagy használj egy másik eszközt.</p></section>`:""}
@@ -2675,8 +2678,8 @@ const plSave=l=>{try{localStorage.setItem(PLKEY,JSON.stringify(l));return true}c
 const hasContent=()=>P&&(P.blocks.length||P.title);
 function archiveCurrent(){if(!hasContent()||tour)return false;const l=plLoad();l.unshift({id:uid(),saved:Date.now(),P,st:{...st,sim:fresh().sim,sw:null}});return plSave(l.slice(0,40))}
 async function newProject(btn){
-  if(isMember())return;
-  if(MP.on){if(!sure(btn,"Közös projekt fut: koppints újra, leválasztom"))return;await mpLeave(true)}
+  // közös projektből is indítható: előbb leválasztjuk (a tagság megmarad, a csapat ugyanúgy folytatja)
+  if(MP.on){if(!sure(btn,isMember()?"Kilépsz a közösből: koppints újra":"Közös projekt fut: koppints újra, leválasztom"))return;await mpLeave(true)}
   const had=archiveCurrent();
   setProject({title:"",call:480,blocks:[]},{reset:true});
   editSec="projekt";openEB=null;location.hash="#terv";renderEdit();
@@ -3184,7 +3187,8 @@ document.addEventListener("click",async e=>{
     else if(d.do==="gotoplan"){editSec="projekt";location.hash="#terv";renderEdit()}
     else if(d.do==="gototeam"){editSec="csapat";location.hash="#terv";renderEdit()}
     else if(d.do==="projexport")exportProjectFile(t);
-    else if(d.do==="projlist"){editSec="fajl";renderEdit();const c=document.getElementById("projcard");c&&c.scrollIntoView({block:"start",behavior:"smooth"})}
+    else if(d.do==="projlist"){editSec="fajl";if(location.hash!=="#terv")location.hash="#terv";else renderEdit();
+      setTimeout(()=>{const c=document.getElementById("projcard");c&&c.scrollIntoView({block:"start",behavior:"smooth"})},80)}
     else if(d.do==="sablon")downloadSablon();
     else if(d.do==="tour")tourStart();
     else if(d.do==="export")exportNow();
