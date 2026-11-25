@@ -2685,7 +2685,9 @@ const uid=()=>Math.random().toString(36).slice(2,9);
 let P=null;const IMG={};
 const splitList=s=>String(s||"").split(/[,;\n]/).map(x=>x.trim()).filter(Boolean);
 const splitLines=s=>String(s||"").split(/\n|;/).map(x=>x.trim()).filter(Boolean);
-const shotIds=l=>{const m=String(l||"").match(/\d+\s*\/\s*\d+[A-Za-z]*/g);return m?[...new Set(m.map(x=>x.replace(/\s/g,"")))]:(String(l||"").trim()?[String(l).trim()]:[])};
+const shotIds=l=>{const m=String(l||"").match(/\d+\s*\/\s*\d+[A-Za-z]*/g);if(m)return[...new Set(m.map(x=>x.replace(/\s/g,"")))];
+  // egyszerű számozásnál is lehet több shot egy blokkban: „8 + 9”, „18 + 16”
+  const s=String(l||"").trim();if(!s)return[];const parts=s.split(/\s*\+\s*/).filter(Boolean);return parts.length>1?[...new Set(parts)]:[s]};
 const hhmm=m=>Number.isFinite(m)?`${String(Math.floor(m/60)%24).padStart(2,"0")}:${String(Math.round(m%60)).padStart(2,"0")}`:"";
 function normP(p){
   p=Object.assign({title:"",date:"",call:480,wrapTarget:0,location:"",parking:"",notes:[],blocks:[],shots:[],groups:[],cast:[],crew:[],script:[],src:""},p||{});
