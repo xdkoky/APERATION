@@ -4,7 +4,14 @@
    (a jelenet címére koppintva az egész jelenetet, Tartomány módban az első és utolsó sort). A margón minden
    sornál látszik, melyik beállítás veszi. Forgatás közben a Most nézetben az épp forgó beállítás teljes
    jelenete olvasható, a vett sorok kiemelve. */
-let scrMode="mark",markShot=null,markRange=false,markAnchor=null;
+let scrMode="mark",markShot=null,markRange=false,markAnchor=null,markAnchorDel=false;
+/* jelölés visszavonása: minden jelölés előtt elmentjük, melyik sort melyik beállítás veszi (több lépés vissza is mehet) */
+const MK_UNDO=[];
+function mkPush(){MK_UNDO.push({n:P.script.length,ids:P.script.map(l=>(l.ids||[]).slice())});if(MK_UNDO.length>80)MK_UNDO.shift()}
+function mkUndo(){const s=MK_UNDO.pop();if(!s){toast("Nincs mit visszavonni.");return false}
+  if(s.n!==P.script.length){MK_UNDO.length=0;toast("A szöveg közben megváltozott, ezt már nem lehet visszavonni.",{tone:"warn"});renderEdit();return false}
+  P.script.forEach((l,i)=>{l.ids=s.ids[i]});markAnchor=null;commit();renderEdit();return true}
+const mkToast=(n,what)=>{if(n)toast(`${n} sor ${what} (${markShot})`,{action:"Visszavonás",fn:()=>{if(mkUndo())toast("Visszavonva.")}});else toast("Nem változott semmi.")};
 const natCmp=(a,b)=>String(a).localeCompare(String(b),"hu",{numeric:true});
 function planShotIds(){const s=new Set();P.shots.forEach(x=>{const c=String(x.code||"").replace(/\s/g,"");if(c)s.add(c)});P.blocks.forEach(b=>{if(b.type==="shoot")shotIds(b.label).forEach(i=>s.add(i))});return[...s].sort(natCmp)}
 function scrPasteCard(open){
@@ -26,15 +33,18 @@ function scriptEditHTML(){
   const cnt=id=>P.script.filter(l=>(l.ids||[]).includes(id)).length,missing=ids.filter(id=>!cnt(id));
   let sc=0;
   const lines=P.script.map((l,k)=>{if(l.t==="sh")sc++;const has=!!markShot&&(l.ids||[]).includes(markShot);
-    return`<div class="ln mk ${has?"hot":""} ${markAnchor===k?"anchor":""} ${l.t==="sh"?"scene":""}" data-mline="${k}" ${l.t==="sh"?`data-scene="${sc}"`:""}>
+    return`<div class="ln mk ${has?"hot":""} ${markAnchor===k?"anchor"+(markAnchorDel?" del":""):""} ${l.t==="sh"?"scene":""}" data-mline="${k}" ${l.t==="sh"?`data-scene="${sc}"`:""}>
       <div class="gut">${(l.ids||[]).slice().sort(natCmp).map(x=>`<span class="mini ${x===markShot?"hot":""}">${esc(x)}</span>`).join("")}</div>
       <div class="script"><div class="${l.t}">${l.t==="sh"?`<span class="scn">${sc}.</span>`:""}${esc(l.x)}</div></div></div>`}).join("");
   return modes+`${ids.length?`<section class="card scr-help"><p class="muted small">Válaszd ki a beállítást, majd koppints a sorokra, amelyeket az vesz. A <b>jelenet címére</b> koppintva az egész jelenet ki-be kapcsol. Egy sor több beállításhoz is tartozhat.</p>
+      ${markShot&&cnt(markShot)?`<div><button type="button" class="btn sm danger" data-mk="clear">${ic("x",14)}A(z) ${esc(markShot)} összes jelölésének törlése</button></div>`:""}
       ${missing.length?`<p class="eb-warn">${ic("alert",16)}<span>${missing.length===ids.length?"Még egyik beállításhoz sincs kijelölt rész.":`Még nincs kijelölt rész: ${missing.map(esc).join(", ")}.`}</span></p>`:`<p class="muted small" style="color:var(--ok)">${ic("check",14)} Minden beállításhoz van kijelölt rész.</p>`}</section>`:""}
     <section class="card scr-tools">
       ${ids.length?`<div class="schips">${ids.map(id=>`<button type="button" class="schip ${id===markShot?"on":""} ${cnt(id)?"":"empty"}" data-mshot="${esc(id)}" aria-pressed="${id===markShot}">${esc(id)}<small>${cnt(id)||"–"}</small></button>`).join("")}</div>
       <div class="scr-row"><label class="fi chkf"><input type="checkbox" data-mrange ${markRange?"checked":""}><span>Tartomány</span></label>
-        <span class="muted small">${markAnchor!=null?"<b>Most koppints az utolsó sorra.</b>":markRange?"Koppints az első, majd az utolsó sorra.":`Jelölés: <b>${esc(markShot)}</b>`}</span></div>`
+        <span class="muted small mk-tip">${markAnchor!=null?`<b class="${markAnchorDel?"del":""}">${markAnchorDel?"Törlés":"Jelölés"}: most koppints az utolsó sorra.</b> <button type="button" class="btn sm" data-mk="cancel">${ic("x",13)}Mégse</button>`
+          :markRange?"Koppints az első, majd az utolsó sorra. Ha az első már jelölt, a tartományból töröl.":`Jelölés: <b>${esc(markShot)}</b> · koppintásra ki/be`}</span>
+        <button type="button" class="btn sm mk-undo" data-mk="undo" ${MK_UNDO.length?"":"disabled"} title="Visszavonás (Ctrl+Z)">${ic("undo",14)}Visszavonás</button></div>`
       :`<p class="muted">A jelöléshez előbb legyenek shotok a <b>Shotlist</b>ben vagy forgatási blokkok az <b>Időrend</b>ben (pl. 1/1, 1/2).</p>`}
     </section>
     <section class="card fs scr-mark" style="padding:14px 8px;gap:0">${lines}</section>${scrPasteCard(false)}`;
@@ -47,18 +57,32 @@ document.addEventListener("click",e=>{
   const ch=e.target.closest("[data-mshot]");if(ch){markShot=ch.dataset.mshot;markAnchor=null;renderEdit();
     const f=document.querySelector(".scr-mark .ln.hot")||document.querySelector(`.scr-mark [data-scene="${parseInt(markShot)}"]`);
     f&&f.scrollIntoView({block:"center",behavior:"smooth"});return}
+  const mk=e.target.closest("[data-mk]");
+  if(mk){const a=mk.dataset.mk;
+    if(a==="undo"){if(mkUndo())toast("Visszavonva.")}
+    else if(a==="cancel"){markAnchor=null;renderEdit()}
+    else if(a==="clear"&&markShot){if(!sure(mk,"Biztos? Koppints újra"))return;mkPush();let n=0;P.script.forEach((l,i)=>{if((l.ids||[]).includes(markShot)){scrSet(i,false);n++}});commit();renderEdit();mkToast(n,"jelölése törölve")}
+    return}
   const ln=e.target.closest("[data-mline]");if(!ln)return;
   if(!markShot){toast("Előbb legyen forgatási blokk az Időrendben.");return}
-  const k=+ln.dataset.mline,l=P.script[k];
-  if(l.t==="sh"&&!markRange){   // jelenet címe: az egész jelenet ki/be
+  const k=+ln.dataset.mline,l=P.script[k],on=i=>(P.script[i].ids||[]).includes(markShot);
+  if(markRange){
+    // első koppintás: csak kijelöli a kezdősort (még nem változtat semmit). Ha az már jelölt, a tartomány törölni fog.
+    if(markAnchor==null){markAnchor=k;markAnchorDel=l.t!=="sh"&&on(k);renderEdit();return}
+    const a=Math.min(markAnchor,k),b=Math.max(markAnchor,k),del=markAnchorDel;mkPush();let n=0;
+    for(let i=a;i<=b;i++)if(P.script[i].t!=="sh"&&on(i)===del){scrSet(i,!del);n++}
+    markAnchor=null;commit();renderEdit();mkToast(n,del?"jelölése törölve":"jelölve");return}
+  mkPush();
+  if(l.t==="sh"){   // jelenet címe: az egész jelenet ki/be
     let j=k+1;const r=[];while(j<P.script.length&&P.script[j].t!=="sh")r.push(j++);
-    const all=r.length&&r.every(i=>(P.script[i].ids||[]).includes(markShot));r.forEach(i=>scrSet(i,!all));
-  }else if(markRange){
-    if(markAnchor==null){markAnchor=k;scrSet(k,true)}
-    else{const a=Math.min(markAnchor,k),b=Math.max(markAnchor,k);for(let i=a;i<=b;i++)if(P.script[i].t!=="sh")scrSet(i,true);markAnchor=null}
-  }else scrSet(k,!(l.ids||[]).includes(markShot));
+    const all=r.length&&r.every(on);let n=0;r.forEach(i=>{if(on(i)===all){scrSet(i,!all);n++}});commit();renderEdit();mkToast(n,all?"jelölése törölve":"jelölve");return}
+  scrSet(k,!on(k));
   commit();renderEdit();
 });
+// gépen Ctrl/Cmd+Z: a jelölés visszavonása (ha nem egy szövegmezőben gépelsz)
+addEventListener("keydown",e=>{if(!(e.ctrlKey||e.metaKey)||e.shiftKey||e.altKey||e.key.toLowerCase()!=="z")return;
+  if(view!=="terv"||editSec!=="szkript"||scrMode!=="mark")return;const t=e.target;if(t&&t.closest&&t.closest("input,textarea,select,[contenteditable]"))return;
+  e.preventDefault();if(mkUndo())toast("Visszavonva.")});
 document.addEventListener("change",e=>{if(e.target.matches&&e.target.matches("[data-mrange]")){markRange=e.target.checked;markAnchor=null;renderEdit()}});
 
 /* forgatás közben: a beállítás teljes jelenete(i) sztori-sorrendben, a vett sorok kiemelve */

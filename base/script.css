@@ -13,6 +13,9 @@
 .scr-mark .ln.mk:hover{background:var(--surface)}
 .scr-mark .ln.mk.hot:hover{background:color-mix(in srgb,var(--shoot) 16%,transparent)}
 .scr-mark .ln.anchor{outline:2px dashed var(--shoot);outline-offset:-2px}
+.scr-mark .ln.anchor.del{outline-color:var(--late);background:color-mix(in srgb,var(--late) 10%,transparent)}
+.mk-tip{order:3;flex:1 1 100%;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px}.mk-tip b.del{color:var(--late)}
+.mk-undo{margin-left:auto}
 .scr-mark .ln.scene .sh{margin-top:14px}
 .scn{display:inline-block;min-width:2.2em;color:var(--shoot);font-family:var(--f-ui);font-weight:800}
 .readbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
